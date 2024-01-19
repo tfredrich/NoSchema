@@ -20,14 +20,6 @@ public interface UnitOfWork<T>
     throws UnitOfWorkRollbackException;
 
     /**
-     * Returns the current state of the given entity: "NEW", "DIRTY", "DELETED", or "UNKNOWN".
-	 * 
-     * @param entity The entity to query the state of.
-     * @return The current state of the entity.
-     */
-    EntityState getState(T entity);
-
-    /**
      * Registers a new entity that has not been persisted yet.
 	 * 
      * @param entity The new entity to register.
