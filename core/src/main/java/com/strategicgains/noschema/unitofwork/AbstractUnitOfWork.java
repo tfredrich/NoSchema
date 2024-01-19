@@ -15,54 +15,16 @@ import com.strategicgains.noschema.Identifiable;
 public abstract class AbstractUnitOfWork<T extends Identifiable>
 implements UnitOfWork<T>
 {
-	// This set is used to keep track of new entities that need to be persisted
-	// during the transaction.
-	private Set<T> newObjects = new HashSet<>();
-
-	// This set is used to keep track of entities that have been updated during the
-	// transaction.
-	private Set<T> dirtyObjects = new HashSet<>();
-
-	// This set is used to keep track of entities that have been marked for deletion
-	// during the transaction.
-	private Set<T> deletedObjects = new HashSet<>();
+	// This set is used to keep track of entities that have changed and
+	// need to be persisted during the transaction.
+	private Set<Change<T>> changes = new HashSet<>();
 
 	/**
-	 * Returns a stream containing all the new entities.
+	 * Returns a stream containing all the changed entities.
 	 */
-	protected Stream<T> newObjects() {
-		return Collections.unmodifiableSet(newObjects).stream();
-	}
-
-	/**
-	 * Returns a stream containing all the dirty entities.
-	 */
-	protected Stream<T> dirtyObjects() {
-		return Collections.unmodifiableSet(dirtyObjects).stream();
-	}
-
-	/**
-	 * Returns a stream containing all the deleted entities.
-	 */
-	protected Stream<T> deletedObjects() {
-		return Collections.unmodifiableSet(deletedObjects).stream();
-	}
-
-	/**
-	 * Determines the state of an entity within this unit of work.
-	 *
-	 * @param entity the entity to determine the state for.
-	 * @return the current state of the object.
-	 */
-	@Override
-	public EntityState getState(T entity) {
-		if (newObjects.contains(entity))
-			return EntityState.NEW;
-		if (dirtyObjects.contains(entity))
-			return EntityState.DIRTY;
-		if (deletedObjects.contains(entity))
-			return EntityState.DELETED;
-		return EntityState.UNKNOWN;
+	protected Stream<Change<T>> changes()
+	{
+		return Collections.unmodifiableSet(changes).stream();
 	}
 
 	/**
@@ -72,7 +34,7 @@ implements UnitOfWork<T>
 	 */
 	@Override
 	public void registerNew(T entity) {
-		newObjects.add(entity);
+		changes.add(new Change<>(entity, EntityState.NEW));
 	}
 
 	/**
@@ -83,7 +45,7 @@ implements UnitOfWork<T>
 	@Override
 	public void registerDirty(T entity)
 	{
-		dirtyObjects.add(entity);
+		changes.add(new Change<>(entity, EntityState.DIRTY));
 	}
 
 	/**
@@ -93,7 +55,7 @@ implements UnitOfWork<T>
 	 */
 	@Override
 	public void registerDeleted(T entity) {
-		deletedObjects.add(entity);
+		changes.add(new Change<>(entity, EntityState.DELETED));
 	}
 
     /**
@@ -101,8 +63,6 @@ implements UnitOfWork<T>
      */
     protected void reset()
 	{
-		newObjects.clear();
-		dirtyObjects.clear();
-		deletedObjects.clear();
+		changes.clear();
 	}
 }

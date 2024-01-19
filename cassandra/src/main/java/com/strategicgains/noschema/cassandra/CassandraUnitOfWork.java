@@ -1,14 +1,17 @@
 package com.strategicgains.noschema.cassandra;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BatchStatement;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BatchType;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.unitofwork.AbstractUnitOfWork;
+import com.strategicgains.noschema.unitofwork.Change;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
@@ -28,11 +31,7 @@ extends AbstractUnitOfWork<T>
     throws UnitOfWorkCommitException
     {
         BatchStatement batch = new BatchStatementBuilder(BatchType.LOGGED).build();
-
-        newObjects().forEach(entity -> batch.add(statements.create(entity)));
-        dirtyObjects().forEach(entity -> batch.add(statements.update(entity)));
-        deletedObjects().forEach(entity -> batch.add(statements.delete(entity.getIdentifier())));
-
+        changes().forEach(change -> createStatementFor(change).ifPresent(batch::add));
         ResultSet resultSet = session.execute(batch);
 
         if (resultSet.wasApplied())
@@ -51,4 +50,21 @@ extends AbstractUnitOfWork<T>
     {
         // No-op for CassandraUnitOfWork since we're using a logged batch
     }
+
+	private Optional<BoundStatement> createStatementFor(Change<T> change)
+	{
+		switch(change.getState())
+		{
+			case DELETED:
+				return Optional.of(statements.delete(change.getId()));
+			case DIRTY:
+				return Optional.of(statements.update(change.getEntity()));
+			case NEW:
+				return Optional.of(statements.create(change.getEntity()));
+			default:
+				break;
+		}
+
+		return Optional.empty();
+	}
 }
