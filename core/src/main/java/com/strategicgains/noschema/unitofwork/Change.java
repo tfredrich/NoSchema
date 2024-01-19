@@ -1,5 +1,7 @@
 package com.strategicgains.noschema.unitofwork;
 
+import java.util.Objects;
+
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
@@ -27,5 +29,17 @@ public class Change<T extends Identifiable>
 	public EntityState getState()
 	{
 		return state;
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return entity.getIdentifier().hashCode();
+	}
+
+	@Override
+	public boolean equals(Object that)
+	{
+		return Objects.equals(this, that);
 	}
 }
