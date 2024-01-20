@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.cassandra;
+package com.strategicgains.noschema.cassandra.document;
 
 import java.nio.ByteBuffer;
 import java.util.Date;
@@ -12,7 +12,9 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.DocumentSchemaProvider.Columns;
+import com.strategicgains.noschema.cassandra.StatementFactory;
+import com.strategicgains.noschema.cassandra.Table;
+import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.InvalidObjectIdException;

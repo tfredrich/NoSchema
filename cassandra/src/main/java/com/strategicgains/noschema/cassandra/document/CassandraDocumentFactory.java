@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.cassandra;
+package com.strategicgains.noschema.cassandra.document;
 
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;

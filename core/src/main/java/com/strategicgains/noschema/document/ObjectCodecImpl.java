@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.bson.AbstractBsonReader.State;
 import org.bson.BSONDecoder;
 import org.bson.BSONEncoder;
 import org.bson.BSONObject;
@@ -17,6 +18,7 @@ import org.bson.BasicBSONEncoder;
 import org.bson.BsonBinaryReader;
 import org.bson.BsonBinaryWriter;
 import org.bson.BsonInvalidOperationException;
+import org.bson.BsonType;
 import org.bson.BsonWriter;
 import org.bson.UuidRepresentation;
 import org.bson.codecs.DecoderContext;
@@ -113,7 +115,7 @@ implements ObjectCodec<T>
 	{
 		try
 		{
-			do
+			while(!State.END_OF_DOCUMENT.equals(bson.getState()))
 			{
 				String name = bson.readName();
 				FieldDescriptor d = descriptor.getField(name);
@@ -123,7 +125,7 @@ implements ObjectCodec<T>
 					bson.skipValue();
 					continue;
 				}
-	
+
 				if (d.isProperty())
 				{
 					Object value = context.decodeWithChildContext(d.getCodec(), bson);
@@ -133,15 +135,13 @@ implements ObjectCodec<T>
 				{
 					readReference(bson, d, d.get(entity), context);
 				}
-			}		
-			while(true);
+			}
 		}
 		catch(BsonInvalidOperationException e)
 		{
-			return;
+			// ignore.
 		}
 	}
-
 	private void readReference(BsonBinaryReader bson, FieldDescriptor descriptor, Object value, DecoderContext context)
 	{
 		bson.readStartDocument();

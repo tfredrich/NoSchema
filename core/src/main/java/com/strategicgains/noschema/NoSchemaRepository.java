@@ -1,8 +1,7 @@
-package com.strategicgains.noschema.document;
+package com.strategicgains.noschema;
 
 import java.util.List;
 
-import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -11,8 +10,8 @@ import com.strategicgains.noschema.exception.StorageException;
 
 public interface NoSchemaRepository<T>
 {
-	void ensureTable();
-	void dropTable();
+	void ensureTables();
+	void dropTables();
 
 	/**
 	 * Store a new entity in the database as a Document.

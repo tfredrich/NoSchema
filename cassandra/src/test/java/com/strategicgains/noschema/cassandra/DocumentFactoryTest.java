@@ -13,6 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;

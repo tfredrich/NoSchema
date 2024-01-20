@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
 import com.strategicgains.noschema.cassandra.schema.SchemaRegistry;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -31,10 +32,10 @@ public class SampleRun {
 			.exportInitializeAll();
 
 		CassandraDocumentRepository<Flower> flowersById = new CassandraDocumentRepository<>(session, byId);
-		flowersById.ensureTable();
+		flowersById.ensureTables();
 
 		CassandraDocumentRepository<Flower> flowersByName = new CassandraDocumentRepository<>(session, byName);
-		flowersByName.ensureTable();
+		flowersByName.ensureTables();
 
 		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
 		UUID accountId = UUID.fromString("a87d3bff-6997-4739-ab4e-ded0cc85700f");

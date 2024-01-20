@@ -1,5 +1,6 @@
-package com.strategicgains.noschema.cassandra;
+package com.strategicgains.noschema.cassandra.document;
 
+import com.strategicgains.noschema.cassandra.Table;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.cassandra.schema.AbstractSchemaProvider;
 
@@ -8,10 +9,10 @@ extends AbstractSchemaProvider
 {
 	public static class Columns
 	{
-		static final String OBJECT = "object";
-		static final String TYPE = "type";
-		static final String CREATED_AT = "created_at";
-		static final String UPDATED_AT = "updated_at";
+		public static final String OBJECT = "object";
+		public static final String TYPE = "type";
+		public static final String CREATED_AT = "created_at";
+		public static final String UPDATED_AT = "updated_at";
 	}
 
 	private static final String DROP_TABLE = "drop table if exists %s.%s;";

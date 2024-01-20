@@ -10,11 +10,14 @@ import org.bson.BasicBSONDecoder;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.DocumentSchemaProvider.Columns;
+import com.strategicgains.noschema.NoSchemaRepository;
+import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
+import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
+import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
+import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.cassandra.key.KeyPropertyConverter;
 import com.strategicgains.noschema.document.Document;
-import com.strategicgains.noschema.document.NoSchemaRepository;
 import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -33,7 +36,6 @@ public class CassandraDocumentRepository<T>
 extends AbstractCassandraRepository<T, DocumentStatementFactory<T>>
 implements NoSchemaRepository<T>
 {
-//	private static final Logger LOG = LoggerFactory.getLogger(CassandraRepository.class);
 	private static final BSONDecoder DECODER = new BasicBSONDecoder();
 
 	private Table table;
@@ -50,15 +52,15 @@ implements NoSchemaRepository<T>
 		this.table = table;
 		this.documentFactory = new CassandraDocumentFactory<>(table.keys());
 
-		if (ensureTable) ensureTable();
+		if (ensureTable) ensureTables();
 	}
 
-	public void ensureTable()
+	public void ensureTables()
 	{
 		new DocumentSchemaProvider(table).create(session());
 	}
 
-	public void dropTable()
+	public void dropTables()
 	{
 		new DocumentSchemaProvider(table).drop(session());
 	}

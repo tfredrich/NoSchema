@@ -15,18 +15,22 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.DocumentSchemaProvider.Columns;
+import com.strategicgains.noschema.NoSchemaRepository;
+import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
+import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
+import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
+import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.cassandra.key.KeyPropertyConverter;
 import com.strategicgains.noschema.document.Document;
-import com.strategicgains.noschema.document.NoSchemaRepository;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 import com.strategicgains.noschema.exception.StorageException;
+import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 
-public class CassandraRepository<T extends Identifiable>
+public class CassandraNoSchemaRepository<T extends Identifiable>
 implements NoSchemaRepository<T>
 {
 	private static final BSONDecoder DECODER = new BasicBSONDecoder();
@@ -38,7 +42,7 @@ implements NoSchemaRepository<T>
 	private Map<String, DocumentStatementFactory<T>> statementsByView = new HashMap<>();
 	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
 
-	public CassandraRepository(CqlSession session, Table table, View... views)
+	public CassandraNoSchemaRepository(CqlSession session, Table table, View... views)
 	{
 		super();
 		this.table = table;
@@ -62,7 +66,7 @@ implements NoSchemaRepository<T>
 	}
 
 	@Override
-	public void ensureTable()
+	public void ensureTables()
 	{
 		new DocumentSchemaProvider(table).create(session);
 
@@ -73,7 +77,7 @@ implements NoSchemaRepository<T>
 	}
 
 	@Override
-	public void dropTable()
+	public void dropTables()
 	{
 		new DocumentSchemaProvider(table).drop(session);
 
@@ -87,20 +91,33 @@ implements NoSchemaRepository<T>
 	public T create(T entity)
 	throws DuplicateItemException, InvalidIdentifierException
 	{
-		List<BoundStatement> statements = new ArrayList<>(views.size() + 1);
-		statements.add(statementsByView.get(PRIMARY_VIEW).create(entity));
+		CassandraUnitOfWork<T> uow = new CassandraUnitOfWork<>(session, statementsByView.get(PRIMARY_VIEW));
+		uow.registerNew(entity);
 
-		if (hasView())
+		try
 		{
-			views.forEach(view -> statements.add(statementsByView.get(view.name()).create(entity)));
-			ExecResult creation = executeAll(statements);
-
-			if (!creation.succeeded())
-			{
-				creation.rollback().forEach(stmt -> session.executeAsync(stmt));
-				throw new DuplicateItemException(creation.message());
-			}
+			uow.commit();
 		}
+		catch (UnitOfWorkCommitException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+//		List<BoundStatement> statements = new ArrayList<>(views.size() + 1);
+//		statements.add(statementsByView.get(PRIMARY_VIEW).create(entity));
+//
+//		if (hasView())
+//		{
+//			views.forEach(view -> statements.add(statementsByView.get(view.name()).create(entity)));
+//			ExecResult creation = executeAll(statements);
+//
+//			if (!creation.succeeded())
+//			{
+//				creation.rollback().forEach(stmt -> session.executeAsync(stmt));
+//				throw new DuplicateItemException(creation.message());
+//			}
+//		}
 
 		return entity;
 	}
