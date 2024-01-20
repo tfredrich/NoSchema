@@ -18,7 +18,6 @@ import org.bson.BasicBSONEncoder;
 import org.bson.BsonBinaryReader;
 import org.bson.BsonBinaryWriter;
 import org.bson.BsonInvalidOperationException;
-import org.bson.BsonType;
 import org.bson.BsonWriter;
 import org.bson.UuidRepresentation;
 import org.bson.codecs.DecoderContext;
