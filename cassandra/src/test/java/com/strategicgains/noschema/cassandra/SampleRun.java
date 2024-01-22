@@ -22,8 +22,8 @@ public class SampleRun {
 	{
 		CqlSession session = createCassandraSession();
 		String keyspace = "sample_run";
-		Table byId = new Table(keyspace, "flowers_by_id", "id:UUID");
-		Table byName = new Table(keyspace, "flowers_by_name", "(account.id as account_id:UUID), name:text");
+		PrimaryTable byId = new PrimaryTable(keyspace, "flowers_by_id", "id:UUID");
+		PrimaryTable byName = new PrimaryTable(keyspace, "flowers_by_name", "(account.id as account_id:UUID), name:text");
 		SchemaRegistry
 			.keyspace(keyspace)
 			.schema(new DocumentSchemaProvider(byId))

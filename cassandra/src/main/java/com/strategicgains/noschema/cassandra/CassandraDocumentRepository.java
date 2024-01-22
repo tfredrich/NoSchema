@@ -38,15 +38,15 @@ implements NoSchemaRepository<T>
 {
 	private static final BSONDecoder DECODER = new BasicBSONDecoder();
 
-	private Table table;
+	private PrimaryTable table;
 	private CassandraDocumentFactory<T> documentFactory;
 
-	public CassandraDocumentRepository(CqlSession session, Table table)
+	public CassandraDocumentRepository(CqlSession session, PrimaryTable table)
 	{
 		this(session, table, false);
 	}
 
-	public CassandraDocumentRepository(CqlSession session, Table table, boolean ensureTable)
+	public CassandraDocumentRepository(CqlSession session, PrimaryTable table, boolean ensureTable)
 	{
 		super(session, table.keyspace(), table.name(), new DocumentStatementFactory<>(session, table));
 		this.table = table;

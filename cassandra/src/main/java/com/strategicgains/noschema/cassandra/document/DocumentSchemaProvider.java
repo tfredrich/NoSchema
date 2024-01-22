@@ -1,6 +1,6 @@
 package com.strategicgains.noschema.cassandra.document;
 
-import com.strategicgains.noschema.cassandra.Table;
+import com.strategicgains.noschema.cassandra.AbstractTable;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.cassandra.schema.AbstractSchemaProvider;
 
@@ -33,7 +33,7 @@ extends AbstractSchemaProvider
 	private String table;
 	private KeyDefinition keys;
 
-	public DocumentSchemaProvider(Table table)
+	public DocumentSchemaProvider(AbstractTable table)
 	{
 		super();
 		this.keyspace = table.keyspace();

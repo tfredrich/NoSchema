@@ -1,52 +1,32 @@
 package com.strategicgains.noschema.cassandra;
 
+import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
-import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
+import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
-public class Table
+public abstract class AbstractTable
 {
-	private static final String DEFAULT_KEYS = "id:uuid";
-
+	// The Cassandra keyspace in which this table is stored.
 	private String keyspace;
+
+	// The name of the table.
 	private String name;
+
+	// The keys that identify the primary identifier 
 	private KeyDefinition keys;
 
 	// How long should the table's data live? (0 implies forever)
 	private long ttl;
 
-	public Table()
+	protected AbstractTable()
 	{
 		super();
 	}
 
-	/**
-	 * Creates a new Table instance with a primary key of 'id' with a type of 'uuid'
-	 * 
-	 * @param keyspace
-	 * @param name
-	 * @throws KeyDefinitionException
-	 */
-	public Table(String keyspace, String name)
-	throws KeyDefinitionException
+	protected AbstractTable(String keyspace, String name, KeyDefinition keys, long ttl)
 	{
-		this(keyspace, name, DEFAULT_KEYS);
-	}
-
-	public Table(String keyspace, String name, String keys)
-	throws KeyDefinitionException
-	{
-		this(keyspace, name, KeyDefinitionParser.parse(keys));
-	}
-
-	public Table(String keyspace, String name, KeyDefinition keys)
-	{
-		this(keyspace, name, keys, 0l);
-	}
-
-	public Table(String keyspace, String name, KeyDefinition keys, long ttl)
-	{
-		this();
+		super();
 		keyspace(keyspace);
 		name(name);
 		keys(keys);
@@ -103,9 +83,14 @@ public class Table
 		this.ttl = ttl;
 	}
 
-	@Override
-	public String toString()
+	public boolean isUnique()
 	{
-		return String.format("%s.%s=(keys=%s, ttl=%l)", keyspace(), name(), keys(), ttl());
+		return keys.isUnique();
+	}
+
+	public Identifier getIdentifier(Object entity)
+	throws InvalidIdentifierException, KeyDefinitionException
+	{
+		return keys.identifier(entity);
 	}
 }

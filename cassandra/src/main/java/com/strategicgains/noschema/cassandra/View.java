@@ -5,45 +5,52 @@ import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 public class View
-extends Table
+extends AbstractTable
 {
-	private Table parent;
+	private PrimaryTable parent;
 
 	public View()
 	{
 		super();
 	}
 
-	public View(Table parent, String name, String keys)
+	public View(PrimaryTable parent, String name, String keys)
 	throws KeyDefinitionException
 	{
-		this(parent, name, KeyDefinitionParser.parse(keys));
+		this(parent, name, KeyDefinitionParser.parse(keys), 0l);
 	}
 
-	public View(Table parent, String name, KeyDefinition keys)
+	public View(PrimaryTable parent, String name, KeyDefinition keys)
 	{
 		this(parent, name, keys, 0l);
 	}
 
-	public View(Table parent, String name, KeyDefinition keys, long ttl)
+	public View(PrimaryTable parent, String name, String keys, long ttl)
+	throws KeyDefinitionException
+	{
+		this(parent, name, KeyDefinitionParser.parse(keys), ttl);
+	}
+
+	public View(PrimaryTable parent, String name, KeyDefinition keys, long ttl)
 	{
 		super(parent.keyspace(), name, keys, ttl);
 		parent(parent);
 	}
 
-	public Table parent()
+	public PrimaryTable parent()
 	{
 		return parent;
 	}
 
-	public void parent(Table parent)
+	public View parent(PrimaryTable parent)
 	{
 		this.parent = parent;
+		return this;
 	}
 
 	@Override
 	public String name()
 	{
-		return parent.name() + "_" + super.name();
+		return String.format("%s_%s", parent.name(), super.name());
 	}
 }

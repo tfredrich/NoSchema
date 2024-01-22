@@ -12,8 +12,9 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.cassandra.AbstractTable;
+import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.StatementFactory;
-import com.strategicgains.noschema.cassandra.Table;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -43,16 +44,16 @@ implements StatementFactory<T>
 	private static final String UPSERT = "upsert";
 
 	private CqlSession session;
-	private Table table;
+	private AbstractTable table;
 	private Map<String, PreparedStatement> statements = new ConcurrentHashMap<>();
 	private CassandraDocumentFactory<T> documentFactory;
 
-	public DocumentStatementFactory(CqlSession session, Table table)
+	public DocumentStatementFactory(CqlSession session, AbstractTable table)
 	{
 		this(session, table, new CassandraDocumentFactory<>(table.keys()));
 	}
 
-	public DocumentStatementFactory(CqlSession session, Table table, CassandraDocumentFactory<T> factory)
+	public DocumentStatementFactory(CqlSession session, AbstractTable table, CassandraDocumentFactory<T> factory)
 	{
 		super();
 		this.session = session;

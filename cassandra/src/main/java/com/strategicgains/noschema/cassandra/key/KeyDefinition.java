@@ -19,6 +19,7 @@ public class KeyDefinition
 {
 	private List<KeyComponent> partitionKey;
 	private List<ClusteringKeyComponent> clusteringKey;
+	private boolean isUnique;
 
 	// Cached at runtime: Access Fields by property name.
 	private transient Map<String, List<Field>> keyFields;
@@ -150,6 +151,16 @@ public class KeyDefinition
 		}
 
 		return keyFields;
+	}
+
+	public boolean isUnique()
+	{
+		return isUnique;
+	}
+
+	public void setUnique(boolean value)
+	{
+		this.isUnique = value;
 	}
 
 	public boolean isValid()

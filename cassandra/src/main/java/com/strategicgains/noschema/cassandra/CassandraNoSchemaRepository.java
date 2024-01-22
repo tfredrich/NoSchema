@@ -34,35 +34,27 @@ public class CassandraNoSchemaRepository<T extends Identifiable>
 implements NoSchemaRepository<T>
 {
 	private static final BSONDecoder DECODER = new BasicBSONDecoder();
-	private static final String PRIMARY_VIEW = "pri";
+	private static final String PRIMARY_TABLE = "<|primary_table|>";
 
 	private CqlSession session;
-	private Table table;
-	private List<View> views;
+	private PrimaryTable table;
 	private Map<String, DocumentStatementFactory<T>> statementsByView = new HashMap<>();
 	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
 
-	public CassandraNoSchemaRepository(CqlSession session, Table table, View... views)
+	public CassandraNoSchemaRepository(CqlSession session, PrimaryTable table)
 	{
 		super();
 		this.table = table;
-		statementsByView.put(PRIMARY_VIEW, new DocumentStatementFactory<>(session, table));
-
-		if (views != null && views.length > 0)
-		{
-			this.views = new ArrayList<>(Arrays.asList(views));
-
-			for(View view : views)
-			{
-				this.statementsByView.put(view.name(), new DocumentStatementFactory<>(session, view));
-				this.factoriesByView.put(view.name(), new CassandraDocumentFactory<>(view.keys()));
-			}
-		}
+		statementsByView.put(PRIMARY_TABLE, new DocumentStatementFactory<>(session, table));
+		table.views().forEach(view -> {
+			this.statementsByView.put(view.name(), new DocumentStatementFactory<>(session, view));
+			this.factoriesByView.put(view.name(), new CassandraDocumentFactory<>(view.keys()));				
+		});
 	}
 
-	protected boolean hasView()
+	protected boolean hasViews()
 	{
-		return views != null;
+		return table.hasViews();
 	}
 
 	@Override
@@ -70,9 +62,9 @@ implements NoSchemaRepository<T>
 	{
 		new DocumentSchemaProvider(table).create(session);
 
-		if (hasView())
+		if (hasViews())
 		{
-			views.forEach(v -> new DocumentSchemaProvider(v).create(session));
+			table.views().forEach(v -> new DocumentSchemaProvider(v).create(session));
 		}
 	}
 
@@ -81,9 +73,9 @@ implements NoSchemaRepository<T>
 	{
 		new DocumentSchemaProvider(table).drop(session);
 
-		if (hasView())
+		if (hasViews())
 		{
-			views.forEach(v -> new DocumentSchemaProvider(v).drop(session));
+			table.views().forEach(v -> new DocumentSchemaProvider(v).drop(session));
 		}
 	}
 
@@ -91,7 +83,7 @@ implements NoSchemaRepository<T>
 	public T create(T entity)
 	throws DuplicateItemException, InvalidIdentifierException
 	{
-		CassandraUnitOfWork<T> uow = new CassandraUnitOfWork<>(session, statementsByView.get(PRIMARY_VIEW));
+		CassandraUnitOfWork<T> uow = new CassandraUnitOfWork<>(session, statementsByView.get(PRIMARY_TABLE));
 		uow.registerNew(entity);
 
 		try
@@ -133,7 +125,7 @@ implements NoSchemaRepository<T>
 	public boolean exists(Identifier id)
 	throws InvalidIdentifierException
 	{
-		return existsInView(PRIMARY_VIEW, id);
+		return existsInView(PRIMARY_TABLE, id);
 	}
 
 	public boolean existsInView(String viewName, Identifier id)
@@ -146,7 +138,7 @@ implements NoSchemaRepository<T>
 	public T read(Identifier id)
 	throws ItemNotFoundException
 	{
-		return readView(PRIMARY_VIEW, id);
+		return readView(PRIMARY_TABLE, id);
 	}
 
 	public T readView(String viewName, Identifier id)
