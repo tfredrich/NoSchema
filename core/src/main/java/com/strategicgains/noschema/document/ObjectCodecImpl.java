@@ -114,7 +114,7 @@ implements ObjectCodec<T>
 	{
 		try
 		{
-			while(!State.END_OF_DOCUMENT.equals(bson.getState()))
+			while(State.END_OF_DOCUMENT != bson.getState())
 			{
 				String name = bson.readName();
 				FieldDescriptor d = descriptor.getField(name);
@@ -122,25 +122,28 @@ implements ObjectCodec<T>
 				if (d == null)
 				{
 					bson.skipValue();
-					continue;
 				}
-
-				if (d.isProperty())
+				else if (d.isProperty())
 				{
 					Object value = context.decodeWithChildContext(d.getCodec(), bson);
 					d.set(entity, value);
 				}
 				else
 				{
-					readReference(bson, d, d.get(entity), context);
+					Object fieldValue = d.get(entity);
+
+					if (fieldValue != null) {
+						readReference(bson, d, fieldValue, context);
+					}
 				}
 			}
 		}
 		catch(BsonInvalidOperationException e)
 		{
-			// ignore.
+			// Log the exception or rethrow it as a different exception.
 		}
 	}
+
 	private void readReference(BsonBinaryReader bson, FieldDescriptor descriptor, Object value, DecoderContext context)
 	{
 		bson.readStartDocument();
