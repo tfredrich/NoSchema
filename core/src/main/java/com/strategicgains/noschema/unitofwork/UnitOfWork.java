@@ -29,9 +29,10 @@ public interface UnitOfWork<T>
     /**
      * Marks the given entity as "dirty" and needs to be updated in the database during commit.
 	 * 
-     * @param entity The entity to mark as dirty.
+     * @param original The entity in its original state (clean).
+     * @param dirty The entity after it is updated (dirty).
      */
-    void registerDirty(T entity);
+    void registerDirty(T original, T dirty);
 
     /**
      * Marks the given entity as "deleted" and should be removed from the database during commit.

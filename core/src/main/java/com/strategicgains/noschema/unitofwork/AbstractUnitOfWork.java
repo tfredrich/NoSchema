@@ -40,12 +40,13 @@ implements UnitOfWork<T>
 	/**
 	 * Registers an entity that has been updated during the transaction.
 	 *
-	 * @param entity the entity that has been updated.
+	 * @param original the entity state before it was updated.
+	 * @param dirty the entity in its dirty state (after update).
 	 */
 	@Override
-	public void registerDirty(T entity)
+	public void registerDirty(T original, T dirty)
 	{
-		changes.add(new Change<>(entity, EntityState.DIRTY));
+		changes.add(new DirtyChange<>(original, dirty));
 	}
 
 	/**
