@@ -97,7 +97,7 @@ public abstract class AbstractTable
 	@Override
 	public String toString()
 	{
-		return String.format("%s.%s=(keys=%s, ttl=%l)", keyspace(), name(), keys().toString(), ttl());
+		return String.format("%s.%s:(keys=%s, ttl=%d)", keyspace(), name(), keys(), ttl());
 	}
 
 	public String asTableName()
