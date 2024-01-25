@@ -57,11 +57,23 @@ extends AbstractTable
 		super(keyspace, name, keys, ttl);
 	}
 
+
+	public PrimaryTable withView(String name, String keys)
+	throws KeyDefinitionException
+	{
+		return withView(name, keys, 0l);
+	}
+
 	public PrimaryTable withView(String name, String keys, long ttl)
 	throws KeyDefinitionException
 	{
 		addView(new View(this, name, keys, ttl));
 		return this;
+	}
+
+	public PrimaryTable withView(String name, KeyDefinition keys)
+	{
+		return withView(name, keys, 0l);
 	}
 
 	public PrimaryTable withView(String name, KeyDefinition keys, long ttl)
@@ -70,13 +82,14 @@ extends AbstractTable
 		return this;
 	}
 
-	private void addView(View view)
+	public void addView(View view)
 	{
 		if (views == null)
 		{
 			views = new ArrayList<>();
 		}
 
+		view.parent(this);
 		views.add(view);
 	}
 
@@ -88,12 +101,6 @@ extends AbstractTable
 	public Stream<View> views()
 	{
 		return (hasViews() ? Collections.unmodifiableList(views).stream() : Stream.empty());
-	}
-
-	@Override
-	public String toString()
-	{
-		return String.format("%s.%s=(keys=%s, ttl=%l)", keyspace(), name(), keys(), ttl());
 	}
 
 	public int getViewCount()

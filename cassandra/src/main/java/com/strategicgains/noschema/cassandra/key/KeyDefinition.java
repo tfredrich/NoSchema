@@ -7,8 +7,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.key.ClusteringKeyComponent.Ordering;
@@ -17,8 +18,13 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 public class KeyDefinition
 {
-	private List<KeyComponent> partitionKey;
-	private List<ClusteringKeyComponent> clusteringKey;
+	private static final String ASSIGNMENT_PLACEHOLDER = " = ?";
+	private static final String SPACE = " ";
+	private static final String COMMA_DELIMITER = ",";
+	private static final String AND = " and ";
+
+	private List<KeyComponent> partitionKey = new ArrayList<>();
+	private List<ClusteringKeyComponent> clusteringKey = new ArrayList<>();
 	private boolean isUnique;
 
 	// Cached at runtime: Access Fields by property name.
@@ -36,11 +42,6 @@ public class KeyDefinition
 
 	public KeyDefinition addPartitionKey(KeyComponent component)
 	{
-		if (partitionKey == null)
-		{
-			partitionKey = new ArrayList<>();
-		}
-
 		partitionKey.add(component);
 		return this;
 	}
@@ -57,11 +58,6 @@ public class KeyDefinition
 
 	public KeyDefinition addClusteringKey(ClusteringKeyComponent component)
 	{
-		if (clusteringKey == null)
-		{
-			clusteringKey = new ArrayList<>();
-		}
-
 		clusteringKey.add(component);
 		return this;
 	}
@@ -73,12 +69,12 @@ public class KeyDefinition
 
 	public boolean hasPartitionKey()
 	{
-		return (partitionKey != null && !partitionKey.isEmpty());
+		return !partitionKey.isEmpty();
 	}
 
 	public boolean hasClusteringKey()
 	{
-		return (clusteringKey != null && !clusteringKey.isEmpty());
+		return !clusteringKey.isEmpty();
 	}
 
 	/**
@@ -179,7 +175,7 @@ public class KeyDefinition
 
 		if (hasClusteringKey())
 		{
-			sb.append(",");
+			sb.append(COMMA_DELIMITER);
 			appendAsColumns(clusteringKey, sb);
 		}
 
@@ -188,19 +184,25 @@ public class KeyDefinition
 
 	public String asPrimaryKey()
 	{
-		StringBuilder sb = new StringBuilder("primary key (");
+		return String.format("%s %s", "primary key ", toString());
+	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder("(");
 
 		if (hasClusteringKey())
 		{
 			sb.append("(");
 		}
 
-		appendAsProperties(partitionKey, sb, ",");
+		appendAsProperties(partitionKey, sb, COMMA_DELIMITER);
 
 		if (hasClusteringKey())
 		{
 			sb.append("),");
-			appendAsProperties(clusteringKey, sb, ",");
+			appendAsProperties(clusteringKey, sb, COMMA_DELIMITER);
 		}
 
 		sb.append(")");
@@ -222,12 +224,12 @@ public class KeyDefinition
 	public String asSelectProperties()
 	{
 		StringBuilder sb = new StringBuilder();
-		appendAsProperties(partitionKey, sb, ",");
+		appendAsProperties(partitionKey, sb, COMMA_DELIMITER);
 
 		if (hasClusteringKey())
 		{
-			sb.append(",");
-			appendAsProperties(clusteringKey, sb, ",");
+			sb.append(COMMA_DELIMITER);
+			appendAsProperties(clusteringKey, sb, COMMA_DELIMITER);
 		}
 
 		return sb.toString();
@@ -237,18 +239,18 @@ public class KeyDefinition
 	{
 		String[] qms = new String[size() + extras];
 		Arrays.fill(qms, "?");
-		return String.join(",", qms);
+		return String.join(COMMA_DELIMITER, qms);
 	}
 
 	public String asIdentityClause()
 	{
 		StringBuilder sb = new StringBuilder();
-		appendAsAssignments(partitionKey, sb, " and ");
+		appendAsAssignments(partitionKey, sb, AND);
 
 		if (hasClusteringKey())
 		{
-			sb.append(" and ");
-			appendAsAssignments(clusteringKey, sb, " and ");
+			sb.append(AND);
+			appendAsAssignments(clusteringKey, sb, AND);
 		}
 
 		return sb.toString();
@@ -257,7 +259,7 @@ public class KeyDefinition
 	public Object asPartitionIdentityClause()
 	{
 		StringBuilder sb = new StringBuilder();
-		appendAsAssignments(partitionKey, sb, " and ");
+		appendAsAssignments(partitionKey, sb, AND);
 		return sb.toString();
 	}
 
@@ -340,16 +342,16 @@ public class KeyDefinition
 		KeyComponent component = iterator.next();
 		builder
 			.append(component.column())
-			.append(" ")
+			.append(SPACE)
 			.append(component.type().cassandraType());
 
 		while(iterator.hasNext())
 		{
 			component = iterator.next();
 			builder
-				.append(",")
+				.append(COMMA_DELIMITER)
 				.append(component.column())
-				.append(" ")
+				.append(SPACE)
 				.append(component.type().cassandraType());
 		}
 	}
@@ -369,74 +371,37 @@ public class KeyDefinition
 		}
 	}
 
-	private void appendAsAssignments(List<? extends KeyComponent> components, StringBuilder builder, String delimiter)
-	{
+	private void appendAsAssignments(List<? extends KeyComponent> components, StringBuilder builder, String delimiter) {
 		if (components == null || components.isEmpty()) return;
-
-		Iterator<? extends KeyComponent> iterator = components.iterator();
-		KeyComponent component = iterator.next();
-		builder
-			.append(component.column())
-			.append(" = ?");
-
-		while(iterator.hasNext())
-		{
-			component = iterator.next();
-			builder
-				.append(" and ")
-				.append(component.column())
-				.append(" = ?");
-		}
+	
+		String assignments = components.stream()
+			.map(component -> component.column() + ASSIGNMENT_PLACEHOLDER)
+			.collect(Collectors.joining(delimiter));
+	
+		builder.append(assignments);
 	}
 
 	private boolean hasDescendingSort(List<ClusteringKeyComponent> components)
 	{
-		if (components == null) return false;
-
-		return components.stream().anyMatch(new Predicate<ClusteringKeyComponent>()
-		{
-			@Override
-			public boolean test(ClusteringKeyComponent t)
-			{
-				return ((t.order().isDescending()));
-			}
-		});
+		return components.stream().anyMatch(t -> t.order().isDescending());
 	}
 
 	private void appendClusteringOrderPhrase(List<ClusteringKeyComponent> components, StringBuilder builder)
 	{
-		builder.append("with clustering order by (");
-		components.forEach(new Consumer<ClusteringKeyComponent>()
-		{
-			private boolean isFirst = true;
+		String clusteringOrder = Optional.ofNullable(components)
+			.map(c -> c.stream()
+				.map(t -> t.column() + SPACE + t.order())
+				.collect(Collectors.joining(COMMA_DELIMITER)))
+			.orElse("");
 
-			@Override
-			public void accept(ClusteringKeyComponent t)
-			{
-				if (!isFirst)
-				{
-					builder.append(",");
-				}
-
-				builder.append(t.column())
-					.append(" ")
-					.append(t.order());
-				isFirst = false;
-			}
-		});
-		builder.append(")");
+		builder.append("with clustering order by (")
+			.append(clusteringOrder)
+			.append(")");
 	}
 
 	public List<KeyComponent> components()
 	{
-		ArrayList<KeyComponent> c = new ArrayList<>(size());
-		c.addAll(partitionKey);
-
-		if (hasClusteringKey())
-		{
-			c.addAll(clusteringKey);
-		}
-
-		return c;
+		return Stream.concat(partitionKey.stream(), clusteringKey.stream())
+			.collect(Collectors.toList());
 	}
 }

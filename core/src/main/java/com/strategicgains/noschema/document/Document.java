@@ -40,6 +40,8 @@ implements Identifiable
 	 */
 	private String type;
 
+	private String view;
+
 	/**
 	 * Default constructor.
 	 */
@@ -164,6 +166,21 @@ implements Identifiable
 	public void setType(String type)
 	{
 		this.type = type;
+	}
+
+	public boolean hasView()
+	{
+		return (view != null);
+	}
+
+	public String getView()
+	{
+		return view;
+	}
+
+	public void setView(String view)
+	{
+		this.view = view;
 	}
 
 	/**

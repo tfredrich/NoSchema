@@ -1,11 +1,10 @@
 package com.strategicgains.noschema.cassandra;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.bson.BSONDecoder;
 import org.bson.BasicBSONDecoder;
@@ -18,10 +17,9 @@ import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.NoSchemaRepository;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
-import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
-import com.strategicgains.noschema.cassandra.key.KeyDefinition;
-import com.strategicgains.noschema.cassandra.key.KeyPropertyConverter;
+import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
+import com.strategicgains.noschema.cassandra.document.DocumentUnitOfWork;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -38,14 +36,16 @@ implements NoSchemaRepository<T>
 
 	private CqlSession session;
 	private PrimaryTable table;
-	private Map<String, DocumentStatementFactory<T>> statementsByView = new HashMap<>();
+	private Map<String, DocumentStatementFactory<Document>> statementsByView = new HashMap<>();
 	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
 
 	public CassandraNoSchemaRepository(CqlSession session, PrimaryTable table)
 	{
 		super();
+		this.session = session;
 		this.table = table;
 		statementsByView.put(PRIMARY_TABLE, new DocumentStatementFactory<>(session, table));
+		factoriesByView.put(PRIMARY_TABLE, new CassandraDocumentFactory<>(table.keys()));
 		table.views().forEach(view -> {
 			this.statementsByView.put(view.name(), new DocumentStatementFactory<>(session, view));
 			this.factoriesByView.put(view.name(), new CassandraDocumentFactory<>(view.keys()));				
@@ -83,11 +83,11 @@ implements NoSchemaRepository<T>
 	public T create(T entity)
 	throws DuplicateItemException, InvalidIdentifierException
 	{
-		CassandraUnitOfWork<T> uow = new CassandraUnitOfWork<>(session, statementsByView.get(PRIMARY_TABLE));
-		uow.registerNew(entity);
+		DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementsByView);
 
 		try
 		{
+			viewDocuments(entity).forEach(uow::registerNew);
 			uow.commit();
 		}
 		catch (UnitOfWorkCommitException e)
@@ -96,21 +96,6 @@ implements NoSchemaRepository<T>
 			e.printStackTrace();
 		}
 
-//		List<BoundStatement> statements = new ArrayList<>(views.size() + 1);
-//		statements.add(statementsByView.get(PRIMARY_VIEW).create(entity));
-//
-//		if (hasView())
-//		{
-//			views.forEach(view -> statements.add(statementsByView.get(view.name()).create(entity)));
-//			ExecResult creation = executeAll(statements);
-//
-//			if (!creation.succeeded())
-//			{
-//				creation.rollback().forEach(stmt -> session.executeAsync(stmt));
-//				throw new DuplicateItemException(creation.message());
-//			}
-//		}
-
 		return entity;
 	}
 
@@ -118,7 +103,20 @@ implements NoSchemaRepository<T>
 	public boolean delete(Identifier id)
 	throws ItemNotFoundException, InvalidIdentifierException
 	{
-		return false;
+		try
+		{
+			T entity = read(id);
+			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementsByView);
+			viewDocuments(entity).forEach(uow::registerDeleted);
+			uow.commit();
+		}
+		catch (UnitOfWorkCommitException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return true;
 	}
 
 	@Override
@@ -129,7 +127,6 @@ implements NoSchemaRepository<T>
 	}
 
 	public boolean existsInView(String viewName, Identifier id)
-	throws InvalidIdentifierException
 	{
 		return (session.execute(statementsByView.get(viewName).exists(id)).one().getLong(0) > 0);
 	}
@@ -144,7 +141,10 @@ implements NoSchemaRepository<T>
 	public T readView(String viewName, Identifier id)
 	throws ItemNotFoundException
 	{
-		Row row = session.execute(statementsByView.get(viewName).read(id)).one();
+		DocumentStatementFactory<Document> factory = statementsByView.get(viewName);
+		BoundStatement s = factory.read(id);
+		Row row = session.execute(s).one();
+//		Row row = session.execute(statementsByView.get(viewName).read(id)).one();
 
 		if (row == null)
 		{
@@ -165,8 +165,21 @@ implements NoSchemaRepository<T>
 	public T update(T entity)
 	throws ItemNotFoundException, InvalidIdentifierException, KeyDefinitionException
 	{
-		// TODO Auto-generated method stub
-		return null;
+		try
+		{
+			T before = read(entity.getIdentifier());
+			Document original = factoriesByView.get(PRIMARY_TABLE).asDocument(before);
+			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementsByView);
+			viewDocuments(before).forEach(updated -> uow.registerDirty(original, updated));
+			uow.commit();
+		}
+		catch (UnitOfWorkCommitException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return entity;
 	}
 
 	@Override
@@ -207,16 +220,36 @@ implements NoSchemaRepository<T>
 		return d;
 	}
 
-	private com.strategicgains.noschema.Identifier marshalId(KeyDefinition keyDefinition, Row row)
+	private Stream<Document> viewDocuments(T entity)
+	throws InvalidIdentifierException
 	{
-		com.strategicgains.noschema.Identifier id = new com.strategicgains.noschema.Identifier();
-		keyDefinition.components().forEach(t -> id.add(KeyPropertyConverter.marshal(t.column(), t.type(), row)));
-		return id;
-	}
+		try
+		{
+			return factoriesByView.entrySet().stream().map(entry -> {
+				try
+				{
+					Document d = entry.getValue().asDocument(entity);
+					d.setView(entry.getKey());
+					return d;
+				}
+				catch (InvalidIdentifierException | KeyDefinitionException e)
+				{
+					throw new RuntimeException(e);
+				}
+			});
+		}
+		catch (RuntimeException e)
+		{
+			if (e.getCause() instanceof InvalidIdentifierException)
+			{
+				throw (InvalidIdentifierException) e.getCause();
+			}
+			else if (e.getCause() instanceof KeyDefinitionException)
+			{
+				throw new InvalidIdentifierException(e.getCause());
+			}
 
-	private ExecResult executeAll(List<BoundStatement> statements)
-	{
-		// TODO Auto-generated method stub
-		return null;
+			throw e; // rethrow the original RuntimeException if the cause is not what we expected
+		}
 	}
 }

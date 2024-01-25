@@ -13,7 +13,6 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.AbstractTable;
-import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.StatementFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.document.Document;
@@ -67,7 +66,7 @@ implements StatementFactory<T>
 			session.prepare(
 				String.format(CREATE_CQL,
 					table.keyspace(),
-					table.name(),
+					table.asTableName(),
 					table.keys().asSelectProperties(),
 					Columns.OBJECT,
 					Columns.TYPE,
@@ -83,7 +82,7 @@ implements StatementFactory<T>
 			session.prepare(
 				String.format(DELETE_CQL,
 					table.keyspace(),
-					table.name(),
+					table.asTableName(),
 					table.keys().asIdentityClause()))
 		);
 	}
@@ -94,7 +93,7 @@ implements StatementFactory<T>
 			session.prepare(
 				String.format(EXISTS_CQL,
 					table.keyspace(),
-					table.name(),
+					table.asTableName(),
 					table.keys().asIdentityClause()))
 		);
 	}
@@ -105,7 +104,7 @@ implements StatementFactory<T>
 			session.prepare(
 				String.format(UPDATE_CQL,
 					table.keyspace(),
-					table.name(),
+					table.asTableName(),
 					Columns.OBJECT,
 					Columns.TYPE,
 					Columns.UPDATED_AT,
@@ -119,7 +118,7 @@ implements StatementFactory<T>
 		session.prepare(
 			String.format(UPSERT_CQL,
 				table.keyspace(),
-				table.name(),
+				table.asTableName(),
 				table.keys().asSelectProperties(),
 				Columns.OBJECT,
 				Columns.TYPE,
@@ -136,7 +135,7 @@ implements StatementFactory<T>
 			String.format(READ_CQL,
 				table.keys().asSelectProperties(),
 				table.keyspace(),
-				table.name(),
+				table.asTableName(),
 				table.keys().asIdentityClause()))
 		);
 	}
@@ -148,7 +147,7 @@ implements StatementFactory<T>
 			String.format(READ_ALL_CQL,
 				table.keys().asSelectProperties(),
 				table.keyspace(),
-				table.name(),
+				table.asTableName(),
 				table.keys().asPartitionIdentityClause()))
 		);
 	}
@@ -241,6 +240,8 @@ implements StatementFactory<T>
 
 	private Document asDocument(T entity)
 	{
+		if (entity instanceof Document) return (Document) entity;
+
 		try
 		{
 			return documentFactory.asDocument(entity);

@@ -3,6 +3,8 @@ package com.strategicgains.noschema.cassandra;
 import java.util.List;
 import java.util.UUID;
 
+import com.strategicgains.noschema.Identifier;
+
 /**
  * This sample entity is in no way invaded by any classes in the NoSchema library. It's a plain POJO that
  * is mapped externally into a Document entity that can be stored in the database.
@@ -65,5 +67,11 @@ extends AbstractEntity
 	public String toString() {
 		return "Flower [id=" + getId() + ", account.id=" + getAccountId() + ", name=" + name + ", colors=" + colors + ", isBlooming=" + isBlooming + ", height="
 				+ height + "]";
+	}
+
+	@Override
+	public Identifier getIdentifier()
+	{
+		return new Identifier(getId());
 	}
 }

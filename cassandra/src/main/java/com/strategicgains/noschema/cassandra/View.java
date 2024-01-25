@@ -49,8 +49,8 @@ extends AbstractTable
 	}
 
 	@Override
-	public String name()
+	public String asTableName()
 	{
-		return String.format("%s_%s", parent.name(), super.name());
+		return String.format("%s_%s", parent.name(), name());
 	}
 }

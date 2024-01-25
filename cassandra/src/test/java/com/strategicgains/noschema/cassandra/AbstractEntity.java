@@ -3,7 +3,10 @@ package com.strategicgains.noschema.cassandra;
 import java.util.Date;
 import java.util.UUID;
 
+import com.strategicgains.noschema.Identifiable;
+
 public abstract class AbstractEntity
+implements Identifiable
 {
 	private UUID id;
 	private AccountReference account = new AccountReference();

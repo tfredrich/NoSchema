@@ -17,25 +17,23 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 public class SampleRun {
 
+	private static final String FLOWERS_BY_NAME = "flowers_by_name";
+
 	public static void main(String[] args)
 	throws KeyDefinitionException, InvalidIdentifierException, DuplicateItemException, ItemNotFoundException
 	{
 		CqlSession session = createCassandraSession();
 		String keyspace = "sample_run";
-		PrimaryTable byId = new PrimaryTable(keyspace, "flowers_by_id", "id:UUID");
-		PrimaryTable byName = new PrimaryTable(keyspace, "flowers_by_name", "(account.id as account_id:UUID), name:text");
-		SchemaRegistry
-			.keyspace(keyspace)
-			.schema(new DocumentSchemaProvider(byId))
-			.schema(new DocumentSchemaProvider(byName))
-			.initializeAll(session)
+		PrimaryTable byId = new PrimaryTable(keyspace, "flowers_by_id", "id:UUID")
+			.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text");
+
+		SchemaRegistry schemas = SchemaRegistry.keyspace(keyspace);
+		byId.views().forEach(v -> schemas.schema(new DocumentSchemaProvider(v)));
+		schemas.initializeAll(session)
 			.exportInitializeAll();
 
-		CassandraDocumentRepository<Flower> flowersById = new CassandraDocumentRepository<>(session, byId);
-		flowersById.ensureTables();
-
-		CassandraDocumentRepository<Flower> flowersByName = new CassandraDocumentRepository<>(session, byName);
-		flowersByName.ensureTables();
+		CassandraNoSchemaRepository<Flower> flowers = new CassandraNoSchemaRepository<>(session, byId);
+		flowers.ensureTables();
 
 		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
 		UUID accountId = UUID.fromString("a87d3bff-6997-4739-ab4e-ded0cc85700f");
@@ -49,9 +47,31 @@ public class SampleRun {
 
 		try
 		{
-			writeById(flowersById, flower);
-			readAndUpdateById(flowersById, id);
-			writeThenReadByName(flowersByName, accountId, flower);
+			System.out.println("*** CREATE ***");
+			Flower written = flowers.create(flower);
+			System.out.println(written.toString());
+
+			System.out.println("*** READ ID ***");
+			Flower read = flowers.read(new Identifier(id));
+			System.out.println(read.toString());
+
+			System.out.println("*** READ-NAME ***");
+			read = flowers.readView(FLOWERS_BY_NAME, new Identifier(accountId, "rose"));
+			System.out.println(read.toString());
+
+			System.out.println("*** UPDATE ***");
+			read.setName(read.getName() + "-updated");
+			read.setIsBlooming(false);
+			read.setColors(Arrays.asList("blue", "green", "yellow"));
+			Flower updated = flowers.update(read);
+			System.out.println(updated.toString());
+
+			read = flowers.read(new Identifier(updated.getId()));
+			System.out.println(read.toString());
+
+//			writeById(flowersById, flower);
+//			readAndUpdateById(flowersById, id);
+//			writeThenReadByName(flowersByName, accountId, flower);
 		}
 		finally
 		{

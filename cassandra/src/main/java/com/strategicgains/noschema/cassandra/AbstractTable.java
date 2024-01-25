@@ -93,4 +93,15 @@ public abstract class AbstractTable
 	{
 		return keys.identifier(entity);
 	}
+
+	@Override
+	public String toString()
+	{
+		return String.format("%s.%s=(keys=%s, ttl=%l)", keyspace(), name(), keys().toString(), ttl());
+	}
+
+	public String asTableName()
+	{
+		return name();
+	}
 }

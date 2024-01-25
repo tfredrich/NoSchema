@@ -37,7 +37,7 @@ extends AbstractSchemaProvider
 	{
 		super();
 		this.keyspace = table.keyspace();
-		this.table = table.name();
+		this.table = table.asTableName();
 		this.keys = table.keys();
 	}
 

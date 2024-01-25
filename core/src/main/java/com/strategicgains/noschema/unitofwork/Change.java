@@ -34,7 +34,7 @@ public class Change<T extends Identifiable>
 	@Override
 	public int hashCode()
 	{
-		return entity.getIdentifier().hashCode();
+		return 11 * Objects.hash(getId(), state);
 	}
 
 	@Override
