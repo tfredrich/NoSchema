@@ -68,51 +68,11 @@ public class SampleRun {
 
 			read = flowers.read(new Identifier(updated.getId()));
 			System.out.println(read.toString());
-
-//			writeById(flowersById, flower);
-//			readAndUpdateById(flowersById, id);
-//			writeThenReadByName(flowersByName, accountId, flower);
 		}
 		finally
 		{
 			session.close();
 		}
-	}
-
-	private static void writeById(CassandraDocumentRepository<Flower> flowersById, Flower flower)
-	throws InvalidIdentifierException, DuplicateItemException, KeyDefinitionException
-	{
-		System.out.println("*** CREATE by ID ***");
-		Flower written = flowersById.create(flower);
-		System.out.println(written.toString());
-	}
-
-	private static void readAndUpdateById(CassandraDocumentRepository<Flower> flowersById, UUID id)
-	throws ItemNotFoundException, InvalidIdentifierException, KeyDefinitionException
-	{
-		Flower read = flowersById.read(new Identifier(id));
-		System.out.println(read.toString());
-
-		read.setName(read.getName() + "-updated");
-		read.setIsBlooming(false);
-		read.setColors(Arrays.asList("blue", "green", "yellow"));
-		System.out.println("*** UPDATE by ID ***");
-		Flower updated = flowersById.update(read);
-		System.out.println(updated.toString());
-		read = flowersById.read(new Identifier(updated.getId()));
-		System.out.println(read.toString());
-	}
-
-	private static void writeThenReadByName(CassandraDocumentRepository<Flower> flowersByName, UUID accountId, Flower flower)
-	throws InvalidIdentifierException, DuplicateItemException, KeyDefinitionException, ItemNotFoundException
-	{
-		Flower written;
-		Flower read;
-		System.out.println("*** CREATE by NAME ***");
-		written = flowersByName.create(flower);
-		System.out.println(written.toString());
-		read = flowersByName.read(new Identifier(accountId, "rose"));
-		System.out.println(read.toString());
 	}
 
 	private static CqlSession createCassandraSession()
