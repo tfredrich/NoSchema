@@ -3,7 +3,6 @@ package com.strategicgains.noschema.cassandra.document;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -22,11 +21,12 @@ public class DocumentUnitOfWork
 extends AbstractUnitOfWork<Document>
 {
     private final CqlSession session;
-    private final Map<String, DocumentStatementFactory<Document>> factories;
+    private final DocumentStatementGenerator generator;
 
-    public DocumentUnitOfWork(CqlSession session, Map<String, DocumentStatementFactory<Document>> statementsByView) {
+    public DocumentUnitOfWork(CqlSession session, DocumentStatementGenerator statementsByView)
+    {
         this.session = Objects.requireNonNull(session);
-        this.factories = Objects.requireNonNull(statementsByView);
+        this.generator = Objects.requireNonNull(statementsByView);
     }
 
     @Override
@@ -56,28 +56,28 @@ extends AbstractUnitOfWork<Document>
 
 	private List<BoundStatement> createStatementsFor(Change<Document> change)
 	{
-		DocumentStatementFactory<Document> generator = factories.get(change.getEntity().getView());
+		String viewName = change.getEntity().getView();
 
 		switch(change.getState())
 		{
 			case DELETED:
-				return Collections.singletonList(generator.delete(change.getId()));
+				return Collections.singletonList(generator.delete(viewName, change.getId()));
 			case DIRTY:
 				DirtyChange<Document> update = (DirtyChange<Document>) change;
 
 				if (update.identityChanged())
 				{
 					ArrayList<BoundStatement> statements = new ArrayList<>(2);
-					statements.add(generator.delete(update.getOriginal().getIdentifier()));
-					statements.add(generator.create(update.getEntity()));
+					statements.add(generator.delete(viewName, update.getOriginal().getIdentifier()));
+					statements.add(generator.create(viewName, update.getEntity()));
 					return statements;
 				}
 				else
 				{
-					return Collections.singletonList(generator.update(change.getEntity()));
+					return Collections.singletonList(generator.update(viewName, change.getEntity()));
 				}
 			case NEW:
-				return Collections.singletonList(generator.create(change.getEntity()));
+				return Collections.singletonList(generator.create(viewName, change.getEntity()));
 			default:
 				break;
 		}

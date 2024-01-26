@@ -19,6 +19,7 @@ import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
+import com.strategicgains.noschema.cassandra.document.DocumentStatementGenerator;
 import com.strategicgains.noschema.cassandra.document.DocumentUnitOfWork;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
@@ -36,7 +37,7 @@ implements NoSchemaRepository<T>
 
 	private CqlSession session;
 	private PrimaryTable table;
-	private Map<String, DocumentStatementFactory<Document>> statementsByView = new HashMap<>();
+	private DocumentStatementGenerator statementsByView = new DocumentStatementGenerator();
 	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
 
 	public CassandraNoSchemaRepository(CqlSession session, PrimaryTable table)
