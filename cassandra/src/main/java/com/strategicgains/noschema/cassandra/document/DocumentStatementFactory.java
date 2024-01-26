@@ -29,8 +29,8 @@ implements StatementFactory<T>
 	private static final String CREATE_CQL = "insert into %s.%s (%s, %s, %s, %s, %s) values (%s) if not exists";
 	private static final String DELETE_CQL = "delete from %s.%s where %s";
 	private static final String EXISTS_CQL = "select count(*) from %s.%s  where %s limit 1";
-	private static final String READ_CQL = "select %s, " + SELECT_COLUMNS + " from %s.%s where %s limit 1";
-	private static final String READ_ALL_CQL = "select %s " + SELECT_COLUMNS + " from %s.%s where %s";
+	private static final String READ_CQL = "select %s," + SELECT_COLUMNS + " from %s.%s where %s limit 1";
+	private static final String READ_ALL_CQL = "select %s" + SELECT_COLUMNS + " from %s.%s where %s";
 	private static final String UPDATE_CQL = "update %s.%s set %s = ?, %s = ?, %s = ? where %s if exists";
 	private static final String UPSERT_CQL = "insert into %s.%s (%s, %s, %s, %s, %s) values (%s)";
 
