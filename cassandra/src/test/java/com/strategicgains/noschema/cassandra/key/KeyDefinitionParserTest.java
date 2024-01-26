@@ -1,6 +1,7 @@
 package com.strategicgains.noschema.cassandra.key;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -14,9 +15,23 @@ public class KeyDefinitionParserTest
 	throws KeyDefinitionException
 	{
 		KeyDefinition kd = KeyDefinitionParser.parse("alpha:uuid");
-		assertTrue(kd.isValid());
-		assertEquals("alpha uuid", kd.asColumns());
-		assertEquals("primary key (alpha)", kd.asPrimaryKey());
+		makeAssertions(kd,
+			"alpha uuid",
+			"primary key (alpha)",
+			"",
+			false);
+	}
+
+	@Test
+	public void shouldParseSimpleWithUnique()
+	throws KeyDefinitionException
+	{
+		KeyDefinition kd = KeyDefinitionParser.parse("alpha:uuid unique");
+		makeAssertions(kd,
+			"alpha uuid",
+			"primary key (alpha)",
+			"",
+			true);
 	}
 
 	@Test(expected=KeyDefinitionException.class)
@@ -38,10 +53,23 @@ public class KeyDefinitionParserTest
 	throws KeyDefinitionException
 	{
 		KeyDefinition kd = KeyDefinitionParser.parse("alpha:uuid, beta:text");
-		assertTrue(kd.isValid());
-		assertEquals("alpha uuid,beta text", kd.asColumns());
-		assertEquals("primary key (alpha,beta)", kd.asPrimaryKey());
-		assertEquals("", kd.asClusteringKey());
+		makeAssertions(kd,
+			"alpha uuid,beta text",
+			"primary key (alpha,beta)",
+			"",
+			false);
+	}
+
+	@Test
+	public void shouldParsePartitionKeyWithUnique()
+	throws KeyDefinitionException
+	{
+		KeyDefinition kd = KeyDefinitionParser.parse("alpha:uuid, beta:text unique");
+		makeAssertions(kd,
+			"alpha uuid,beta text",
+			"primary key (alpha,beta)",
+			"",
+			true);
 	}
 
 	@Test
@@ -49,10 +77,11 @@ public class KeyDefinitionParserTest
 	throws KeyDefinitionException
 	{
 		KeyDefinition kd = KeyDefinitionParser.parse("((alpha:uuid, beta:text), -chi:timestamp, +delta:int)");
-		assertTrue(kd.isValid());
-		assertEquals("alpha uuid,beta text,chi timestamp,delta int", kd.asColumns());
-		assertEquals("primary key ((alpha,beta),chi,delta)", kd.asPrimaryKey());
-		assertEquals("with clustering order by (chi DESC,delta ASC)", kd.asClusteringKey());
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"with clustering order by (chi DESC,delta ASC)",
+			false);
 	}
 
 	@Test
@@ -60,10 +89,23 @@ public class KeyDefinitionParserTest
 	throws KeyDefinitionException
 	{
 		KeyDefinition kd = KeyDefinitionParser.parse("(alpha:uuid, beta:text), -chi:timestamp, +delta:int");
-		assertTrue(kd.isValid());
-		assertEquals("alpha uuid,beta text,chi timestamp,delta int", kd.asColumns());
-		assertEquals("primary key ((alpha,beta),chi,delta)", kd.asPrimaryKey());
-		assertEquals("with clustering order by (chi DESC,delta ASC)", kd.asClusteringKey());
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"with clustering order by (chi DESC,delta ASC)",
+			false);
+	}
+
+	@Test
+	public void shouldParseComplexWithOptionalParensWithUnique()
+	throws KeyDefinitionException
+	{
+		KeyDefinition kd = KeyDefinitionParser.parse("(alpha:uuid, beta:text), -chi:timestamp, +delta:int unique");
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"with clustering order by (chi DESC,delta ASC)",
+			true);
 	}
 
 	@Test
@@ -71,10 +113,23 @@ public class KeyDefinitionParserTest
 	throws KeyDefinitionException
 	{
 		KeyDefinition kd = KeyDefinitionParser.parse("(alpha:uuid, beta:text), chi:timestamp, delta:int");
-		assertTrue(kd.isValid());
-		assertEquals("alpha uuid,beta text,chi timestamp,delta int", kd.asColumns());
-		assertEquals("primary key ((alpha,beta),chi,delta)", kd.asPrimaryKey());
-		assertEquals("", kd.asClusteringKey());
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"",
+			false);
+	}
+
+	@Test
+	public void shouldParseComplexWithoutOptionalSortWithUnique()
+	throws KeyDefinitionException
+	{
+		KeyDefinition kd = KeyDefinitionParser.parse("(alpha:uuid, beta:text), chi:timestamp, delta:int unique");
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"",
+			true);
 	}
 
 	@Test
@@ -82,10 +137,23 @@ public class KeyDefinitionParserTest
 	throws KeyDefinitionException
 	{
 		KeyDefinition kd = KeyDefinitionParser.parse("((alpha:uuid, beta:text) -chi:timestamp, +delta:int)");
-		assertTrue(kd.isValid());
-		assertEquals("alpha uuid,beta text,chi timestamp,delta int", kd.asColumns());
-		assertEquals("primary key ((alpha,beta),chi,delta)", kd.asPrimaryKey());
-		assertEquals("with clustering order by (chi DESC,delta ASC)", kd.asClusteringKey());
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"with clustering order by (chi DESC,delta ASC)",
+			false);
+	}
+
+	@Test
+	public void shouldParseComplexWithoutOptionalCommaWithUnique()
+	throws KeyDefinitionException
+	{
+		KeyDefinition kd = KeyDefinitionParser.parse("((alpha:uuid, beta:text) -chi:timestamp, +delta:int) unique");
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"with clustering order by (chi DESC,delta ASC)",
+			true);
 	}
 
 	@Test
@@ -93,10 +161,23 @@ public class KeyDefinitionParserTest
 	throws KeyDefinitionException
 	{
 		KeyDefinition kd = KeyDefinitionParser.parse("(alpha:uuid, beta:text) -chi:timestamp, +delta:int");
-		assertTrue(kd.isValid());
-		assertEquals("alpha uuid,beta text,chi timestamp,delta int", kd.asColumns());
-		assertEquals("primary key ((alpha,beta),chi,delta)", kd.asPrimaryKey());
-		assertEquals("with clustering order by (chi DESC,delta ASC)", kd.asClusteringKey());
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"with clustering order by (chi DESC,delta ASC)",
+			false);
+	}
+
+	@Test
+	public void shouldParseComplexWithoutOptionalCommaAndParensWithUnique()
+	throws KeyDefinitionException
+	{
+		KeyDefinition kd = KeyDefinitionParser.parse("(alpha:uuid, beta:text) -chi:timestamp, +delta:int unique");
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"with clustering order by (chi DESC,delta ASC)",
+			false);
 	}
 
 	@Test
@@ -104,10 +185,23 @@ public class KeyDefinitionParserTest
 	throws KeyDefinitionException
 	{
 		KeyDefinition kd = KeyDefinitionParser.parse("(account.id as alpha:uuid, beta:text) -chi:timestamp, +foo.bar as delta:int");
-		assertTrue(kd.isValid());
-		assertEquals("alpha uuid,beta text,chi timestamp,delta int", kd.asColumns());
-		assertEquals("primary key ((alpha,beta),chi,delta)", kd.asPrimaryKey());
-		assertEquals("with clustering order by (chi DESC,delta ASC)", kd.asClusteringKey());
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"with clustering order by (chi DESC,delta ASC)",
+			false);
+	}
+
+	@Test
+	public void shouldParseComplexWithPropertyMappingWithUnique()
+	throws KeyDefinitionException
+	{
+		KeyDefinition kd = KeyDefinitionParser.parse("(account.id as alpha:uuid, beta:text) -chi:timestamp, +foo.bar as delta:int unique");
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"with clustering order by (chi DESC,delta ASC)",
+			true);
 	}
 
 	@Test
@@ -115,10 +209,23 @@ public class KeyDefinitionParserTest
 	throws KeyDefinitionException
 	{
 		KeyDefinition kd = KeyDefinitionParser.parse("(((alpha:uuid, beta:text)), -chi:timestamp, +delta:int)");
-		assertTrue(kd.isValid());
-		assertEquals("alpha uuid,beta text,chi timestamp,delta int", kd.asColumns());
-		assertEquals("primary key ((alpha,beta),chi,delta)", kd.asPrimaryKey());
-		assertEquals("with clustering order by (chi DESC,delta ASC)", kd.asClusteringKey());
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"with clustering order by (chi DESC,delta ASC)",
+			false);
+	}
+
+	@Test
+	public void shouldTollerateSpaces()
+	throws KeyDefinitionException
+	{
+		KeyDefinition kd = KeyDefinitionParser.parse(" ( ( ( alpha:uuid, beta:text ) ) , -chi:timestamp , +delta:int ) ");
+		makeAssertions(kd,
+			"alpha uuid,beta text,chi timestamp,delta int",
+			"primary key ((alpha,beta),chi,delta)",
+			"with clustering order by (chi DESC,delta ASC)",
+			false);
 	}
 
 	@Test(expected=KeyDefinitionException.class)
@@ -126,6 +233,20 @@ public class KeyDefinitionParserTest
 	throws KeyDefinitionException
 	{
 		KeyDefinitionParser.parse("((alpha:uuid, beta:text), -chi:timestamp, +delta:int");
+	}
+
+	@Test(expected=KeyDefinitionException.class)
+	public void shouldThrowOnMisplacedUniqueWithoutParens()
+	throws KeyDefinitionException
+	{
+		KeyDefinitionParser.parse("(alpha:uuid, beta:text) unique -chi:timestamp, +delta:int");
+	}
+
+	@Test(expected=KeyDefinitionException.class)
+	public void shouldThrowOnMisplacedUnique()
+	throws KeyDefinitionException
+	{
+		KeyDefinitionParser.parse("unique alpha:uuid");
 	}
 
 	@Test(expected=KeyDefinitionException.class)
@@ -146,13 +267,22 @@ public class KeyDefinitionParserTest
 	public void shouldThrowOnInvalidPartitionKeyType()
 	throws KeyDefinitionException
 	{
-		KeyDefinitionParser.parse("((alpha:uuid, beta:data), -chi:timestamp, +delta:int)");
+		KeyDefinitionParser.parse("((alpha:uuid, beta:invalid), -chi:timestamp, +delta:int)");
 	}
 
 	@Test(expected=KeyDefinitionException.class)
 	public void shouldThrowOnInvalidClusterKeyType()
 	throws KeyDefinitionException
 	{
-		KeyDefinitionParser.parse("((alpha:uuid, beta:text), -chi:data, +delta:int)");
+		KeyDefinitionParser.parse("((alpha:uuid, beta:text), -chi:invalid, +delta:int)");
+	}
+
+	private void makeAssertions(KeyDefinition kd, String columns, String primaryKey, String clusterKey, boolean unique)
+	{
+		assertTrue(kd.isValid());
+		assertEquals(columns, kd.asColumns());
+		assertEquals(primaryKey, kd.asPrimaryKey());
+		assertEquals(clusterKey, kd.asClusteringKey());
+		assertEquals(unique, kd.isUnique());
 	}
 }

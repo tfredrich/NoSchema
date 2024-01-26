@@ -3,7 +3,6 @@ package com.strategicgains.noschema.cassandra.key;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,10 +24,14 @@ public class KeyDefinition
 
 	private List<KeyComponent> partitionKey = new ArrayList<>();
 	private List<ClusteringKeyComponent> clusteringKey = new ArrayList<>();
+
+	/**
+	 * If set, causes uniqueness checks before writes. If unset, upsert is used.
+	 */
 	private boolean isUnique;
 
 	// Cached at runtime: Access Fields by property name.
-	private transient Map<String, List<Field>> keyFields;
+	private Map<String, List<Field>> keyFields;
 
 	public KeyDefinition addPartitionKey(String column, DataTypes type)
 	{
@@ -184,7 +187,7 @@ public class KeyDefinition
 
 	public String asPrimaryKey()
 	{
-		return String.format("%s %s", "primary key ", toString());
+		return String.format("%s %s", "primary key", toString());
 	}
 
 	@Override
@@ -338,40 +341,24 @@ public class KeyDefinition
 	{
 		if (components == null || components.isEmpty()) return;
 
-		Iterator<? extends KeyComponent> iterator = components.iterator();
-		KeyComponent component = iterator.next();
-		builder
-			.append(component.column())
-			.append(SPACE)
-			.append(component.type().cassandraType());
-
-		while(iterator.hasNext())
-		{
-			component = iterator.next();
-			builder
-				.append(COMMA_DELIMITER)
-				.append(component.column())
-				.append(SPACE)
-				.append(component.type().cassandraType());
-		}
+		String result = components.stream()
+			.map(component -> component.column() + SPACE + component.type().cassandraType())
+			.collect(Collectors.joining(COMMA_DELIMITER));
+		builder.append(result);
 	}
 
 	private void appendAsProperties(List<? extends KeyComponent> components, StringBuilder builder, String delimiter)
 	{
 		if (components == null || components.isEmpty()) return;
 
-		Iterator<? extends KeyComponent> iterator = components.iterator();
-		builder.append(iterator.next().column());
-
-		while(iterator.hasNext())
-		{
-			builder
-				.append(delimiter)
-				.append(iterator.next().column());
-		}
+		String result = components.stream()
+			.map(KeyComponent::column)
+			.collect(Collectors.joining(delimiter));
+		builder.append(result);
 	}
 
-	private void appendAsAssignments(List<? extends KeyComponent> components, StringBuilder builder, String delimiter) {
+	private void appendAsAssignments(List<? extends KeyComponent> components, StringBuilder builder, String delimiter)
+	{
 		if (components == null || components.isEmpty()) return;
 	
 		String assignments = components.stream()
