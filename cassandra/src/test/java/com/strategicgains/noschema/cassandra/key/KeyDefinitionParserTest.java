@@ -26,7 +26,7 @@ public class KeyDefinitionParserTest
 	public void shouldParseSimpleWithUnique()
 	throws KeyDefinitionException
 	{
-		KeyDefinition kd = KeyDefinitionParser.parse("alpha:uuid unique");
+		KeyDefinition kd = KeyDefinitionParser.parse("(alpha:uuid) unique");
 		makeAssertions(kd,
 			"alpha uuid",
 			"primary key (alpha)",
@@ -112,7 +112,7 @@ public class KeyDefinitionParserTest
 	public void shouldParseComplexWithoutOptionalSort()
 	throws KeyDefinitionException
 	{
-		KeyDefinition kd = KeyDefinitionParser.parse("(alpha:uuid, beta:text), chi:timestamp, delta:int");
+		KeyDefinition kd = KeyDefinitionParser.parse("((alpha:uuid, beta:text), chi:timestamp, delta:int)");
 		makeAssertions(kd,
 			"alpha uuid,beta text,chi timestamp,delta int",
 			"primary key ((alpha,beta),chi,delta)",
@@ -124,7 +124,7 @@ public class KeyDefinitionParserTest
 	public void shouldParseComplexWithoutOptionalSortWithUnique()
 	throws KeyDefinitionException
 	{
-		KeyDefinition kd = KeyDefinitionParser.parse("(alpha:uuid, beta:text), chi:timestamp, delta:int unique");
+		KeyDefinition kd = KeyDefinitionParser.parse("((alpha:uuid, beta:text), chi:timestamp, delta:int) unique");
 		makeAssertions(kd,
 			"alpha uuid,beta text,chi timestamp,delta int",
 			"primary key ((alpha,beta),chi,delta)",
@@ -177,7 +177,7 @@ public class KeyDefinitionParserTest
 			"alpha uuid,beta text,chi timestamp,delta int",
 			"primary key ((alpha,beta),chi,delta)",
 			"with clustering order by (chi DESC,delta ASC)",
-			false);
+			true);
 	}
 
 	@Test
@@ -204,23 +204,18 @@ public class KeyDefinitionParserTest
 			true);
 	}
 
-	@Test
-	public void shouldTollerateParenDepth()
+	@Test(expected=KeyDefinitionException.class)
+	public void shouldThrowOnTooManyParentheses()
 	throws KeyDefinitionException
 	{
-		KeyDefinition kd = KeyDefinitionParser.parse("(((alpha:uuid, beta:text)), -chi:timestamp, +delta:int)");
-		makeAssertions(kd,
-			"alpha uuid,beta text,chi timestamp,delta int",
-			"primary key ((alpha,beta),chi,delta)",
-			"with clustering order by (chi DESC,delta ASC)",
-			false);
+		KeyDefinitionParser.parse("(((alpha:uuid, beta:text)), -chi:timestamp, +delta:int)");
 	}
 
 	@Test
 	public void shouldTollerateSpaces()
 	throws KeyDefinitionException
 	{
-		KeyDefinition kd = KeyDefinitionParser.parse(" ( ( ( alpha:uuid, beta:text ) ) , -chi:timestamp , +delta:int ) ");
+		KeyDefinition kd = KeyDefinitionParser.parse(" ( ( alpha:uuid, beta:text )  , -chi:timestamp , +delta:int ) ");
 		makeAssertions(kd,
 			"alpha uuid,beta text,chi timestamp,delta int",
 			"primary key ((alpha,beta),chi,delta)",

@@ -28,8 +28,7 @@ public final class KeyDefinitionParser
 	private enum ParseState
 	{
 		PARTITION_KEY,
-		CLUSTER_KEY,
-		MODIFIER;
+		CLUSTER_KEY;
 
 		boolean isPartitionKey()
 		{
@@ -38,12 +37,7 @@ public final class KeyDefinitionParser
 
 		boolean isClusteringKey()
 		{
-			return PARTITION_KEY.equals(this);
-		}
-
-		boolean isModifier()
-		{
-			return MODIFIER.equals(this);
+			return CLUSTER_KEY.equals(this);
 		}
 	}
 
@@ -64,29 +58,39 @@ public final class KeyDefinitionParser
 		if (keys == null || keys.isEmpty()) throw new KeyDefinitionException("Key string null or empty");
 
 		KeyDefinition definition = new KeyDefinition();
-		char[] chars = keys.trim().toCharArray();
+		String trimmed = keys.trim();
+
+		if (keys.toLowerCase().endsWith(UNIQUE_SPECIFIER))
+		{
+			definition.setUnique(true);
+			trimmed = trimmed.substring(0, trimmed.length() - UNIQUE_SPECIFIER.length() - 1);
+		}
+	
+		char[] chars = trimmed.toCharArray();
 		ParseState state = ParseState.PARTITION_KEY;
 		StringBuilder phrase = new StringBuilder();
 		int depth = 0;
+		int maxDepth = 0;
 
 		for (char c : chars)
 		{
 			switch(c)
 			{
 				case '(':
-					if (state.isPartitionKey()) ++depth;
-					else throw new KeyDefinitionException("Misplaced '('");
+					++depth;
+					maxDepth = Math.max(maxDepth, depth);
+					if (depth > 2) throw new KeyDefinitionException("Too many parentheses: " + keys);
+					state = transition(state, depth, maxDepth);
 					break;
 				case ')':
-					state = processPhrase(phrase.toString(), definition, state);
+					processPhrase(phrase.toString(), definition, state);
 					phrase.setLength(0);
 					--depth;
-
-					if (depth < 0) throw new KeyDefinitionException("Misplaced ')'");
+					if (depth < 0) throw new KeyDefinitionException("Misplaced ')': " + keys);
+					state = transition(state, depth, maxDepth);
 					break;
 				case ',':
-				case ' ':
-					state = processPhrase(phrase.toString(), definition, state);
+					processPhrase(phrase.toString(), definition, state);
 					phrase.setLength(0);
 					break;
 				default:
@@ -101,28 +105,26 @@ public final class KeyDefinitionParser
 		return definition;
 	}
 
-	private static ParseState processPhrase(String phrase, KeyDefinition definition, ParseState state)
+	private static ParseState transition(ParseState state, int depth, int maxDepth)
+	{
+		if (state.isPartitionKey() && depth < maxDepth) return ParseState.CLUSTER_KEY;
+
+		return state;
+	}
+
+	private static void processPhrase(String phrase, KeyDefinition definition, ParseState state)
 	throws KeyDefinitionException
 	{
 		String trimmed = phrase.trim();
-		if (trimmed.length() == 0) return state;
+		if (trimmed.length() == 0) return;
 
 		if (state.isPartitionKey())
 		{
 			definition.addPartitionKey(KeyComponent.parse(trimmed));
-			return ParseState.CLUSTER_KEY;
 		}
-		else
+		else if (state.isClusteringKey())
 		{
-			if (UNIQUE_SPECIFIER.equalsIgnoreCase(trimmed))
-			{
-				definition.setUnique(true);
-				return state;
-			}
-
 			definition.addClusteringKey(ClusteringKeyComponent.parse(trimmed));
 		}
-
-		return state;
 	}
 }
