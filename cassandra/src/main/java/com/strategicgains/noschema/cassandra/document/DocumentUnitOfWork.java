@@ -11,6 +11,8 @@ import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.strategicgains.noschema.document.Document;
+import com.strategicgains.noschema.exception.DuplicateItemException;
+import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.unitofwork.AbstractUnitOfWork;
 import com.strategicgains.noschema.unitofwork.Change;
 import com.strategicgains.noschema.unitofwork.DirtyChange;
@@ -33,8 +35,18 @@ extends AbstractUnitOfWork<Document>
     public void commit()
     throws UnitOfWorkCommitException
     {
+    	List<BoundStatement> uniqueness = new ArrayList<>();
+    	List<BoundStatement> existence = new ArrayList<>();
+    	List<BoundStatement> statements = new ArrayList<>();
+
+        changes().forEach(change -> {
+        	uniqueness.add(createUniquenessCheckFor(change));
+        	existence.add(createExistenceCheckFor(change));
+        	statements.addAll(createStatementsFor(change));
+        });
+
         BatchStatementBuilder batch = new BatchStatementBuilder(BatchType.LOGGED);
-        changes().forEach(change -> createStatementsFor(change).forEach(batch::addStatements));
+        statements.stream().forEach(batch::addStatement);
         ResultSet resultSet = session.execute(batch.build());
 
         if (resultSet.wasApplied())
@@ -47,12 +59,22 @@ extends AbstractUnitOfWork<Document>
         }
     }
 
-    @Override
+	@Override
     public void rollback()
     throws UnitOfWorkRollbackException
     {
         // No-op for CassandraUnitOfWork since we're using a logged batch
     }
+
+	private BoundStatement createExistenceCheckFor(Change<Document> change)
+	{
+		return generator.exists(change.getEntity().getView(), change.getId());
+	}
+
+	private BoundStatement createUniquenessCheckFor(Change<Document> change)
+	{
+		return generator.exists(change.getEntity().getView(), change.getId());
+	}
 
 	private List<BoundStatement> createStatementsFor(Change<Document> change)
 	{
@@ -83,5 +105,19 @@ extends AbstractUnitOfWork<Document>
 		}
 
 		return Collections.emptyList();
+	}
+
+	private void ensureUniqueness()
+	throws DuplicateItemException
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+    private void ensureExistence()
+    throws ItemNotFoundException
+    {
+		// TODO Auto-generated method stub
+		
 	}
 }

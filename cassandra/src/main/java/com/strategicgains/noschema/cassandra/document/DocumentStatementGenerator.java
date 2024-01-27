@@ -26,6 +26,11 @@ public class DocumentStatementGenerator
 		return get(viewName).update(entity);
 	}
 
+	public BoundStatement exists(String viewName, Identifier id)
+	{
+		return get(viewName).exists(id);
+	}
+
 	public void put(String viewName, DocumentStatementFactory<Document> factory)
 	{
 		factories.put(viewName, factory);

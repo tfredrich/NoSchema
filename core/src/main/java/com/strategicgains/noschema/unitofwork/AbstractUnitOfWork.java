@@ -33,7 +33,8 @@ implements UnitOfWork<T>
 	 * @param entity the new entity to register.
 	 */
 	@Override
-	public void registerNew(T entity) {
+	public void registerNew(T entity)
+	{
 		changes.add(new Change<>(entity, EntityState.NEW));
 	}
 
@@ -55,7 +56,8 @@ implements UnitOfWork<T>
 	 * @param entity the entity that has been marked for deletion.
 	 */
 	@Override
-	public void registerDeleted(T entity) {
+	public void registerDeleted(T entity)
+	{
 		changes.add(new Change<>(entity, EntityState.DELETED));
 	}
 

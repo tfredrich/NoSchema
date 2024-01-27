@@ -1,7 +1,9 @@
 package com.strategicgains.noschema.unitofwork;
 
+import com.strategicgains.noschema.exception.StorageException;
+
 public class UnitOfWorkCommitException
-extends Exception
+extends StorageException
 {
 	private static final long serialVersionUID = -6123684196945185514L;
 

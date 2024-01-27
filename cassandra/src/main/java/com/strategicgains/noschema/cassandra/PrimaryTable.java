@@ -12,7 +12,7 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
 public class PrimaryTable
 extends AbstractTable
 {
-	private static final String DEFAULT_KEYS = "id:uuid";
+	private static final String DEFAULT_KEYS = "id:uuid unique";
 	private List<View> views;
 
 	public PrimaryTable()
@@ -101,6 +101,14 @@ extends AbstractTable
 	public Stream<View> views()
 	{
 		return (hasViews() ? Collections.unmodifiableList(views).stream() : Stream.empty());
+	}
+
+	public Stream<View> uniqueViews()
+	{
+		return (hasViews()
+			? Collections.unmodifiableList(views.stream().filter(View::isUnique).toList()).stream()
+			: Stream.empty()
+		);
 	}
 
 	public int getViewCount()

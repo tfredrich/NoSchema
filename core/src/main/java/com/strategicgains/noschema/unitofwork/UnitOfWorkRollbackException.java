@@ -1,7 +1,9 @@
 package com.strategicgains.noschema.unitofwork;
 
+import com.strategicgains.noschema.exception.StorageException;
+
 public class UnitOfWorkRollbackException
-extends Exception
+extends StorageException
 {
 	private static final long serialVersionUID = -2683447409756870271L;
 
