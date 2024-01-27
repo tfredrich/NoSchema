@@ -21,16 +21,18 @@ public class KeyComponent
 	private DataTypes type;
 
 	public KeyComponent(String column, DataTypes type)
+	throws KeyDefinitionException
 	{
 		this(column, column, type);
 	}
 
 	public KeyComponent(String column, String property, DataTypes type)
+	throws KeyDefinitionException
 	{
 		super();
-		this.column = column;
-		this.property = property;
-		this.type = type;
+		column(column);
+		property(property);
+		type(type);
 	}
 
 	public String column()
@@ -38,14 +40,44 @@ public class KeyComponent
 		return column;
 	}
 
+	private KeyComponent column(String column)
+	throws KeyDefinitionException
+	{
+		if (column == null || column.isEmpty() || column.contains(" "))
+		{
+			throw new KeyDefinitionException("Invalid column value: " + column);
+		}
+
+		this.column = column;
+		return this;
+	}
+
 	public String property()
 	{
 		return property;
 	}
 
+	private KeyComponent property(String property)
+	throws KeyDefinitionException
+	{
+		if (property == null || column.isEmpty() || column.contains(" "))
+		{
+			throw new KeyDefinitionException("Invalid property value: " + property);
+		}
+
+		this.property = property;
+		return this;
+	}
+
 	public DataTypes type()
 	{
 		return type;
+	}
+
+	private KeyComponent type(DataTypes type)
+	{
+		this.type = type;
+		return this;
 	}
 
 	public static KeyComponent parse(String phrase)
@@ -67,7 +99,7 @@ public class KeyComponent
 		}
 		catch (IllegalStateException e)
 		{
-			throw new KeyDefinitionException(e.getMessage());
+			throw new KeyDefinitionException(e);
 		}
 	}
 

@@ -1,7 +1,6 @@
 package com.strategicgains.noschema.cassandra.key;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -235,6 +234,13 @@ public class KeyDefinitionParserTest
 	throws KeyDefinitionException
 	{
 		KeyDefinitionParser.parse("(alpha:uuid, beta:text) unique -chi:timestamp, +delta:int");
+	}
+
+	@Test(expected=KeyDefinitionException.class)
+	public void shouldThrowOnMisplacedUniqueInPartitionKey()
+	throws KeyDefinitionException
+	{
+		KeyDefinitionParser.parse("(unique alpha:uuid, beta:text) -chi:timestamp, +delta:int");
 	}
 
 	@Test(expected=KeyDefinitionException.class)
