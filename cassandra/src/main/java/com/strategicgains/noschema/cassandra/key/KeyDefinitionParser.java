@@ -18,7 +18,7 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  */
 public final class KeyDefinitionParser
 {
-	private static final String UNIQUE_SPECIFIER = "unique";
+	private static final String UNIQUE_MODIFIER = "unique";
 
 	private KeyDefinitionParser()
 	{
@@ -60,10 +60,10 @@ public final class KeyDefinitionParser
 		KeyDefinition definition = new KeyDefinition();
 		String trimmed = keys.trim();
 
-		if (keys.toLowerCase().endsWith(UNIQUE_SPECIFIER))
+		if (keys.toLowerCase().endsWith(UNIQUE_MODIFIER))
 		{
 			definition.setUnique(true);
-			trimmed = trimmed.substring(0, trimmed.length() - UNIQUE_SPECIFIER.length() - 1);
+			trimmed = trimmed.substring(0, trimmed.length() - UNIQUE_MODIFIER.length() - 1);
 		}
 	
 		char[] chars = trimmed.toCharArray();
