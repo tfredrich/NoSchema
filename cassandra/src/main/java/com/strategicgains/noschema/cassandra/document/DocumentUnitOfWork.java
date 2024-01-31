@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -13,8 +13,6 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.shaded.guava.common.util.concurrent.Futures;
-import com.datastax.oss.driver.shaded.guava.common.util.concurrent.ListenableFuture;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -40,7 +38,7 @@ extends AbstractUnitOfWork<Document>
     public void commit()
     throws UnitOfWorkCommitException
     {
-    	List<ListenableFuture<Boolean>> existence = new ArrayList<>();
+    	List<CompletionStage<Boolean>> existence = new ArrayList<>();
     	List<BoundStatement> statements = new ArrayList<>();
 
 		changes().forEach(change -> {
@@ -50,7 +48,24 @@ extends AbstractUnitOfWork<Document>
 
 		if (!existence.isEmpty())
 		{
-			Futures.inCompletionOrder(existence);
+			try
+			{
+				existence.stream().forEach(f -> {
+					try
+					{
+						Object v = f.toCompletableFuture().join();
+						System.out.println(v);
+					}
+					catch (CompletionException e)
+					{
+						throw new RuntimeException(e.getCause());
+					}
+				});
+			}
+			catch(RuntimeException e)
+			{
+				throw new UnitOfWorkCommitException(e.getCause());
+			}
 		}
 
 		// TODO: use an execution strategy: LOGGED, UNLOGGED, ASYNC
@@ -58,14 +73,13 @@ extends AbstractUnitOfWork<Document>
         statements.stream().forEach(batch::addStatement);
         CompletionStage<AsyncResultSet> resultSet = session.executeAsync(batch.build());
 
-        if (resultSet.wasApplied())
-        {
-            reset();
-        }
-        else
-        {
-            throw new UnitOfWorkCommitException("Commit failed", resultSet.getExecutionInfo().getErrors().get(0).getValue());
-        }
+        resultSet
+        	.thenAccept(r -> reset())
+        	.exceptionally(t -> {
+                throw new UnitOfWorkCommitException("Commit failed", t);
+        	})
+        	.toCompletableFuture()
+        	.join();
     }
 
 	@Override
@@ -75,28 +89,28 @@ extends AbstractUnitOfWork<Document>
         // No-op for CassandraUnitOfWork since we're using a logged batch
     }
 
-	private Optional<ListenableFuture<Boolean>> checkExistence(CqlSession session, Change<Document> change)
+	private Optional<CompletionStage<Boolean>> checkExistence(CqlSession session, final Change<Document> change)
 	{
 		String viewName = change.getEntity().getView();
 
-		// Updates and deletes on unique views require pre-existence.
-		// Creation on unique views requires non-existence.
 		if (generator.isViewUnique(viewName))
 		{
-			return Optional.of(session.executeAsync(generator.exists(viewName, change.getId())).thenApply(r -> 
-				Boolean.valueOf(r.one().getInt(0) > 0))
+			return Optional.of(session.executeAsync(generator.exists(viewName, change.getId()))
+				.thenApply(r -> Boolean.valueOf(r.one().getLong(0) > 0L))
 					.thenApply(exists -> {
+						// Creation on unique views requires non-existence.
 						if (Boolean.TRUE == exists && change.isNew())
 						{
-							return Futures.immediateFailedFuture(new DuplicateItemException());
+							throw new DuplicateItemException(change.getId().toString());
 						}
+						// Updates and deletes on unique views require pre-existence.
 						else if (Boolean.FALSE == exists && (change.isDirty() || change.isDeleted()))
 						{
-							return Futures.immediateFailedFuture(new ItemNotFoundException());
+							throw new ItemNotFoundException(change.getId().toString());
 						}
 
-						return true;
-					}).toCompletableFuture());
+						return Boolean.TRUE;
+					}));
 		}
 
 		return Optional.empty();

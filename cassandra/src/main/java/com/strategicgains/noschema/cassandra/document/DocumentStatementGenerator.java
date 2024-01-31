@@ -21,6 +21,7 @@ public class DocumentStatementGenerator
 	{
 		super();
 		factoriesByView.put(PRIMARY_TABLE, new DocumentStatementFactory<>(session, table));
+		keysByView.put(PRIMARY_TABLE, table.keys());				
 		table.views().forEach(view -> {
 			this.factoriesByView.put(view.name(), new DocumentStatementFactory<>(session, view));
 			this.keysByView.put(view.name(), view.keys());				

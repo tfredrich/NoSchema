@@ -20,7 +20,7 @@ package com.strategicgains.noschema.exception;
  * @since May 7, 2015
  */
 public class StorageException
-extends Exception
+extends RuntimeException
 {
 	private static final long serialVersionUID = 3907693537286941667L;
 

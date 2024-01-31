@@ -90,8 +90,17 @@ implements NoSchemaRepository<T>
 		}
 		catch (UnitOfWorkCommitException e)
 		{
-			// TODO Determine if it's unique violation, bad ID, or something else.
-			e.printStackTrace();
+			if (e.getCause() instanceof DuplicateItemException)
+			{
+				throw (DuplicateItemException) e.getCause();
+			}
+
+			if (e.getCause() instanceof InvalidIdentifierException)
+			{
+				throw (InvalidIdentifierException) e.getCause();
+			}
+
+			throw new StorageException(e.getCause());
 		}
 
 		return entity;
@@ -133,10 +142,10 @@ implements NoSchemaRepository<T>
 	public T read(Identifier id)
 	throws ItemNotFoundException
 	{
-		return readView(PRIMARY_TABLE, id);
+		return read(PRIMARY_TABLE, id);
 	}
  
-	public T readView(String viewName, Identifier id)
+	public T read(String viewName, Identifier id)
 	throws ItemNotFoundException
 	{
 		Row row = session.execute(statementGenerator.read(viewName, id)).one();
@@ -162,7 +171,9 @@ implements NoSchemaRepository<T>
 	{
 		try
 		{
+//			T original = read(entity.getIdentifier());
 			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
+//			asViewDocuments(original).forEach(uow::registerRead);			
 			asViewDocuments(entity).forEach(uow::registerDirty);
 			uow.commit();
 		}

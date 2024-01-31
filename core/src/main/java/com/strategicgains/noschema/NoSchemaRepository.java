@@ -25,7 +25,7 @@ public interface NoSchemaRepository<T>
 	 * @see DocumentFactory
 	 */
 	T create(T entity)
-	throws DuplicateItemException, InvalidIdentifierException, KeyDefinitionException;
+	throws DuplicateItemException, InvalidIdentifierException, KeyDefinitionException, StorageException;
 
 	/**
 	 * Remove an entity from the database by the given identifier.
@@ -36,7 +36,7 @@ public interface NoSchemaRepository<T>
 	 * @throws InvalidIdentifierException 
 	 */
 	boolean delete(Identifier id)
-	throws ItemNotFoundException, InvalidIdentifierException;
+	throws ItemNotFoundException, InvalidIdentifierException, StorageException;
 
 	/**
 	 * Check to see if the given identifier exists in the database.
