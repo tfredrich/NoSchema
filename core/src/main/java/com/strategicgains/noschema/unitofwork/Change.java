@@ -31,6 +31,26 @@ public class Change<T extends Identifiable>
 		return state;
 	}
 
+	public boolean isNew()
+	{
+		return EntityState.NEW == state;
+	}
+
+	public boolean isClean()
+	{
+		return EntityState.CLEAN == state;
+	}
+
+	public boolean isDirty()
+	{
+		return EntityState.DIRTY == state;
+	}
+
+	public boolean isDeleted()
+	{
+		return EntityState.DELETED == state;
+	}
+
 	@Override
 	public int hashCode()
 	{

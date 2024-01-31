@@ -4,12 +4,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.shaded.guava.common.util.concurrent.Futures;
+import com.datastax.oss.driver.shaded.guava.common.util.concurrent.ListenableFuture;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -25,29 +30,33 @@ extends AbstractUnitOfWork<Document>
     private final CqlSession session;
     private final DocumentStatementGenerator generator;
 
-    public DocumentUnitOfWork(CqlSession session, DocumentStatementGenerator statementsByView)
+    public DocumentUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator)
     {
         this.session = Objects.requireNonNull(session);
-        this.generator = Objects.requireNonNull(statementsByView);
+        this.generator = Objects.requireNonNull(statementGenerator);
     }
 
     @Override
     public void commit()
     throws UnitOfWorkCommitException
     {
-    	List<BoundStatement> uniqueness = new ArrayList<>();
-    	List<BoundStatement> existence = new ArrayList<>();
+    	List<ListenableFuture<Boolean>> existence = new ArrayList<>();
     	List<BoundStatement> statements = new ArrayList<>();
 
-        changes().forEach(change -> {
-        	uniqueness.add(createUniquenessCheckFor(change));
-        	existence.add(createExistenceCheckFor(change));
-        	statements.addAll(createStatementsFor(change));
-        });
+		changes().forEach(change -> {
+			checkExistence(session, change).ifPresent(existence::add);
+			statements.addAll(generateStatementsFor(change));
+		});
 
+		if (!existence.isEmpty())
+		{
+			Futures.inCompletionOrder(existence);
+		}
+
+		// TODO: use an execution strategy: LOGGED, UNLOGGED, ASYNC
         BatchStatementBuilder batch = new BatchStatementBuilder(BatchType.LOGGED);
         statements.stream().forEach(batch::addStatement);
-        ResultSet resultSet = session.execute(batch.build());
+        CompletionStage<AsyncResultSet> resultSet = session.executeAsync(batch.build());
 
         if (resultSet.wasApplied())
         {
@@ -66,17 +75,34 @@ extends AbstractUnitOfWork<Document>
         // No-op for CassandraUnitOfWork since we're using a logged batch
     }
 
-	private BoundStatement createExistenceCheckFor(Change<Document> change)
+	private Optional<ListenableFuture<Boolean>> checkExistence(CqlSession session, Change<Document> change)
 	{
-		return generator.exists(change.getEntity().getView(), change.getId());
+		String viewName = change.getEntity().getView();
+
+		// Updates and deletes on unique views require pre-existence.
+		// Creation on unique views requires non-existence.
+		if (generator.isViewUnique(viewName))
+		{
+			return Optional.of(session.executeAsync(generator.exists(viewName, change.getId())).thenApply(r -> 
+				Boolean.valueOf(r.one().getInt(0) > 0))
+					.thenApply(exists -> {
+						if (Boolean.TRUE == exists && change.isNew())
+						{
+							return Futures.immediateFailedFuture(new DuplicateItemException());
+						}
+						else if (Boolean.FALSE == exists && (change.isDirty() || change.isDeleted()))
+						{
+							return Futures.immediateFailedFuture(new ItemNotFoundException());
+						}
+
+						return true;
+					}).toCompletableFuture());
+		}
+
+		return Optional.empty();
 	}
 
-	private BoundStatement createUniquenessCheckFor(Change<Document> change)
-	{
-		return generator.exists(change.getEntity().getView(), change.getId());
-	}
-
-	private List<BoundStatement> createStatementsFor(Change<Document> change)
+	private List<BoundStatement> generateStatementsFor(Change<Document> change)
 	{
 		String viewName = change.getEntity().getView();
 
@@ -105,19 +131,5 @@ extends AbstractUnitOfWork<Document>
 		}
 
 		return Collections.emptyList();
-	}
-
-	private void ensureUniqueness()
-	throws DuplicateItemException
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-    private void ensureExistence()
-    throws ItemNotFoundException
-    {
-		// TODO Auto-generated method stub
-		
 	}
 }
