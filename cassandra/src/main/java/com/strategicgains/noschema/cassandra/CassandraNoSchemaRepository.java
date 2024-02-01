@@ -1,6 +1,7 @@
 package com.strategicgains.noschema.cassandra;
 
 import java.nio.ByteBuffer;
+import java.sql.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,6 +159,19 @@ implements NoSchemaRepository<T>
 		return marshalRow(viewName, row);
 	}
 
+	private Document readAsDocument(Identifier id)
+	throws ItemNotFoundException
+	{
+		Row row = session.execute(statementGenerator.read(PRIMARY_TABLE, id)).one();
+
+		if (row == null)
+		{
+			throw new ItemNotFoundException(id.toString());
+		}
+
+		return marshalDocument(row);
+	}
+
 	@Override
 	public List<T> readAll(Object... parms)
 	{
@@ -171,7 +185,7 @@ implements NoSchemaRepository<T>
 	{
 		try
 		{
-//			T original = read(entity.getIdentifier());
+			Document original = readAsDocument(entity.getIdentifier());
 			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
 //			asViewDocuments(original).forEach(uow::registerRead);			
 			asViewDocuments(entity).forEach(uow::registerDirty);
@@ -221,6 +235,8 @@ implements NoSchemaRepository<T>
 		}
 
 		d.setType(row.getString(Columns.TYPE));
+		d.setCreatedAt(row.get(Columns.CREATED_AT, Date.class));
+		d.setUpdatedAt(row.get(Columns.UPDATED_AT, Date.class));
 		return d;
 	}
 
