@@ -30,7 +30,7 @@ public class SchemaRegistry
 	public static SchemaRegistry keyspace(String keyspace)
 	{
 		instance().setKeyspace(keyspace);
-		return instance().schema(new KeyspaceProvider(keyspace));
+		return instance().withProvider(new KeyspaceProvider(keyspace));
 	}
 
 	public static String keyspace()
@@ -55,7 +55,7 @@ public class SchemaRegistry
 	 * @param provider
 	 * @return this schema registry
 	 */
-	public SchemaRegistry schema(SchemaProvider provider)
+	public SchemaRegistry withProvider(SchemaProvider provider)
 	{
 		if (provider != null)
 		{
