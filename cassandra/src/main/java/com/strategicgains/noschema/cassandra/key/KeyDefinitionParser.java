@@ -107,7 +107,10 @@ public final class KeyDefinitionParser
 
 	private static ParseState transition(ParseState state, int depth, int maxDepth)
 	{
-		if (state.isPartitionKey() && depth < maxDepth) return ParseState.CLUSTER_KEY;
+		if (state.isPartitionKey() && depth < maxDepth)
+		{
+			return ParseState.CLUSTER_KEY;
+		}
 
 		return state;
 	}

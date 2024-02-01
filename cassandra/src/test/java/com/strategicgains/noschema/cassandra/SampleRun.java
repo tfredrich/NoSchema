@@ -24,8 +24,9 @@ public class SampleRun {
 	{
 		CqlSession session = createCassandraSession();
 		String keyspace = "sample_run";
-		PrimaryTable byId = new PrimaryTable(keyspace, "flowers_by_id", "id:UUID")
-			.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text");
+
+		PrimaryTable byId = new PrimaryTable(keyspace, "flowers_by_id", "id:UUID unique")
+			.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique");
 
 		SchemaRegistry schemas = SchemaRegistry.keyspace(keyspace);
 		byId.views().forEach(v -> schemas.schema(new DocumentSchemaProvider(v)));
@@ -56,8 +57,19 @@ public class SampleRun {
 			System.out.println(read.toString());
 
 			System.out.println("*** READ-NAME ***");
-			read = flowers.readView(FLOWERS_BY_NAME, new Identifier(accountId, "rose"));
+			read = flowers.read(FLOWERS_BY_NAME, new Identifier(accountId, "rose"));
 			System.out.println(read.toString());
+
+			System.out.println("*** CREATE DUPLICATE ***");
+			try
+			{
+				flowers.create(flower);
+				throw new RuntimeException("FAILED: Expected DuplicateItemException");
+			}
+			catch (DuplicateItemException e)
+			{
+				System.out.println("Recieved expected exception: DuplicateItemException: " + e.getMessage());
+			}
 
 			System.out.println("*** UPDATE ***");
 			read.setName(read.getName() + "-updated");

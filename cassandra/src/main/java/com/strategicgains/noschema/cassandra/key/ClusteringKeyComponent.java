@@ -26,11 +26,13 @@ extends KeyComponent
 	private Ordering order;
 
 	public ClusteringKeyComponent(String column, DataTypes type, Ordering order)
+	throws KeyDefinitionException
 	{
 		this(column, column, type, order);
 	}
 
 	public ClusteringKeyComponent(String column, String property, DataTypes type, Ordering order)
+	throws KeyDefinitionException
 	{
 		super(column, property, type);
 		this.order = order;
@@ -73,7 +75,7 @@ extends KeyComponent
 		}
 		catch (IllegalStateException e)
 		{
-			throw new KeyDefinitionException(e.getMessage());
+			throw new KeyDefinitionException(e);
 		}
 	}
 }

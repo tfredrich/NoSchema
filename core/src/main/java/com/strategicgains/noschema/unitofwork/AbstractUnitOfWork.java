@@ -1,11 +1,11 @@
 package com.strategicgains.noschema.unitofwork;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import com.strategicgains.noschema.Identifiable;
+import com.strategicgains.noschema.Identifier;
 
 /**
  * This class provides transactional context for managing database changes. It allows
@@ -15,38 +15,44 @@ import com.strategicgains.noschema.Identifiable;
 public abstract class AbstractUnitOfWork<T extends Identifiable>
 implements UnitOfWork<T>
 {
-	// This set is used to keep track of entities that have changed and
+	// This identity map is used to keep track of entities that have changed and
 	// need to be persisted during the transaction.
-	private Set<Change<T>> changes = new HashSet<>();
+	private Map<Identifier, ChangeSet<T>> changes = new HashMap<>();
 
 	/**
 	 * Returns a stream containing all the changed entities.
 	 */
 	protected Stream<Change<T>> changes()
 	{
-		return Collections.unmodifiableSet(changes).stream();
+	    return changes.values().stream().flatMap(s -> s.asChange().stream());
 	}
 
 	/**
-	 * Registers a new entity that needs to be persisted during the transaction.
+	 * Registers a new entity that doesn't exist in the database and needs to be
+	 * persisted during the transaction.
+	 * 
+	 * NOTE: Entities MUST be fully-populated across all identifier properties before
+	 * registering them.
 	 *
 	 * @param entity the new entity to register.
 	 */
 	@Override
-	public void registerNew(T entity) {
-		changes.add(new Change<>(entity, EntityState.NEW));
+	public void registerNew(T entity)
+	{
+		ChangeSet<T> changeSet = getChangeSetFor(entity);
+		changeSet.add(EntityState.NEW, entity);
 	}
 
 	/**
 	 * Registers an entity that has been updated during the transaction.
 	 *
-	 * @param original the entity state before it was updated.
-	 * @param dirty the entity in its dirty state (after update).
+	 * @param entity the entity in its dirty state (after update).
 	 */
 	@Override
-	public void registerDirty(T original, T dirty)
+	public void registerDirty(T entity)
 	{
-		changes.add(new DirtyChange<>(original, dirty));
+		ChangeSet<T> changeSet = getChangeSetFor(entity);
+		changeSet.add(EntityState.DIRTY, entity);
 	}
 
 	/**
@@ -55,15 +61,37 @@ implements UnitOfWork<T>
 	 * @param entity the entity that has been marked for deletion.
 	 */
 	@Override
-	public void registerDeleted(T entity) {
-		changes.add(new Change<>(entity, EntityState.DELETED));
+	public void registerDeleted(T entity)
+	{
+		ChangeSet<T> changeSet = getChangeSetFor(entity);
+		changeSet.add(EntityState.DELETED, entity);
+	}
+
+	/**
+	 * Registers an entity as clean, freshly-read from the database. These objects are used
+	 * to determine deltas between dirty objects during commit().
+	 * 
+	 * NOTE: this method does NOT perform any copy operations so updating the object will
+	 * change the copy that is registered as clean, making registration useless. Copy your
+	 * own objects either before registering them as clean or before mutating them.
+	 */
+	@Override
+	public void registerRead(T entity)
+	{
+		ChangeSet<T> changeSet = getChangeSetFor(entity);
+		changeSet.add(EntityState.CLEAN, entity);
 	}
 
     /**
-     * Clears or deregisters all the registered entities and resets the unit of work to it's initial, empty state.
+     * Clears or deregisters all the previously-registered entities and resets the unit of work to it's initial, empty state.
      */
     protected void reset()
 	{
 		changes.clear();
+	}
+
+	private ChangeSet<T> getChangeSetFor(T entity)
+	{
+		return changes.computeIfAbsent(entity.getIdentifier(), a -> new ChangeSet<>());
 	}
 }

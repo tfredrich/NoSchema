@@ -22,6 +22,7 @@ public class KeyDefinitionTest
 {
 	@Test
 	public void shouldHandleSimple()
+	throws KeyDefinitionException
 	{
 		KeyDefinition kd = new KeyDefinition();
 		kd.addPartitionKey(new KeyComponent("alpha", DataTypes.UUID));
@@ -32,6 +33,7 @@ public class KeyDefinitionTest
 
 	@Test
 	public void shouldHandlePartitionKey()
+	throws KeyDefinitionException
 	{
 		KeyDefinition kd = new KeyDefinition();
 		kd.addPartitionKey(new KeyComponent("alpha", DataTypes.UUID))
@@ -45,6 +47,7 @@ public class KeyDefinitionTest
 
 	@Test
 	public void shouldHandleComplex()
+	throws KeyDefinitionException
 	{
 		KeyDefinition kd = new KeyDefinition();
 		kd.addPartitionKey(new KeyComponent("alpha", DataTypes.UUID))
@@ -59,6 +62,7 @@ public class KeyDefinitionTest
 
 	@Test
 	public void shouldHandleComplexWithDefaultSort()
+	throws KeyDefinitionException
 	{
 		KeyDefinition kd = new KeyDefinition();
 		kd.addPartitionKey(new KeyComponent("alpha", DataTypes.UUID))

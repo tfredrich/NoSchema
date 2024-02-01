@@ -1,6 +1,7 @@
 package com.strategicgains.noschema.cassandra;
 
 import java.nio.ByteBuffer;
+import java.sql.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,7 +11,6 @@ import org.bson.BSONDecoder;
 import org.bson.BasicBSONDecoder;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
@@ -18,7 +18,6 @@ import com.strategicgains.noschema.NoSchemaRepository;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
-import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentStatementGenerator;
 import com.strategicgains.noschema.cassandra.document.DocumentUnitOfWork;
 import com.strategicgains.noschema.document.Document;
@@ -32,12 +31,12 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 public class CassandraNoSchemaRepository<T extends Identifiable>
 implements NoSchemaRepository<T>
 {
+	public static final String PRIMARY_TABLE = "<|primary_table|>";
 	private static final BSONDecoder DECODER = new BasicBSONDecoder();
-	private static final String PRIMARY_TABLE = "<|primary_table|>";
 
 	private CqlSession session;
 	private PrimaryTable table;
-	private DocumentStatementGenerator statementsByView = new DocumentStatementGenerator();
+	private DocumentStatementGenerator statementGenerator;
 	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
 
 	public CassandraNoSchemaRepository(CqlSession session, PrimaryTable table)
@@ -45,12 +44,11 @@ implements NoSchemaRepository<T>
 		super();
 		this.session = session;
 		this.table = table;
-		statementsByView.put(PRIMARY_TABLE, new DocumentStatementFactory<>(session, table));
+		this.statementGenerator = new DocumentStatementGenerator(session, table);
 		factoriesByView.put(PRIMARY_TABLE, new CassandraDocumentFactory<>(table.keys()));
-		table.views().forEach(view -> {
-			this.statementsByView.put(view.name(), new DocumentStatementFactory<>(session, view));
-			this.factoriesByView.put(view.name(), new CassandraDocumentFactory<>(view.keys()));				
-		});
+		table.views().forEach(view ->
+			this.factoriesByView.put(view.name(), new CassandraDocumentFactory<>(view.keys()))
+		);
 	}
 
 	protected boolean hasViews()
@@ -84,17 +82,26 @@ implements NoSchemaRepository<T>
 	public T create(T entity)
 	throws DuplicateItemException, InvalidIdentifierException
 	{
-		DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementsByView);
+		DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
 
 		try
 		{
-			viewDocuments(entity).forEach(uow::registerNew);
+			asViewDocuments(entity).forEach(uow::registerNew);
 			uow.commit();
 		}
 		catch (UnitOfWorkCommitException e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			if (e.getCause() instanceof DuplicateItemException)
+			{
+				throw (DuplicateItemException) e.getCause();
+			}
+
+			if (e.getCause() instanceof InvalidIdentifierException)
+			{
+				throw (InvalidIdentifierException) e.getCause();
+			}
+
+			throw new StorageException(e.getCause());
 		}
 
 		return entity;
@@ -107,8 +114,8 @@ implements NoSchemaRepository<T>
 		try
 		{
 			T entity = read(id);
-			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementsByView);
-			viewDocuments(entity).forEach(uow::registerDeleted);
+			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
+			asViewDocuments(entity).forEach(uow::registerDeleted);
 			uow.commit();
 		}
 		catch (UnitOfWorkCommitException e)
@@ -129,23 +136,20 @@ implements NoSchemaRepository<T>
 
 	public boolean existsInView(String viewName, Identifier id)
 	{
-		return (session.execute(statementsByView.get(viewName).exists(id)).one().getLong(0) > 0);
+		return (session.execute(statementGenerator.exists(viewName, id)).one().getLong(0) > 0);
 	}
 
 	@Override
 	public T read(Identifier id)
 	throws ItemNotFoundException
 	{
-		return readView(PRIMARY_TABLE, id);
+		return read(PRIMARY_TABLE, id);
 	}
-
-	public T readView(String viewName, Identifier id)
+ 
+	public T read(String viewName, Identifier id)
 	throws ItemNotFoundException
 	{
-		DocumentStatementFactory<Document> factory = statementsByView.get(viewName);
-		BoundStatement s = factory.read(id);
-		Row row = session.execute(s).one();
-//		Row row = session.execute(statementsByView.get(viewName).read(id)).one();
+		Row row = session.execute(statementGenerator.read(viewName, id)).one();
 
 		if (row == null)
 		{
@@ -153,6 +157,19 @@ implements NoSchemaRepository<T>
 		}
 
 		return marshalRow(viewName, row);
+	}
+
+	private Document readAsDocument(Identifier id)
+	throws ItemNotFoundException
+	{
+		Row row = session.execute(statementGenerator.read(PRIMARY_TABLE, id)).one();
+
+		if (row == null)
+		{
+			throw new ItemNotFoundException(id.toString());
+		}
+
+		return marshalDocument(row);
 	}
 
 	@Override
@@ -168,10 +185,10 @@ implements NoSchemaRepository<T>
 	{
 		try
 		{
-			T before = read(entity.getIdentifier());
-			Document original = factoriesByView.get(PRIMARY_TABLE).asDocument(before);
-			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementsByView);
-			viewDocuments(before).forEach(updated -> uow.registerDirty(original, updated));
+			Document original = readAsDocument(entity.getIdentifier());
+			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
+//			asViewDocuments(original).forEach(uow::registerRead);			
+			asViewDocuments(entity).forEach(uow::registerDirty);
 			uow.commit();
 		}
 		catch (UnitOfWorkCommitException e)
@@ -218,10 +235,12 @@ implements NoSchemaRepository<T>
 		}
 
 		d.setType(row.getString(Columns.TYPE));
+		d.setCreatedAt(row.get(Columns.CREATED_AT, Date.class));
+		d.setUpdatedAt(row.get(Columns.UPDATED_AT, Date.class));
 		return d;
 	}
 
-	private Stream<Document> viewDocuments(T entity)
+	private Stream<Document> asViewDocuments(T entity)
 	throws InvalidIdentifierException
 	{
 		try

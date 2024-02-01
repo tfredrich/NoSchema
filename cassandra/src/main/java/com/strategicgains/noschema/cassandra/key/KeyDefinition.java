@@ -26,7 +26,8 @@ public class KeyDefinition
 	private List<ClusteringKeyComponent> clusteringKey = new ArrayList<>();
 
 	/**
-	 * If set, causes uniqueness checks before writes. If unset, upsert is used.
+	 * If true, causes uniqueness checks before writes. If false (default), 
+	 * upsert is used with no uniqueness enforcement.
 	 */
 	private boolean isUnique;
 
@@ -34,11 +35,13 @@ public class KeyDefinition
 	private Map<String, List<Field>> keyFields;
 
 	public KeyDefinition addPartitionKey(String column, DataTypes type)
+	throws KeyDefinitionException
 	{
 		return addPartitionKey(new KeyComponent(column, type));
 	}
 
 	public KeyDefinition addPartitionKey(String column, String property, DataTypes type)
+	throws KeyDefinitionException
 	{
 		return addPartitionKey(new KeyComponent(column, property, type));
 	}
@@ -50,11 +53,13 @@ public class KeyDefinition
 	}
 
 	public KeyDefinition addClusteringKey(String column, DataTypes type, Ordering order)
+	throws KeyDefinitionException
 	{
 		return addClusteringKey(new ClusteringKeyComponent(column, type, order));
 	}
 
 	public KeyDefinition addClusteringKey(String column, String property, DataTypes type, Ordering order)
+	throws KeyDefinitionException
 	{
 		return addClusteringKey(new ClusteringKeyComponent(column, property, type, order));
 	}
