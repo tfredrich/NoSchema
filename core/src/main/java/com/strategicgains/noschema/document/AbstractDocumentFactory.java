@@ -1,7 +1,5 @@
 package com.strategicgains.noschema.document;
 
-import java.util.Date;
-
 import org.bson.BSONObject;
 
 import com.strategicgains.noschema.Identifier;
@@ -39,13 +37,15 @@ public abstract class AbstractDocumentFactory<T>
 	public Document asDocument(T entity)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		Identifier id = extractIdentifier(entity);
 		BSONObject bson = codec.encode(entity);
-		Document document = new Document(id, bson, entity.getClass());
-		Date now = new Date();
-		document.setCreatedAt(now);
-		document.setUpdatedAt(now);
-		return document;
+		return asDocument(entity, bson);
+	}
+
+	public Document asDocument(T entity, BSONObject bson)
+	throws InvalidIdentifierException, KeyDefinitionException
+	{
+		Identifier id = extractIdentifier(entity);
+		return new Document(id, bson, entity.getClass());		
 	}
 
 	public T asPojo(Document document)

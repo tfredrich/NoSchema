@@ -85,6 +85,10 @@ implements Identifiable
 		this(bson, type);
 		setIdentifier(id);
 		setType(type.getName());
+
+		Date now = new Date();
+		setCreatedAt(now);
+		setUpdatedAt(now);
 	}
 
 	/**
