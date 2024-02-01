@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.document.Document;
 
 /**
  * This class provides transactional context for managing database changes. It allows
@@ -76,7 +77,7 @@ implements UnitOfWork<T>
 	 * own objects either before registering them as clean or before mutating them.
 	 */
 	@Override
-	public void registerRead(T entity)
+	public void registerClean(T entity)
 	{
 		ChangeSet<T> changeSet = getChangeSetFor(entity);
 		changeSet.add(EntityState.CLEAN, entity);
@@ -93,5 +94,11 @@ implements UnitOfWork<T>
 	private ChangeSet<T> getChangeSetFor(T entity)
 	{
 		return changes.computeIfAbsent(entity.getIdentifier(), a -> new ChangeSet<>());
+	}
+
+	public T findClean(Identifier id)
+	{
+		ChangeSet<T> s = changes.get(id);
+		return (s != null ? s.get(EntityState.CLEAN) : null);
 	}
 }
