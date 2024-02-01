@@ -17,7 +17,7 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 public class SampleRun {
 
-	private static final String FLOWERS_BY_NAME = "flowers_by_name";
+	private static final String FLOWERS_BY_NAME = "by_name";
 
 	public static void main(String[] args)
 	throws KeyDefinitionException, InvalidIdentifierException, DuplicateItemException, ItemNotFoundException
@@ -25,26 +25,20 @@ public class SampleRun {
 		CqlSession session = createCassandraSession();
 		String keyspace = "sample_run";
 
-		PrimaryTable byId = new PrimaryTable(keyspace, "flowers_by_id", "id:UUID unique")
+		PrimaryTable flowersTable = new PrimaryTable(keyspace, "flowers", "id:UUID unique")
 			.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique");
 
 		SchemaRegistry schemas = SchemaRegistry.keyspace(keyspace);
-		byId.views().forEach(v -> schemas.schema(new DocumentSchemaProvider(v)));
+		flowersTable.views().forEach(v -> schemas.withProvider(new DocumentSchemaProvider(v)));
 		schemas.initializeAll(session)
 			.exportInitializeAll();
 
-		CassandraNoSchemaRepository<Flower> flowers = new CassandraNoSchemaRepository<>(session, byId);
+		CassandraNoSchemaRepository<Flower> flowers = new CassandraNoSchemaRepository<>(session, flowersTable);
 		flowers.ensureTables();
 
 		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
 		UUID accountId = UUID.fromString("a87d3bff-6997-4739-ab4e-ded0cc85700f");
-		Date createdAt = new Date(1648598130248L);
-		Date updatedAt = new Date(1648598130233L);
-		List<String> colors = Arrays.asList("red", "white", "pink", "yellow");
-		Flower flower = new Flower(id, "rose", true, 3.25f, colors);
-		flower.setAccountId(accountId);
-		flower.setCreatedAt(createdAt);
-		flower.setUpdatedAt(updatedAt);
+		Flower flower = instantiateFlower(accountId, id);
 
 		try
 		{
@@ -85,6 +79,18 @@ public class SampleRun {
 		{
 			session.close();
 		}
+	}
+
+	private static Flower instantiateFlower(UUID accountId, UUID id)
+	{
+		Date createdAt = new Date(1648598130248L);
+		Date updatedAt = new Date(1648598130233L);
+		List<String> colors = Arrays.asList("red", "white", "pink", "yellow");
+		Flower flower = new Flower(id, "rose", true, 3.25f, colors);
+		flower.setAccountId(accountId);
+		flower.setCreatedAt(createdAt);
+		flower.setUpdatedAt(updatedAt);
+		return flower;
 	}
 
 	private static CqlSession createCassandraSession()
