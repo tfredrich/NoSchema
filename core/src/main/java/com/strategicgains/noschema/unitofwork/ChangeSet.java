@@ -16,6 +16,11 @@ public class ChangeSet<T extends Identifiable>
 		return this;
 	}
 
+	public T get(EntityState state)
+	{
+		return changes.get(state);
+	}
+
 	public Optional<Change<T>> asChange()
 	{
 		return changes.entrySet().stream().map(e -> {
@@ -27,6 +32,8 @@ public class ChangeSet<T extends Identifiable>
 				return new Change<>(changes.get(EntityState.NEW), EntityState.NEW);
 			case DELETED:
 				return new Change<>(changes.get(EntityState.DELETED), EntityState.DELETED);
+			case CLEAN:
+				return new Change<>(changes.get(EntityState.CLEAN), EntityState.CLEAN);
 			default:
 				return null;
 			}
