@@ -23,8 +23,8 @@ public class DocumentStatementGenerator
 		factoriesByView.put(PRIMARY_TABLE, new DocumentStatementFactory<>(session, table));
 		keysByView.put(PRIMARY_TABLE, table.keys());				
 		table.views().forEach(view -> {
-			this.factoriesByView.put(view.name(), new DocumentStatementFactory<>(session, view));
-			this.keysByView.put(view.name(), view.keys());				
+			put(view.name(), new DocumentStatementFactory<>(session, view));
+			put(view.name(), view.keys());				
 		});
 	}
 
@@ -61,6 +61,11 @@ public class DocumentStatementGenerator
 	private void put(String viewName, DocumentStatementFactory<Document> factory)
 	{
 		factoriesByView.put(viewName, factory);
+	}
+
+	private void put(String viewName, KeyDefinition keys)
+	{
+		this.keysByView.put(viewName, keys);
 	}
 
 	private DocumentStatementFactory<Document> get(String viewName)
