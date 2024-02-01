@@ -48,5 +48,5 @@ public interface UnitOfWork<T> {
 	 * 
 	 * @param entity The entity to mark as deleted.
 	 */
-	void registerRead(T entity);
+	void registerClean(T entity);
 }
