@@ -2,8 +2,6 @@ package com.strategicgains.noschema.cassandra;
 
 import java.nio.ByteBuffer;
 import java.sql.Date;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,13 +13,11 @@ import org.bson.BSONObject;
 import org.bson.BasicBSONDecoder;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.NoSchemaRepository;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
-import com.strategicgains.noschema.cassandra.document.DirtyChange;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.document.DocumentStatementGenerator;
@@ -119,6 +115,7 @@ implements NoSchemaRepository<T>
 	{
 		try
 		{
+			// TODO: enable end-customer creation of the unit of work. Perhaps a thread local?
 			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
 			Document original = uow.readClean(id);
 
@@ -133,8 +130,17 @@ implements NoSchemaRepository<T>
 		}
 		catch (UnitOfWorkCommitException e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			if (e.getCause() instanceof ItemNotFoundException)
+			{
+				throw (ItemNotFoundException) e.getCause();
+			}
+
+			if (e.getCause() instanceof InvalidIdentifierException)
+			{
+				throw (InvalidIdentifierException) e.getCause();
+			}
+
+			throw e;
 		}
 
 		return true;
@@ -226,6 +232,7 @@ implements NoSchemaRepository<T>
 	{
 		try
 		{
+			// TODO: enable end-customer creation of the unit of work. Perhaps a thread local?
 			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
 			asViewDocuments(entity).forEach(uow::registerNew);
 			uow.commit();
