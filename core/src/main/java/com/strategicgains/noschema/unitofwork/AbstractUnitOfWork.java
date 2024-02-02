@@ -6,7 +6,6 @@ import java.util.stream.Stream;
 
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.document.Document;
 
 /**
  * This class provides transactional context for managing database changes. It allows
@@ -20,8 +19,10 @@ implements UnitOfWork<T>
 	// need to be persisted during the transaction.
 	private Map<Identifier, ChangeSet<T>> changes = new HashMap<>();
 
+	private ChangeFactory<T> factory = new DefaultChangeFactory<>();
+
 	/**
-	 * Returns a stream containing all the changed entities.
+	 * Returns a stream containing all the changed entities (excluding CLEAN).
 	 */
 	protected Stream<Change<T>> changes()
 	{
@@ -41,7 +42,7 @@ implements UnitOfWork<T>
 	public void registerNew(T entity)
 	{
 		ChangeSet<T> changeSet = getChangeSetFor(entity);
-		changeSet.add(EntityState.NEW, entity);
+		changeSet.add(createChange(EntityState.NEW, entity));
 	}
 
 	/**
@@ -53,7 +54,7 @@ implements UnitOfWork<T>
 	public void registerDirty(T entity)
 	{
 		ChangeSet<T> changeSet = getChangeSetFor(entity);
-		changeSet.add(EntityState.DIRTY, entity);
+		changeSet.add(createChange(EntityState.DIRTY, entity));
 	}
 
 	/**
@@ -65,7 +66,7 @@ implements UnitOfWork<T>
 	public void registerDeleted(T entity)
 	{
 		ChangeSet<T> changeSet = getChangeSetFor(entity);
-		changeSet.add(EntityState.DELETED, entity);
+		changeSet.add(createChange(EntityState.DELETED, entity));
 	}
 
 	/**
@@ -80,7 +81,7 @@ implements UnitOfWork<T>
 	public void registerClean(T entity)
 	{
 		ChangeSet<T> changeSet = getChangeSetFor(entity);
-		changeSet.add(EntityState.CLEAN, entity);
+		changeSet.add(createChange(EntityState.CLEAN, entity));
 	}
 
     /**
@@ -99,6 +100,19 @@ implements UnitOfWork<T>
 	public T findClean(Identifier id)
 	{
 		ChangeSet<T> s = changes.get(id);
-		return (s != null ? s.get(EntityState.CLEAN) : null);
+
+		if (s != null)
+		{
+			Change<T> change = s.get(EntityState.CLEAN);
+
+			if (change != null) return change.getEntity();
+		}
+
+		return null;
+	}
+
+	protected Change<T> createChange(EntityState state, T entity)
+	{
+		return factory.create(entity, state);
 	}
 }

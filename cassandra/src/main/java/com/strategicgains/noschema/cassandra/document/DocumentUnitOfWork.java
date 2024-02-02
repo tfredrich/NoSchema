@@ -1,7 +1,6 @@
 package com.strategicgains.noschema.cassandra.document;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -14,12 +13,12 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.unitofwork.AbstractUnitOfWork;
 import com.strategicgains.noschema.unitofwork.Change;
-import com.strategicgains.noschema.unitofwork.DirtyChange;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
@@ -37,17 +36,17 @@ extends AbstractUnitOfWork<Document>
 
     @Override
 	public void commit()
+	throws UnitOfWorkCommitException
 	{
 		List<CompletionStage<Boolean>> existence = new ArrayList<>();
 		List<BoundStatement> statements = new ArrayList<>();
 
 		changes().forEach(change -> {
-			checkExistence(session, change).ifPresent(existence::add);
-			statements.addAll(generateStatementsFor(change));
+			checkExistence(session, (DocumentChange) change).ifPresent(existence::add);
+			generateStatementFor((DocumentChange) change).ifPresent(statements::add);
 		});
 
-		handleExistenceInOrder(existence);
-		// existence.forEach(this::handleExistence);
+		handleExistenceChecks(existence);
 
 		// TODO: use an execution strategy: LOGGED, UNLOGGED, ASYNC
 		BatchStatementBuilder batch = new BatchStatementBuilder(BatchType.LOGGED);
@@ -63,31 +62,6 @@ extends AbstractUnitOfWork<Document>
 			.join();
 	}
 
-	private void handleExistenceInOrder(List<CompletionStage<Boolean>> futures)
-	{
-		CompletableFuture<?>[] futuresArray = futures.stream()
-			.map(CompletionStage::toCompletableFuture)
-			.toArray(CompletableFuture[]::new);
-
-		CompletableFuture<Void> anyFailedFuture = CompletableFuture.allOf(futuresArray);
-
-		anyFailedFuture.exceptionally(t -> {
-			throw new UnitOfWorkCommitException("Existence check failed", t);
-		}).join();
-	}
-
-	private void handleExistence(CompletionStage<Boolean> future)
-	{
-		try
-		{
-			Object v = future.toCompletableFuture().join();
-		}
-		catch (CompletionException e)
-		{
-			throw new UnitOfWorkCommitException(e.getCause());
-		}
-	}
-
 	@Override
     public void rollback()
     throws UnitOfWorkRollbackException
@@ -95,60 +69,82 @@ extends AbstractUnitOfWork<Document>
         // No-op for CassandraUnitOfWork since we're using a logged batch
     }
 
-	private Optional<CompletionStage<Boolean>> checkExistence(CqlSession session, final Change<Document> change) {
-		String viewName = change.getEntity().getView();
+	private void handleExistenceChecks(List<CompletionStage<Boolean>> futures)
+	throws UnitOfWorkCommitException
+	{
+		CompletableFuture<?>[] futuresArray = futures.stream()
+			.map(CompletionStage::toCompletableFuture)
+			.toArray(CompletableFuture[]::new);
 
-		if (generator.isViewUnique(viewName)) {
+		CompletableFuture<Void> anyFailedFuture = CompletableFuture.allOf(futuresArray);
+
+		try
+		{
+			anyFailedFuture.exceptionally(t -> {
+				throw new UnitOfWorkCommitException(t.getCause());
+			}).join();
+		}
+		catch (CompletionException e)
+		{
+			throw (UnitOfWorkCommitException) e.getCause();
+		}
+	}
+
+	private Optional<CompletionStage<Boolean>> checkExistence(CqlSession session, final DocumentChange change)
+	{
+		String viewName = change.getView();
+
+		if (generator.isViewUnique(viewName))
+		{
 			return Optional.of(session.executeAsync(generator.exists(viewName, change.getId()))
 				.thenApply(r -> r.one().getLong(0) > 0L)
-				.thenCompose(exists -> checkExistenceRules(change, exists)));
+					.thenCompose(exists -> checkExistenceRules(change, exists)));
 		}
 
 		return Optional.empty();
 	}
 
-	private CompletionStage<Boolean> checkExistenceRules(Change<Document> change, boolean exists) {
+	private CompletionStage<Boolean> checkExistenceRules(Change<Document> change, boolean exists)
+	{
 		CompletableFuture<Boolean> result = new CompletableFuture<>();
 
-		if (exists && change.isNew()) {
+		if (exists && change.isNew())
+		{
 			result.completeExceptionally(new DuplicateItemException(change.getId().toString()));
-		} else if (!exists && (change.isDirty() || change.isDeleted())) {
+		}
+		else if (!exists && (change.isDirty() || change.isDeleted()))
+		{
 			result.completeExceptionally(new ItemNotFoundException(change.getId().toString()));
-		} else {
+		}
+		else
+		{
 			result.complete(Boolean.TRUE);
 		}
 
 		return result;
 	}
 
-	private List<BoundStatement> generateStatementsFor(Change<Document> change)
+	private Optional<BoundStatement> generateStatementFor(DocumentChange change)
 	{
-		String viewName = change.getEntity().getView();
+		String viewName = change.getView();
 
 		switch(change.getState())
 		{
 			case DELETED:
-				return Collections.singletonList(generator.delete(viewName, change.getId()));
+				return Optional.of(generator.delete(viewName, change.getId()));
 			case DIRTY:
-				DirtyChange<Document> update = (DirtyChange<Document>) change;
-
-				if (update.identityChanged())
-				{
-					ArrayList<BoundStatement> statements = new ArrayList<>(2);
-					statements.add(generator.delete(viewName, update.getOriginal().getIdentifier()));
-					statements.add(generator.create(viewName, update.getEntity()));
-					return statements;
-				}
-				else
-				{
-					return Collections.singletonList(generator.update(viewName, change.getEntity()));
-				}
+				return Optional.of(generator.update(viewName, change.getEntity()));
 			case NEW:
-				return Collections.singletonList(generator.create(viewName, change.getEntity()));
+				return Optional.of(generator.create(viewName, change.getEntity()));
 			default:
 				break;
 		}
 
-		return Collections.emptyList();
+		return Optional.empty();
+	}
+
+	public Document readClean(Identifier id)
+	{
+		return findClean(id);
 	}
 }
