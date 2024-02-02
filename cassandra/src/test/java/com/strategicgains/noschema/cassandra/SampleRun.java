@@ -29,7 +29,7 @@ public class SampleRun {
 			.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique");
 
 		SchemaRegistry schemas = SchemaRegistry.keyspace(keyspace);
-		flowersTable.views().forEach(v -> schemas.withProvider(new DocumentSchemaProvider(v)));
+		flowersTable.stream().forEach(v -> schemas.withProvider(new DocumentSchemaProvider(v)));
 		schemas.initializeAll(session)
 			.exportInitializeAll();
 

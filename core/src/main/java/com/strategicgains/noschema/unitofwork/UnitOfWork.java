@@ -17,36 +17,4 @@ public interface UnitOfWork<T> {
 	 * transaction.
 	 */
 	void rollback() throws UnitOfWorkRollbackException;
-
-	/**
-	 * Registers a new entity that has not been persisted yet.
-	 * 
-	 * @param entity The new entity to register.
-	 */
-	void registerNew(T entity);
-
-	/**
-	 * Marks the given entity as "dirty" and needs to be updated in the database
-	 * during commit.
-	 * 
-	 * @param entity The entity after it is updated (dirty).
-	 */
-	void registerDirty(T entity);
-
-	/**
-	 * Marks the given entity as "deleted" and should be removed from the database
-	 * during commit.
-	 * 
-	 * @param entity The entity to mark as deleted.
-	 */
-	void registerDeleted(T entity);
-
-	/**
-	 * Registers the entity as "clean" or freshly-read from the database before
-	 * any modifications have occurred. This may be used during commit() to detect
-	 * change between those marked dirty to minimize read-before-update impacts. 
-	 * 
-	 * @param entity The entity to mark as deleted.
-	 */
-	void registerClean(T entity);
 }

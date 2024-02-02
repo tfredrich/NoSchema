@@ -17,17 +17,20 @@ import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
-import com.strategicgains.noschema.unitofwork.AbstractUnitOfWork;
 import com.strategicgains.noschema.unitofwork.Change;
+import com.strategicgains.noschema.unitofwork.EntityState;
+import com.strategicgains.noschema.unitofwork.UnitOfWork;
+import com.strategicgains.noschema.unitofwork.UnitOfWorkChangeSet;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
 public class DocumentUnitOfWork
-extends AbstractUnitOfWork<Document>
+implements UnitOfWork<Document>
 {
     private final CqlSession session;
     private final DocumentStatementGenerator generator;
     private final BatchType type;
+    private final UnitOfWorkChangeSet<Document> changeSet = new UnitOfWorkChangeSet<>();
 
     public DocumentUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator)
     {
@@ -41,6 +44,57 @@ extends AbstractUnitOfWork<Document>
         this.type = Objects.requireNonNull(batchType);
     }
 
+	/**
+	 * Registers a new entity that doesn't exist in the database and needs to be
+	 * persisted during the transaction.
+	 * 
+	 * NOTE: Entities MUST be fully-populated across all identifier properties before
+	 * registering them.
+	 *
+	 * @param entity the new entity to register.
+	 */
+	public DocumentUnitOfWork registerNew(String viewName, Document entity)
+	{
+		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.NEW));
+		return this;
+	}
+
+	/**
+	 * Registers an entity that has been updated during the transaction.
+	 *
+	 * @param entity the entity in its dirty state (after update).
+	 */
+	public DocumentUnitOfWork registerDirty(String viewName, Document entity)
+	{
+		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.DIRTY));
+		return this;
+	}
+
+	/**
+	 * Registers an entity that has been marked for deletion during the transaction.
+	 *
+	 * @param entity the entity that has been marked for deletion.
+	 */
+	public DocumentUnitOfWork registerDeleted(String viewName, Document entity)
+	{
+		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.DELETED));
+		return this;
+	}
+
+	/**
+	 * Registers an entity as clean, freshly-read from the database. These objects are used
+	 * to determine deltas between dirty objects during commit().
+	 * 
+	 * NOTE: this method does NOT perform any copy operations so updating the object will
+	 * change the copy that is registered as clean, making registration useless. Copy your
+	 * own objects either before registering them as clean or before mutating them.
+	 */
+	public DocumentUnitOfWork registerClean(String viewName, Document entity)
+	{
+		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.CLEAN));
+		return this;
+	}
+
     @Override
 	public void commit()
 	throws UnitOfWorkCommitException
@@ -48,7 +102,7 @@ extends AbstractUnitOfWork<Document>
 		List<CompletionStage<Boolean>> existence = new ArrayList<>();
 		List<BoundStatement> statements = new ArrayList<>();
 
-		changes().forEach(change -> {
+		changeSet.stream().forEach(change -> {
 			checkExistence(session, (DocumentChange) change).ifPresent(existence::add);
 			generateStatementFor((DocumentChange) change).ifPresent(statements::add);
 		});
@@ -61,7 +115,7 @@ extends AbstractUnitOfWork<Document>
 		CompletionStage<AsyncResultSet> resultSet = session.executeAsync(batch.build());
 
 		resultSet
-			.thenAccept(r -> reset())
+			.thenAccept(r -> changeSet.reset())
 			.exceptionally(t -> {
 				throw new UnitOfWorkCommitException("Commit failed", t);
 			})
@@ -152,6 +206,6 @@ extends AbstractUnitOfWork<Document>
 
 	public Document readClean(Identifier id)
 	{
-		return findClean(id);
+		return changeSet.findClean(id);
 	}
 }

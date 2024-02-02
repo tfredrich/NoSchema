@@ -9,7 +9,6 @@ public class Change<T extends Identifiable>
 {
 	private final T entity;
 	private EntityState state;
-	private boolean isCommitted;
 
 	public Change(T entity, EntityState state)
 	{
@@ -52,20 +51,10 @@ public class Change<T extends Identifiable>
 		return EntityState.DELETED == state;
 	}
 
-	public boolean isCommitted()
-	{
-		return isCommitted;
-	}
-
-	public void setCommitted(boolean value)
-	{
-		this.isCommitted = value;
-	}
-
 	@Override
 	public int hashCode()
 	{
-		return 11 * Objects.hash(getId(), state, isCommitted);
+		return Objects.hash(getId(), state);
 	}
 
 	@Override

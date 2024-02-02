@@ -1,7 +1,5 @@
 package com.strategicgains.noschema.cassandra.document;
 
-import static com.strategicgains.noschema.cassandra.CassandraNoSchemaRepository.PRIMARY_TABLE;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,9 +18,7 @@ public class DocumentStatementGenerator
 	public DocumentStatementGenerator(CqlSession session, PrimaryTable table)
 	{
 		super();
-		factoriesByView.put(PRIMARY_TABLE, new DocumentStatementFactory<>(session, table));
-		keysByView.put(PRIMARY_TABLE, table.keys());				
-		table.views().forEach(view -> {
+		table.stream().forEach(view -> {
 			put(view.name(), new DocumentStatementFactory<>(session, view));
 			put(view.name(), view.keys());				
 		});

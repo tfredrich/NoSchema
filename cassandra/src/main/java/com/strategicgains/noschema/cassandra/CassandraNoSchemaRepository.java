@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import org.bson.BSONDecoder;
 import org.bson.BSONObject;
@@ -33,7 +32,6 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 public class CassandraNoSchemaRepository<T extends Identifiable>
 implements NoSchemaRepository<T>
 {
-	public static final String PRIMARY_TABLE = "<|primary_table|>";
 	private static final BSONDecoder DECODER = new BasicBSONDecoder();
 
 	private CqlSession session;
@@ -47,7 +45,7 @@ implements NoSchemaRepository<T>
 		this.session = session;
 		this.table = table;
 		this.statementGenerator = new DocumentStatementGenerator(session, table);
-		factoriesByView.put(PRIMARY_TABLE, new CassandraDocumentFactory<>(table.keys()));
+		factoriesByView.put(table.name(), new CassandraDocumentFactory<>(table.keys()));
 		table.views().forEach(view ->
 			this.factoriesByView.put(view.name(), new CassandraDocumentFactory<>(view.keys()))
 		);
@@ -88,10 +86,11 @@ implements NoSchemaRepository<T>
 
 		try
 		{
-			AtomicReference<BSONObject> bson = new AtomicReference<>();
+			final AtomicReference<BSONObject> bson = new AtomicReference<>();
 
-			table.stream().map(t -> {
-				Document d;
+			table.stream().forEach(t -> {
+				final Document d;
+
 				if (bson.get() == null)
 				{
 					d = asDocument(t.name(), entity);
@@ -102,24 +101,14 @@ implements NoSchemaRepository<T>
 					d = asDocument(t.name(), entity, bson.get());
 				}
 
-				return asDocument(t.name(), entity);
-			}).forEach(uow::registerNew);
+				uow.registerNew(t.name(), d);
+			});
 
 			uow.commit();
 		}
 		catch (UnitOfWorkCommitException e)
 		{
-			if (e.getCause() instanceof DuplicateItemException)
-			{
-				throw (DuplicateItemException) e.getCause();
-			}
-
-			if (e.getCause() instanceof InvalidIdentifierException)
-			{
-				throw (InvalidIdentifierException) e.getCause();
-			}
-
-			throw new StorageException(e.getCause());
+			handleException(e);
 		}
 
 		return entity;
@@ -133,30 +122,38 @@ implements NoSchemaRepository<T>
 		{
 			// TODO: enable end-customer creation of the unit of work. Perhaps a thread local?
 			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
-			Document original = uow.readClean(id);
+			Document originalDocument = uow.readClean(id);
 
-			if(original == null)
+			if(originalDocument == null)
 			{
-				original = readAsDocument(id);
-				uow.registerClean(original);
+				originalDocument = readAsDocument(id);
+				uow.registerClean(table.name(), originalDocument);
 			}
 
-			asViewDocuments(original).forEach(uow::registerDeleted);
+			final T originalEntity = asEntity(table.name(), originalDocument);
+			final AtomicReference<BSONObject> bson = new AtomicReference<>();
+
+			table.stream().forEach(t -> {
+				final Document d;
+
+				if (bson.get() == null)
+				{
+					d = asDocument(t.name(), originalEntity);
+					bson.set(d.getObject());
+				}
+				else
+				{
+					d = asDocument(t.name(), originalEntity, bson.get());
+				}
+
+				uow.registerDeleted(t.name(), d);
+			});
+
 			uow.commit();
 		}
 		catch (UnitOfWorkCommitException e)
 		{
-			if (e.getCause() instanceof ItemNotFoundException)
-			{
-				throw (ItemNotFoundException) e.getCause();
-			}
-
-			if (e.getCause() instanceof InvalidIdentifierException)
-			{
-				throw (InvalidIdentifierException) e.getCause();
-			}
-
-			throw e;
+			handleException(e);
 		}
 
 		return true;
@@ -166,7 +163,7 @@ implements NoSchemaRepository<T>
 	public boolean exists(Identifier id)
 	throws InvalidIdentifierException
 	{
-		return exists(PRIMARY_TABLE, id);
+		return exists(table.name(), id);
 	}
 
 	public boolean exists(String viewName, Identifier id)
@@ -178,7 +175,7 @@ implements NoSchemaRepository<T>
 	public T read(Identifier id)
 	throws ItemNotFoundException
 	{
-		return read(PRIMARY_TABLE, id);
+		return read(table.name(), id);
 	}
  
 	public T read(String viewName, Identifier id)
@@ -208,26 +205,26 @@ implements NoSchemaRepository<T>
 			if (originalDocument == null)
 			{
 				originalDocument = readAsDocument(entity.getIdentifier());
-				uow.registerClean(originalDocument);
+				uow.registerClean(table.name(), originalDocument);
 			}
 
-			final T originalEntity = asEntity(PRIMARY_TABLE, originalDocument);
+			final T originalEntity = asEntity(table.name(), originalDocument);
 			final BSONObject bson = originalDocument.getObject();
 
 			table.stream().forEach(t -> {
-				Document updatedDocument = asDocument(t.name(), entity);
-				Document viewOriginal = asDocument(t.name(), originalEntity, bson);
+				final Document updatedViewDocument = asDocument(t.name(), entity);
+				final Document originalViewDocument = asDocument(t.name(), originalEntity, bson);
 
 				// If identifier changed, must perform delete and create.
-				if (!updatedDocument.getIdentifier().equals(viewOriginal.getIdentifier()))
+				if (!updatedViewDocument.getIdentifier().equals(originalViewDocument.getIdentifier()))
 				{
-					uow.registerDeleted(viewOriginal);
-					uow.registerNew(updatedDocument);
+					uow.registerDeleted(t.name(), originalViewDocument);
+					uow.registerNew(t.name(), updatedViewDocument);
 				}
 				// Otherwise it is simply an update.
 				else
 				{
-					uow.registerDirty(updatedDocument);
+					uow.registerDirty(t.name(), updatedViewDocument);
 				}
 			});
 
@@ -235,8 +232,7 @@ implements NoSchemaRepository<T>
 		}
 		catch (UnitOfWorkCommitException e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			handleException(e);
 		}
 
 		return entity;
@@ -246,17 +242,33 @@ implements NoSchemaRepository<T>
 	public T upsert(T entity)
 	throws InvalidIdentifierException, KeyDefinitionException, StorageException
 	{
+		DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
+
 		try
 		{
-			// TODO: enable end-customer creation of the unit of work. Perhaps a thread local?
-			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
-			asViewDocuments(entity).forEach(uow::registerDirty);
+			final AtomicReference<BSONObject> bson = new AtomicReference<>();
+
+			table.stream().forEach(t -> {
+				final Document d;
+
+				if (bson.get() == null)
+				{
+					d = asDocument(t.name(), entity);
+					bson.set(d.getObject());
+				}
+				else
+				{
+					d = asDocument(t.name(), entity, bson.get());
+				}
+
+				uow.registerDirty(t.name(), d);
+			});
+
 			uow.commit();
 		}
 		catch (UnitOfWorkCommitException e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			handleException(e);
 		}
 
 		return entity;
@@ -265,9 +277,9 @@ implements NoSchemaRepository<T>
 	private Document readAsDocument(Identifier id)
 	throws ItemNotFoundException
 	{
-		Row row = readRow(PRIMARY_TABLE, id);
+		Row row = readRow(table.name(), id);
 		Document document = marshalDocument(row);
-		T entity = asEntity(PRIMARY_TABLE, document);
+		T entity = asEntity(table.name(), document);
 		document.setIdentifier(entity.getIdentifier());
 		return document;
 	}
@@ -315,31 +327,6 @@ implements NoSchemaRepository<T>
 		return d;
 	}
 
-	private Stream<Document> asViewDocuments(Document document)
-	{
-		return asViewDocuments(asEntity(PRIMARY_TABLE, document));
-	}
-
-	private Stream<Document> asViewDocuments(T entity)
-	{
-		AtomicReference<BSONObject> bson = new AtomicReference<>();
-
-		return table.stream().map(t -> {
-			Document d;
-			if (bson.get() == null)
-			{
-				d = asDocument(t.name(), entity);
-				bson.set(d.getObject());
-			}
-			else
-			{
-				d = asDocument(t.name(), entity, bson.get());
-			}
-
-			return asDocument(t.name(), entity);
-		});
-	}
-
 	private T asEntity(String viewName, Document d)
 	{
 		return factoriesByView.get(viewName).asPojo(d);
@@ -355,5 +342,20 @@ implements NoSchemaRepository<T>
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		return factoriesByView.get(viewName).asDocument(entity, bson);
+	}
+
+	private void handleException(UnitOfWorkCommitException e)
+	{
+		if (e.getCause() instanceof DuplicateItemException)
+		{
+			throw (DuplicateItemException) e.getCause();
+		}
+
+		if (e.getCause() instanceof InvalidIdentifierException)
+		{
+			throw (InvalidIdentifierException) e.getCause();
+		}
+
+		throw new StorageException(e.getCause());
 	}
 }
