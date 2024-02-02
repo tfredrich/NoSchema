@@ -33,7 +33,7 @@ public class SampleRun {
 		schemas.initializeAll(session)
 			.exportInitializeAll();
 
-		CassandraNoSchemaRepository<Flower> flowers = new SimpleCassandraNoSchemaRepository<>(session, flowersTable);
+		CassandraNoSchemaRepository<Flower> flowers = new CassandraNoSchemaRepository<>(session, flowersTable);
 		flowers.ensureTables();
 
 		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
@@ -66,10 +66,11 @@ public class SampleRun {
 			}
 
 			System.out.println("*** UPDATE ***");
-			read.setName(read.getName() + "-updated");
-			read.setIsBlooming(false);
-			read.setColors(Arrays.asList("blue", "green", "yellow"));
-			Flower updated = flowers.update(read);
+			Flower updated = new Flower(read);
+			updated.setName(read.getName() + "-updated");
+			updated.setIsBlooming(false);
+			updated.setColors(Arrays.asList("blue", "green", "yellow"));
+			updated = flowers.update(updated, read);
 			System.out.println(updated.toString());
 
 			read = flowers.read(new Identifier(updated.getId()));

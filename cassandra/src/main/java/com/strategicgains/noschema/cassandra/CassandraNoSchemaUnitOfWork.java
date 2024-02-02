@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.cassandra.document;
+package com.strategicgains.noschema.cassandra;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +14,8 @@ import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.cassandra.document.DocumentChange;
+import com.strategicgains.noschema.cassandra.document.DocumentStatementGenerator;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -24,24 +26,24 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkChangeSet;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
-public class DocumentUnitOfWork
-implements UnitOfWork<Document>
+public class CassandraNoSchemaUnitOfWork
+implements UnitOfWork
 {
     private final CqlSession session;
     private final DocumentStatementGenerator generator;
-    private final BatchType type;
+    private final BatchType batchType;
     private final UnitOfWorkChangeSet<Document> changeSet = new UnitOfWorkChangeSet<>();
 
-    public DocumentUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator)
+    public CassandraNoSchemaUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator)
     {
     	this(session, statementGenerator, BatchType.LOGGED);
     }
 
-    public DocumentUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator, BatchType batchType)
+    public CassandraNoSchemaUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator, BatchType batchType)
     {
         this.session = Objects.requireNonNull(session);
         this.generator = Objects.requireNonNull(statementGenerator);
-        this.type = Objects.requireNonNull(batchType);
+        this.batchType = Objects.requireNonNull(batchType);
     }
 
 	/**
@@ -53,7 +55,7 @@ implements UnitOfWork<Document>
 	 *
 	 * @param entity the new entity to register.
 	 */
-	public DocumentUnitOfWork registerNew(String viewName, Document entity)
+	public CassandraNoSchemaUnitOfWork registerNew(String viewName, Document entity)
 	{
 		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.NEW));
 		return this;
@@ -64,18 +66,18 @@ implements UnitOfWork<Document>
 	 *
 	 * @param entity the entity in its dirty state (after update).
 	 */
-	public DocumentUnitOfWork registerDirty(String viewName, Document entity)
+	public CassandraNoSchemaUnitOfWork registerDirty(String viewName, Document entity)
 	{
 		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.DIRTY));
 		return this;
 	}
 
 	/**
-	 * Registers an entity that has been marked for deletion during the transaction.
+	 * Registers an entity for removal during the transaction.
 	 *
-	 * @param entity the entity that has been marked for deletion.
+	 * @param entity the entity in its clean state (before removal).
 	 */
-	public DocumentUnitOfWork registerDeleted(String viewName, Document entity)
+	public CassandraNoSchemaUnitOfWork registerDeleted(String viewName, Document entity)
 	{
 		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.DELETED));
 		return this;
@@ -89,7 +91,7 @@ implements UnitOfWork<Document>
 	 * change the copy that is registered as clean, making registration useless. Copy your
 	 * own objects either before registering them as clean or before mutating them.
 	 */
-	public DocumentUnitOfWork registerClean(String viewName, Document entity)
+	public CassandraNoSchemaUnitOfWork registerClean(String viewName, Document entity)
 	{
 		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.CLEAN));
 		return this;
@@ -110,7 +112,7 @@ implements UnitOfWork<Document>
 		handleExistenceChecks(existence);
 
 		// TODO: use an execution strategy: LOGGED, UNLOGGED, ASYNC
-		BatchStatementBuilder batch = new BatchStatementBuilder(type);
+		BatchStatementBuilder batch = new BatchStatementBuilder(batchType);
 		statements.forEach(batch::addStatement);
 		CompletionStage<AsyncResultSet> resultSet = session.executeAsync(batch.build());
 

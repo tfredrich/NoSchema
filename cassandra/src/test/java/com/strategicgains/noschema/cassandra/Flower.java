@@ -1,5 +1,7 @@
 package com.strategicgains.noschema.cassandra;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +33,15 @@ extends AbstractEntity
 		this.colors = colors;
 	}
 
+	public Flower(Flower that)
+	{
+		super(that);
+		setName(that.name);
+		setColors(that.colors);
+		setIsBlooming(that.isBlooming);
+		setHeight(that.height);
+	}
+
 	public String getName() {
 		return name;
 	}
@@ -56,11 +67,11 @@ extends AbstractEntity
 	}
 
 	public List<String> getColors() {
-		return colors;
+		return Collections.unmodifiableList(colors);
 	}
 
 	public void setColors(List<String> colors) {
-		this.colors = colors;
+		this.colors = new ArrayList<>(colors);
 	}
 
 	@Override

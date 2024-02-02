@@ -5,7 +5,8 @@ package com.strategicgains.noschema.unitofwork;
  * changes. It allows registering new entities, marking entities as "dirty" or
  * "deleted", and committing or rolling back the current transaction.
  */
-public interface UnitOfWork<T> {
+public interface UnitOfWork
+{
 	/**
 	 * Commits the current transaction and saves all changes made during the session
 	 * to the database.

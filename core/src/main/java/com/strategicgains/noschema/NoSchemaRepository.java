@@ -32,7 +32,7 @@ public interface NoSchemaRepository<T>
 	 * @throws ItemNotFoundException
 	 * @throws InvalidIdentifierException 
 	 */
-	boolean delete(Identifier id)
+	void delete(Identifier id)
 	throws ItemNotFoundException, InvalidIdentifierException, StorageException;
 
 	/**
@@ -84,8 +84,7 @@ public interface NoSchemaRepository<T>
 	 * @throws InvalidIdentifierException 
 	 * @throws KeyDefinitionException 
 	 */
-	T update(T entity)
-	throws ItemNotFoundException, InvalidIdentifierException, KeyDefinitionException;
+	T update(T updated, T original);
 
 	/**
 	 * Write an entity to the database not caring whether it exists or not.
@@ -96,6 +95,5 @@ public interface NoSchemaRepository<T>
 	 * @throws KeyDefinitionException 
 	 * @throws StorageException 
 	 */
-	T upsert(T entity)
-	throws InvalidIdentifierException, KeyDefinitionException, StorageException;
+	T upsert(T entity);
 }

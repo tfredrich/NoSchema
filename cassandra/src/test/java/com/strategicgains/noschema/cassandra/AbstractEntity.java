@@ -27,6 +27,14 @@ implements Identifiable
 		this.setUpdatedAt(now);
 	}
 
+	public AbstractEntity(AbstractEntity that)
+	{
+		this(that.id);
+		setAccountId(that.getAccountId());
+		setCreatedAt(that.createdAt);
+		setUpdatedAt(that.updatedAt);
+	}
+
 	public UUID getId() {
 		return id;
 	}
