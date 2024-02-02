@@ -33,7 +33,7 @@ public class SampleRun {
 		schemas.initializeAll(session)
 			.exportInitializeAll();
 
-		CassandraNoSchemaRepository<Flower> flowers = new CassandraNoSchemaRepository<>(session, flowersTable);
+		CassandraNoSchemaRepository<Flower> flowers = new SimpleCassandraNoSchemaRepository<>(session, flowersTable);
 		flowers.ensureTables();
 
 		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");

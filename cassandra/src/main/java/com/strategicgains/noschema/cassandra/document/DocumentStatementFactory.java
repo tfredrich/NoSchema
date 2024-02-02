@@ -14,7 +14,7 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.AbstractTable;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
-import com.strategicgains.noschema.cassandra.StatementFactory;
+import com.strategicgains.noschema.cassandra.CqlStatementFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -22,7 +22,7 @@ import com.strategicgains.noschema.exception.InvalidObjectIdException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 public final class DocumentStatementFactory<T>
-implements StatementFactory<T>
+implements CqlStatementFactory<T>
 {
 	private static final BSONEncoder ENCODER = new BasicBSONEncoder();
 

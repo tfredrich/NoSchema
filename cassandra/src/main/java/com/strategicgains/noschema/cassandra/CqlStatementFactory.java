@@ -3,7 +3,7 @@ package com.strategicgains.noschema.cassandra;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifier;
 
-public interface StatementFactory<T>
+public interface CqlStatementFactory<T>
 {
 	BoundStatement create(T entity);
 	BoundStatement delete(Identifier id);

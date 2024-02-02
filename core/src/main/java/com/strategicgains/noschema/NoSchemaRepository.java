@@ -10,9 +10,6 @@ import com.strategicgains.noschema.exception.StorageException;
 
 public interface NoSchemaRepository<T>
 {
-	void ensureTables();
-	void dropTables();
-
 	/**
 	 * Store a new entity in the database as a Document.
 	 * An IdentityMapper must be registered for the Class in the singleton DocumentFactory.
