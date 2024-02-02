@@ -115,4 +115,9 @@ extends AbstractTable
 	{
 		return (hasViews() ? views.size() : 0);
 	}
+
+	public Stream<AbstractTable> stream()
+	{
+		return Stream.concat(Stream.of(this), views());
+	}
 }
