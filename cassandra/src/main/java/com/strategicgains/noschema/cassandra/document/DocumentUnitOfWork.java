@@ -27,11 +27,18 @@ extends AbstractUnitOfWork<Document>
 {
     private final CqlSession session;
     private final DocumentStatementGenerator generator;
+    private final BatchType type;
 
     public DocumentUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator)
     {
+    	this(session, statementGenerator, BatchType.LOGGED);
+    }
+
+    public DocumentUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator, BatchType batchType)
+    {
         this.session = Objects.requireNonNull(session);
         this.generator = Objects.requireNonNull(statementGenerator);
+        this.type = Objects.requireNonNull(batchType);
     }
 
     @Override
@@ -49,7 +56,7 @@ extends AbstractUnitOfWork<Document>
 		handleExistenceChecks(existence);
 
 		// TODO: use an execution strategy: LOGGED, UNLOGGED, ASYNC
-		BatchStatementBuilder batch = new BatchStatementBuilder(BatchType.LOGGED);
+		BatchStatementBuilder batch = new BatchStatementBuilder(type);
 		statements.forEach(batch::addStatement);
 		CompletionStage<AsyncResultSet> resultSet = session.executeAsync(batch.build());
 
