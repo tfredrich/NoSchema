@@ -4,12 +4,12 @@
 
 	<name>NoSchema Core</name>
 	<description>The shared or common components across all implementations of the NoSchema Java library</description>
-	<artifactId>noschema-core</artifactId>
+	<artifactId>core</artifactId>
 	<packaging>jar</packaging>
 
 	<parent>
-		<groupId>com.strategicgains</groupId>
-		<artifactId>noschema-parent</artifactId>
+		<groupId>com.strategicgains.noschema</groupId>
+		<artifactId>parent</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 

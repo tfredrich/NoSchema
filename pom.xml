@@ -5,8 +5,8 @@
 	<name>NoSchema</name>
 	<description>A Java library to store document-style JSON in any nosql DB, like Cassandra or Dynamodb</description>
 	<url>https://github.com/tfredrich/noschema</url>
-	<groupId>com.strategicgains</groupId>
-	<artifactId>noschema-parent</artifactId>
+	<groupId>com.strategicgains.noschema</groupId>
+	<artifactId>parent</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
@@ -39,8 +39,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.0</version>
 				<configuration>
-					<source>11</source>
-					<target>11</target>
+					<source>17</source>
+					<target>17</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
