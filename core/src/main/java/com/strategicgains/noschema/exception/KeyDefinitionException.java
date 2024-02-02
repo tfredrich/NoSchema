@@ -5,7 +5,7 @@ package com.strategicgains.noschema.exception;
  * @since 2 Sept 2016
  */
 public class KeyDefinitionException
-extends Exception
+extends RuntimeException
 {
 	private static final long serialVersionUID = 2488298881183539211L;
 
