@@ -88,7 +88,23 @@ implements NoSchemaRepository<T>
 
 		try
 		{
-			asViewDocuments(entity).forEach(uow::registerNew);
+			AtomicReference<BSONObject> bson = new AtomicReference<>();
+
+			table.stream().map(t -> {
+				Document d;
+				if (bson.get() == null)
+				{
+					d = asDocument(t.name(), entity);
+					bson.set(d.getObject());
+				}
+				else
+				{
+					d = asDocument(t.name(), entity, bson.get());
+				}
+
+				return asDocument(t.name(), entity);
+			}).forEach(uow::registerNew);
+
 			uow.commit();
 		}
 		catch (UnitOfWorkCommitException e)
@@ -183,38 +199,38 @@ implements NoSchemaRepository<T>
 	public T update(T entity)
 	throws ItemNotFoundException, InvalidIdentifierException, KeyDefinitionException
 	{
-//		case DIRTY:
-//			DirtyChange<Document> update = (DirtyChange<Document>) change;
-//
-//			if (update.identityChanged())
-//			{
-//				ArrayList<BoundStatement> statements = new ArrayList<>(2);
-//				statements.add(generator.delete(viewName, update.getOriginal().getIdentifier()));
-//				statements.add(generator.create(viewName, update.getEntity()));
-//				return statements;
-//			}
-//			else
-//			{
-//				return Collections.singletonList(generator.update(viewName, change.getEntity()));
-//			}
-
 		try
 		{
 			// TODO: enable end-customer creation of the unit of work. Perhaps a thread local?
 			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
-			Document original = uow.readClean(entity.getIdentifier());
+			Document originalDocument = uow.readClean(entity.getIdentifier());
 
-			if (original == null)
+			if (originalDocument == null)
 			{
-				original = readAsDocument(entity.getIdentifier());
-				uow.registerClean(original);
+				originalDocument = readAsDocument(entity.getIdentifier());
+				uow.registerClean(originalDocument);
 			}
 
-			Identifier previous = original.getIdentifier();
-			Identifier updated = entity.getIdentifier();
+			final T originalEntity = asEntity(PRIMARY_TABLE, originalDocument);
+			final BSONObject bson = originalDocument.getObject();
 
-			final Document originalDocument = original;
-			asViewDocuments(entity).forEach(d -> uow.registerDirty(d));
+			table.stream().forEach(t -> {
+				Document updatedDocument = asDocument(t.name(), entity);
+				Document viewOriginal = asDocument(t.name(), originalEntity, bson);
+
+				// If identifier changed, must perform delete and create.
+				if (!updatedDocument.getIdentifier().equals(viewOriginal.getIdentifier()))
+				{
+					uow.registerDeleted(viewOriginal);
+					uow.registerNew(updatedDocument);
+				}
+				// Otherwise it is simply an update.
+				else
+				{
+					uow.registerDirty(updatedDocument);
+				}
+			});
+
 			uow.commit();
 		}
 		catch (UnitOfWorkCommitException e)
@@ -234,7 +250,7 @@ implements NoSchemaRepository<T>
 		{
 			// TODO: enable end-customer creation of the unit of work. Perhaps a thread local?
 			DocumentUnitOfWork uow = new DocumentUnitOfWork(session, statementGenerator);
-			asViewDocuments(entity).forEach(uow::registerNew);
+			asViewDocuments(entity).forEach(uow::registerDirty);
 			uow.commit();
 		}
 		catch (UnitOfWorkCommitException e)
@@ -305,53 +321,39 @@ implements NoSchemaRepository<T>
 	}
 
 	private Stream<Document> asViewDocuments(T entity)
-	throws InvalidIdentifierException
 	{
-		try
-		{
-			AtomicReference<BSONObject> bson = new AtomicReference<>();
+		AtomicReference<BSONObject> bson = new AtomicReference<>();
 
-			return factoriesByView.entrySet().stream().map(entry -> {
-				try
-				{
-					final Document d;
-
-					// OPTIMIZATION: Only serialize into BSON for the primary table and reuse it in the views.
-					if (bson.get() == null)
-					{
-						d = entry.getValue().asDocument(entity);
-						bson.set(d.getObject());
-					}
-					else
-					{
-						d = entry.getValue().asDocument(entity, bson.get());
-					}
-
-					return d;
-				}
-				catch (InvalidIdentifierException | KeyDefinitionException e)
-				{
-					throw new RuntimeException(e);
-				}
-			});
-		}
-		catch (RuntimeException e)
-		{
-			if (e.getCause() instanceof InvalidIdentifierException)
+		return table.stream().map(t -> {
+			Document d;
+			if (bson.get() == null)
 			{
-				throw (InvalidIdentifierException) e.getCause();
+				d = asDocument(t.name(), entity);
+				bson.set(d.getObject());
 			}
-			else if (e.getCause() instanceof KeyDefinitionException)
+			else
 			{
-				throw new InvalidIdentifierException(e.getCause());
+				d = asDocument(t.name(), entity, bson.get());
 			}
 
-			throw e; // rethrow the original RuntimeException if the cause is not what we expected
-		}
+			return asDocument(t.name(), entity);
+		});
 	}
 
 	private T asEntity(String viewName, Document d)
 	{
 		return factoriesByView.get(viewName).asPojo(d);
+	}
+
+	private Document asDocument(String viewName, T entity)
+	throws InvalidIdentifierException, KeyDefinitionException
+	{
+		return factoriesByView.get(viewName).asDocument(entity);
+	}
+
+	private Document asDocument(String viewName, T entity, BSONObject bson)
+	throws InvalidIdentifierException, KeyDefinitionException
+	{
+		return factoriesByView.get(viewName).asDocument(entity, bson);
 	}
 }
