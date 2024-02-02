@@ -19,7 +19,6 @@
 	<modules>
 		<module>core</module>
 		<module>cassandra</module>
-		<module>dynamodb</module>
 	</modules>
 
 	<dependencies>
