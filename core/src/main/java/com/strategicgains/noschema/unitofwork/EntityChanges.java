@@ -7,11 +7,11 @@ import java.util.Optional;
 
 import com.strategicgains.noschema.Identifiable;
 
-public class EntityChangeSet<T extends Identifiable>
+public class EntityChanges<T extends Identifiable>
 {
 	Map<EntityState, Change<T>> changes = new EnumMap<>(EntityState.class);
 
-	public EntityChangeSet<T> add(Change<T> change)
+	public EntityChanges<T> add(Change<T> change)
 	{
 		changes.put(change.getState(), change);
 		return this;
