@@ -41,15 +41,15 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	private PrimaryTable table;
 	private DocumentStatementGenerator statementGenerator;
 	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
-	private BatchType unitOfWorkType;
+	private UnitOfWorkType unitOfWorkType;
 
 
 	protected CassandraNoSchemaRepository(CqlSession session, PrimaryTable table)
 	{
-		this(session, table, BatchType.LOGGED);
+		this(session, table, UnitOfWorkType.LOGGED);
 	}
 
-	protected CassandraNoSchemaRepository(CqlSession session, PrimaryTable table, BatchType unitOfWorkType)
+	protected CassandraNoSchemaRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType)
 	{
 		super();
 		this.session = Objects.requireNonNull(session);

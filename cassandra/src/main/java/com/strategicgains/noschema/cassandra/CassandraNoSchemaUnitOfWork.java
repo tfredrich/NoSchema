@@ -9,9 +9,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.DocumentChange;
@@ -31,19 +28,20 @@ implements UnitOfWork
 {
     private final CqlSession session;
     private final DocumentStatementGenerator generator;
-    private final BatchType batchType;
     private final UnitOfWorkChangeSet<Document> changeSet = new UnitOfWorkChangeSet<>();
+    private final UnitOfWorkCommitStrategy commitStrategy;
 
     public CassandraNoSchemaUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator)
     {
-    	this(session, statementGenerator, BatchType.LOGGED);
+    	this(session, statementGenerator, UnitOfWorkType.LOGGED);
     }
 
-    public CassandraNoSchemaUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator, BatchType batchType)
+    public CassandraNoSchemaUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator, UnitOfWorkType unitOfWorkType)
     {
         this.session = Objects.requireNonNull(session);
         this.generator = Objects.requireNonNull(statementGenerator);
-        this.batchType = Objects.requireNonNull(batchType);
+        this.commitStrategy = Objects.requireNonNull(unitOfWorkType)
+        	.asCommitStrategy(session);
     }
 
 	/**
@@ -111,17 +109,8 @@ implements UnitOfWork
 
 		handleExistenceChecks(existence);
 
-		// TODO: use an execution strategy: LOGGED, UNLOGGED, ASYNC
-		BatchStatementBuilder batch = new BatchStatementBuilder(batchType);
-		statements.forEach(batch::addStatement);
-		CompletionStage<AsyncResultSet> resultSet = session.executeAsync(batch.build());
-
-		resultSet
-			.thenAccept(r -> changeSet.reset())
-			.exceptionally(t -> {
-				throw new UnitOfWorkCommitException("Commit failed", t);
-			})
-			.toCompletableFuture()
+		commitStrategy
+			.commit(statements)
 			.join();
 	}
 

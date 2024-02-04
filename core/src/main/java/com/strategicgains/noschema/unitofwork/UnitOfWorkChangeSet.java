@@ -28,7 +28,7 @@ public class UnitOfWorkChangeSet<T extends Identifiable>
 
 	public UnitOfWorkChangeSet<T> registerChange(Change<T> change)
 	{
-		EntityChanges<T> changeSet = getChangeSetFor(change.getEntity());
+		EntityChanges<T> changeSet = getChangesFor(change.getEntity());
 		changeSet.add(change);
 		return this;
 	}
@@ -41,7 +41,7 @@ public class UnitOfWorkChangeSet<T extends Identifiable>
 		changes.clear();
 	}
 
-	private EntityChanges<T> getChangeSetFor(T entity)
+	private EntityChanges<T> getChangesFor(T entity)
 	{
 		return changes.computeIfAbsent(entity.getIdentifier(), a -> new EntityChanges<>());
 	}
