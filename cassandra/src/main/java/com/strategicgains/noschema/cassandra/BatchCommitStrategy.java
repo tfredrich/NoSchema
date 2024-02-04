@@ -10,6 +10,7 @@ import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
+import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
 public class BatchCommitStrategy
 implements UnitOfWorkCommitStrategy
@@ -45,4 +46,11 @@ implements UnitOfWorkCommitStrategy
 			.toCompletableFuture();
 	}
 
+	@Override
+	public void rollback()
+	throws UnitOfWorkRollbackException
+	{
+		// No-op for CassandraUnitOfWork since we're using a logged batch
+		throw new UnitOfWorkRollbackException("Not Implemented.");
+	}
 }

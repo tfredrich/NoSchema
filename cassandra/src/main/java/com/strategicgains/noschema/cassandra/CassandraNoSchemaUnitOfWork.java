@@ -118,7 +118,7 @@ implements UnitOfWork
     public void rollback()
     throws UnitOfWorkRollbackException
     {
-        // No-op for CassandraUnitOfWork since we're using a logged batch
+        commitStrategy.rollback();
     }
 
 	private void handleExistenceChecks(List<CompletionStage<Boolean>> futures)

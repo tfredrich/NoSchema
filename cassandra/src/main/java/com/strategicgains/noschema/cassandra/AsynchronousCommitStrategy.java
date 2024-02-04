@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
+import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
 public class AsynchronousCommitStrategy
 implements UnitOfWorkCommitStrategy
@@ -25,6 +26,7 @@ implements UnitOfWorkCommitStrategy
 	public CompletableFuture<AsyncResultSet> commit(List<BoundStatement> statements)
 	throws UnitOfWorkCommitException
 	{
+		throw new UnitOfWorkCommitException("Not Implemented.");
 		// TODO: Implement
 //		List<CompletionStage<?>> existence = new ArrayList<>();
 //		
@@ -33,6 +35,13 @@ implements UnitOfWorkCommitStrategy
 //				.toArray(CompletableFuture[]::new);
 //
 //			CompletableFuture<Void> allStatements = CompletableFuture.allOf(futuresArray);
-		return null;
+	}
+
+
+	@Override
+	public void rollback() throws UnitOfWorkRollbackException
+	{
+		// No-op for CassandraUnitOfWork so far...
+		throw new UnitOfWorkRollbackException("Not Implemented.");
 	}
 }
