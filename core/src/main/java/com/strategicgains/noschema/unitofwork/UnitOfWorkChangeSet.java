@@ -16,7 +16,7 @@ public class UnitOfWorkChangeSet<T extends Identifiable>
 {
 	// This identity map is used to keep track of entities that have changed and
 	// need to be persisted during the transaction.
-	private Map<Identifier, ChangeSet<T>> changes = new HashMap<>();
+	private Map<Identifier, EntityChangeSet<T>> changes = new HashMap<>();
 
 	/**
 	 * Returns a stream containing all the changed entities (excluding CLEAN).
@@ -28,7 +28,7 @@ public class UnitOfWorkChangeSet<T extends Identifiable>
 
 	public UnitOfWorkChangeSet<T> registerChange(Change<T> change)
 	{
-		ChangeSet<T> changeSet = getChangeSetFor(change.getEntity());
+		EntityChangeSet<T> changeSet = getChangeSetFor(change.getEntity());
 		changeSet.add(change);
 		return this;
 	}
@@ -41,14 +41,14 @@ public class UnitOfWorkChangeSet<T extends Identifiable>
 		changes.clear();
 	}
 
-	private ChangeSet<T> getChangeSetFor(T entity)
+	private EntityChangeSet<T> getChangeSetFor(T entity)
 	{
-		return changes.computeIfAbsent(entity.getIdentifier(), a -> new ChangeSet<>());
+		return changes.computeIfAbsent(entity.getIdentifier(), a -> new EntityChangeSet<>());
 	}
 
 	public T findClean(Identifier id)
 	{
-		ChangeSet<T> s = changes.get(id);
+		EntityChangeSet<T> s = changes.get(id);
 
 		if (s != null)
 		{
