@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.bson.BSONDecoder;
@@ -13,6 +14,7 @@ import org.bson.BSONObject;
 import org.bson.BasicBSONDecoder;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
@@ -39,12 +41,20 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	private PrimaryTable table;
 	private DocumentStatementGenerator statementGenerator;
 	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
+	private BatchType unitOfWorkType;
+
 
 	protected CassandraNoSchemaRepository(CqlSession session, PrimaryTable table)
 	{
+		this(session, table, BatchType.LOGGED);
+	}
+
+	protected CassandraNoSchemaRepository(CqlSession session, PrimaryTable table, BatchType unitOfWorkType)
+	{
 		super();
-		this.session = session;
-		this.table = table;
+		this.session = Objects.requireNonNull(session);
+		this.table = Objects.requireNonNull(table);
+		this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
 		this.statementGenerator = new DocumentStatementGenerator(session, table);
 		factoriesByView.put(table.name(), new CassandraDocumentFactory<>(table.keys()));
 		table.views().forEach(view ->
@@ -260,7 +270,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 	protected CassandraNoSchemaUnitOfWork createUnitOfWork()
 	{
-		return new CassandraNoSchemaUnitOfWork(session, statementGenerator);
+		return new CassandraNoSchemaUnitOfWork(session, statementGenerator, unitOfWorkType);
 	}
 
 	private Document readAsDocument(Identifier id)
