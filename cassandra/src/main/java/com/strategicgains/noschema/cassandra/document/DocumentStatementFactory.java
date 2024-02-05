@@ -32,7 +32,7 @@ implements CqlStatementFactory<T>
 	private static final String EXISTS_CQL = "select count(*) from %s.%s  where %s limit 1";
 	private static final String READ_CQL = "select %s," + SELECT_COLUMNS + " from %s.%s where %s limit 1";
 	private static final String READ_ALL_CQL = "select %s" + SELECT_COLUMNS + " from %s.%s where %s";
-	private static final String UPDATE_CQL = "update %s.%s set %s = ?, %s = ?, %s = ? where %s";
+	private static final String UPDATE_CQL = "update %s.%s set %s = ?, %s = ?, %s = ?, %s = ? where %s";
 
 	// These are used IFF there is a single primary table (with no views) and it is unique.
 	private static final String DELETE_UNIQUE_CQL = DELETE_CQL + " if exists";
@@ -82,9 +82,10 @@ implements CqlStatementFactory<T>
 					table.keys().asSelectProperties(),
 					Columns.OBJECT,
 					Columns.TYPE,
+					Columns.METADATA,
 					Columns.CREATED_AT,
 					Columns.UPDATED_AT,
-					table.keys().asQuestionMarks(4)))
+					table.keys().asQuestionMarks(5)))
 		);
 	}
 
@@ -121,6 +122,7 @@ implements CqlStatementFactory<T>
 					table.asTableName(),
 					Columns.OBJECT,
 					Columns.TYPE,
+					Columns.METADATA,
 					Columns.UPDATED_AT,
 					table.keys().asIdentityClause()))
 		);
@@ -136,9 +138,10 @@ implements CqlStatementFactory<T>
 				table.keys().asSelectProperties(),
 				Columns.OBJECT,
 				Columns.TYPE,
+				Columns.METADATA,
 				Columns.CREATED_AT,
 				Columns.UPDATED_AT,
-				table.keys().asQuestionMarks(4)))
+				table.keys().asQuestionMarks(5)))
 		);
 	}
 
@@ -220,11 +223,12 @@ implements CqlStatementFactory<T>
 		document.setCreatedAt(now);
 		document.setUpdatedAt(now);
 		Identifier id = document.getIdentifier();
-		Object[] values = new Object[id.size() + 4]; // Identifier + object + createdAt + updatedAt.
+		Object[] values = new Object[id.size() + 5]; // Identifier + object + metadata + createdAt + updatedAt.
 		fill(values, 0, id.components().toArray());
 		fill(values, id.size(),
 			(document.hasObject() ? ByteBuffer.wrap(ENCODER.encode(document.getObject())) : null),
 				document.getType(),
+				document.getMetadata(),
 				document.getCreatedAt().toInstant(),
 			    document.getUpdatedAt().toInstant());
 		return ps.bind(values);
@@ -235,12 +239,13 @@ implements CqlStatementFactory<T>
 		Document document = asDocument(entity);
 		document.setUpdatedAt(new Date());
 		Identifier id = document.getIdentifier();
-		Object[] values = new Object[id.size() + 3];
+		Object[] values = new Object[id.size() + 4];
 			fill(values, 0,
 				(document.hasObject() ? ByteBuffer.wrap(ENCODER.encode(document.getObject())) : null),
 					document.getType(),
+					document.getMetadata(),
 				    document.getUpdatedAt().toInstant());
-			fill(values, 3, id.components().toArray());
+			fill(values, 4, id.components().toArray());
 			return ps.bind(values);
 	}
 

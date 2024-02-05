@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
@@ -23,18 +22,14 @@ implements UnitOfWorkCommitStrategy
 
 
 	@Override
-	public CompletableFuture<AsyncResultSet> commit(List<BoundStatement> statements)
+	public CompletableFuture<Void> commit(List<BoundStatement> statements)
 	throws UnitOfWorkCommitException
 	{
-		throw new UnitOfWorkCommitException("Not Implemented.");
-		// TODO: Implement
-//		List<CompletionStage<?>> existence = new ArrayList<>();
-//		
-//		CompletableFuture[] allStatements = statements.stream()
-//				.map(s -> session.executeAsync(s).toCompletableFuture())
-//				.toArray(CompletableFuture[]::new);
-//
-//			CompletableFuture<Void> allStatements = CompletableFuture.allOf(futuresArray);
+		CompletableFuture<?>[] futuresArray = statements.stream()
+				.map(s -> session.executeAsync(s).toCompletableFuture())
+				.toArray(CompletableFuture[]::new);
+
+			return CompletableFuture.allOf(futuresArray);
 	}
 
 

@@ -96,6 +96,12 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return table.name();
 	}
 
+	public CassandraNoSchemaRepository<T> withObserver(DocumentObserver observer)
+	{
+		observers.add(observer);
+		return this;
+	}
+
 	public T create(T entity)
 	{
 		CassandraNoSchemaUnitOfWork uow = createUnitOfWork();
@@ -120,6 +126,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 				else
 				{
 					d = asDocument(t.name(), entity, bson.get());
+					d.setMetadata(primaryDocument.get().getMetadata());
 				}
 
 				uow.registerNew(t.name(), d);
@@ -227,10 +234,13 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			table.stream().forEach(t -> {
 				final Document updatedViewDocument = asDocument(t.name(), entity);
 				final Document originalViewDocument = asDocument(t.name(), originalEntity, bson);
+				updatedViewDocument.setMetadata(originalDocument.get().getMetadata());
+				originalViewDocument.setMetadata(originalDocument.get().getMetadata());
 
 				if (updatedDocument.get() == null)
 				{
 					updatedDocument.set(updatedViewDocument);
+					observers.forEach(o-> o.afterEncoding(updatedViewDocument));
 				}
 
 				// If identifier changed, must perform delete and create.
@@ -265,20 +275,20 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		{
 			final AtomicReference<BSONObject> bson = new AtomicReference<>();
 
-			table.stream().forEach(t -> {
+			table.stream().forEach(table -> {
 				final Document d;
 
 				if (bson.get() == null)
 				{
-					d = asDocument(t.name(), entity);
+					d = asDocument(table.name(), entity);
 					bson.set(d.getObject());
 				}
 				else
 				{
-					d = asDocument(t.name(), entity, bson.get());
+					d = asDocument(table.name(), entity, bson.get());
 				}
 
-				uow.registerDirty(t.name(), d);
+				uow.registerDirty(table.name(), d);
 			});
 
 			uow.commit();

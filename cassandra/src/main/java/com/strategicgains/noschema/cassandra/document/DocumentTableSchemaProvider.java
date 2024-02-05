@@ -27,7 +27,7 @@ extends AbstractSchemaProvider
 		"%s," +									// identifying properties
 	    Columns.OBJECT + " blob," +
 		Columns.TYPE + " text," +
-	    Columns.METADATA + "map" +
+	    Columns.METADATA + " map<text,text>," +
 	    // Add Location details, if needed, to Document.
 	    // Add Lucene index capability if needed to Document.
 		Columns.CREATED_AT + " timestamp," +

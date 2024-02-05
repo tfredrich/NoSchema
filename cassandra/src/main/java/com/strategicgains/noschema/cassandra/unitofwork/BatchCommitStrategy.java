@@ -39,7 +39,6 @@ implements UnitOfWorkCommitStrategy
 		CompletionStage<AsyncResultSet> resultSet = session.executeAsync(batch.build());
 
 		return resultSet
-//			.thenAccept(r -> changeSet.reset())
 			.exceptionally(t -> {
 				throw new UnitOfWorkCommitException("Commit failed", t);
 			})

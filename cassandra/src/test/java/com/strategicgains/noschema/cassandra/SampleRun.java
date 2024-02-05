@@ -34,6 +34,7 @@ public class SampleRun {
 			.exportInitializeAll();
 
 		CassandraNoSchemaRepository<Flower> flowers = new CassandraNoSchemaRepository<>(session, flowersTable);
+		flowers.withObserver(new SampleObserver());
 		flowers.ensureTables();
 
 		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
