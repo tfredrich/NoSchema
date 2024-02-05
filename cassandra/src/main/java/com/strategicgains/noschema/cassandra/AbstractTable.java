@@ -1,5 +1,9 @@
 package com.strategicgains.noschema.cassandra;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -18,6 +22,9 @@ public abstract class AbstractTable
 
 	// How long should the table's data live? (0 implies forever)
 	private long ttl;
+
+	// Any extra name/value tag-alongs the customer wants to include.
+	private Map<String, String> metadata;
 
 	protected AbstractTable()
 	{
@@ -86,6 +93,22 @@ public abstract class AbstractTable
 	public boolean isUnique()
 	{
 		return keys.isUnique();
+	}
+
+	public Map<String, String> metadata()
+	{
+		return (metadata != null ? Collections.unmodifiableMap(metadata) : Collections.emptyMap());
+	}
+
+	public AbstractTable withMetadata(String name, String value)
+	{
+		if (metadata == null)
+		{
+			metadata = new HashMap<>();
+		}
+
+		metadata.put(name, value);
+		return this;
 	}
 
 	public Identifier getIdentifier(Object entity)

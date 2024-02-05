@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.cassandra;
+package com.strategicgains.noschema.cassandra.unitofwork;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

@@ -15,7 +15,7 @@ import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.AbstractTable;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.CqlStatementFactory;
-import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
+import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider.Columns;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.InvalidObjectIdException;
@@ -26,8 +26,8 @@ implements CqlStatementFactory<T>
 {
 	private static final BSONEncoder ENCODER = new BasicBSONEncoder();
 
-	private static final String SELECT_COLUMNS = String.join(",", Columns.OBJECT, Columns.TYPE, Columns.CREATED_AT, Columns.UPDATED_AT);
-	private static final String CREATE_CQL = "insert into %s.%s (%s, %s, %s, %s, %s) values (%s)";
+	private static final String SELECT_COLUMNS = String.join(",", Columns.OBJECT, Columns.TYPE, Columns.METADATA, Columns.CREATED_AT, Columns.UPDATED_AT);
+	private static final String CREATE_CQL = "insert into %s.%s (%s, %s, %s, %s, %s, %s) values (%s)";
 	private static final String DELETE_CQL = "delete from %s.%s where %s";
 	private static final String EXISTS_CQL = "select count(*) from %s.%s  where %s limit 1";
 	private static final String READ_CQL = "select %s," + SELECT_COLUMNS + " from %s.%s where %s limit 1";
@@ -35,9 +35,9 @@ implements CqlStatementFactory<T>
 	private static final String UPDATE_CQL = "update %s.%s set %s = ?, %s = ?, %s = ? where %s";
 
 	// These are used IFF there is a single primary table (with no views) and it is unique.
-	private static final String DELETE_UNIQUE_CQL = "delete from %s.%s where %s if exists";
-	private static final String CREATE_UNIQUE_CQL = "insert into %s.%s (%s, %s, %s, %s, %s) values (%s) if not exists";
-	private static final String UPDATE_UNIQUE_CQL = "update %s.%s set %s = ?, %s = ?, %s = ? where %s if exists";
+	private static final String DELETE_UNIQUE_CQL = DELETE_CQL + " if exists";
+	private static final String CREATE_UNIQUE_CQL = CREATE_CQL + " if not exists";
+	private static final String UPDATE_UNIQUE_CQL = UPDATE_CQL + " if exists";
 
 	private static final String CREATE = "create";
 	private static final String DELETE = "delete";
@@ -65,7 +65,7 @@ implements CqlStatementFactory<T>
 		this.table = table;
 		this.documentFactory = factory;
 
-		if (table instanceof PrimaryTable && !((PrimaryTable) table).hasViews())
+		if ((table instanceof PrimaryTable primary) && !primary.hasViews())
 		{
 			this.useLightweightTxns = true;
 		}
@@ -254,7 +254,7 @@ implements CqlStatementFactory<T>
 
 	private Document asDocument(T entity)
 	{
-		if (entity instanceof Document) return (Document) entity;
+		if (entity instanceof Document entityDocument) return entityDocument;
 
 		try
 		{

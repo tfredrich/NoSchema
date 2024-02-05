@@ -8,7 +8,7 @@ import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
+import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider;
 import com.strategicgains.noschema.cassandra.schema.SchemaRegistry;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -29,7 +29,7 @@ public class SampleRun {
 			.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique");
 
 		SchemaRegistry schemas = SchemaRegistry.keyspace(keyspace);
-		flowersTable.stream().forEach(v -> schemas.withProvider(new DocumentSchemaProvider(v)));
+		flowersTable.stream().forEach(v -> schemas.withProvider(new DocumentTableSchemaProvider(v)));
 		schemas.initializeAll(session)
 			.exportInitializeAll();
 

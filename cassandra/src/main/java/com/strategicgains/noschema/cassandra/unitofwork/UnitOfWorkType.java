@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.cassandra;
+package com.strategicgains.noschema.cassandra.unitofwork;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BatchType;

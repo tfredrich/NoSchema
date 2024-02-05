@@ -13,6 +13,8 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.DocumentChange;
 import com.strategicgains.noschema.cassandra.document.DocumentStatementGenerator;
+import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkCommitStrategy;
+import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;

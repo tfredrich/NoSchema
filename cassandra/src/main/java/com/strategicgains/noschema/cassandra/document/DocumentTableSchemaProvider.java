@@ -4,15 +4,21 @@ import com.strategicgains.noschema.cassandra.AbstractTable;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.cassandra.schema.AbstractSchemaProvider;
 
-public class DocumentSchemaProvider
+public class DocumentTableSchemaProvider
 extends AbstractSchemaProvider
 {
 	public static class Columns
 	{
 		public static final String OBJECT = "object";
 		public static final String TYPE = "type";
+		public static final String METADATA = "metadata";
 		public static final String CREATED_AT = "created_at";
 		public static final String UPDATED_AT = "updated_at";
+
+		private Columns()
+		{
+			// prevents instantiation.
+		}
 	}
 
 	private static final String DROP_TABLE = "drop table if exists %s.%s;";
@@ -21,8 +27,9 @@ extends AbstractSchemaProvider
 		"%s," +									// identifying properties
 	    Columns.OBJECT + " blob," +
 		Columns.TYPE + " text," +
-	    // TODO: Add Location details to Document.
-	    // TODO: Add Lucene index capability to Document.
+	    Columns.METADATA + "map" +
+	    // Add Location details, if needed, to Document.
+	    // Add Lucene index capability if needed to Document.
 		Columns.CREATED_AT + " timestamp," +
 	    Columns.UPDATED_AT + " timestamp," +
 		"%s" +									// primary key
@@ -33,7 +40,7 @@ extends AbstractSchemaProvider
 	private String table;
 	private KeyDefinition keys;
 
-	public DocumentSchemaProvider(AbstractTable table)
+	public DocumentTableSchemaProvider(AbstractTable table)
 	{
 		super();
 		this.keyspace = table.keyspace();

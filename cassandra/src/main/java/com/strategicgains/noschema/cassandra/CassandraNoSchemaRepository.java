@@ -20,10 +20,11 @@ import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.NoSchemaRepository;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
-import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
-import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
+import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider;
+import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.document.DocumentStatementGenerator;
 import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
+import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.DocumentObserver;
 import com.strategicgains.noschema.exception.DuplicateItemException;
@@ -72,22 +73,22 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	@Override
 	public void ensureTables()
 	{
-		new DocumentSchemaProvider(table).create(session);
+		new DocumentTableSchemaProvider(table).create(session);
 
 		if (hasViews())
 		{
-			table.views().forEach(v -> new DocumentSchemaProvider(v).create(session));
+			table.views().forEach(v -> new DocumentTableSchemaProvider(v).create(session));
 		}
 	}
 
 	@Override
 	public void dropTables()
 	{
-		new DocumentSchemaProvider(table).drop(session);
+		new DocumentTableSchemaProvider(table).drop(session);
 
 		if (hasViews())
 		{
-			table.views().forEach(v -> new DocumentSchemaProvider(v).drop(session));
+			table.views().forEach(v -> new DocumentTableSchemaProvider(v).drop(session));
 		}
 	}
 
