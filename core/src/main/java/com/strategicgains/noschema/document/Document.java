@@ -1,6 +1,9 @@
 package com.strategicgains.noschema.document;
 
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.bson.BSONObject;
 
@@ -39,6 +42,11 @@ implements Identifiable
 	 * BSON as a POJO
 	 */
 	private String type;
+
+	/**
+	 * Name/value pairs that can tag along with the document in the database that can be applied to the entity.
+	 */
+	private Map<String, String> metadata;
 
 	/**
 	 * Default constructor.
@@ -208,6 +216,23 @@ implements Identifiable
 	public void setUpdatedAt(Date updatedAt)
 	{
 		this.updatedAt = updatedAt;
+	}
+
+	public boolean hasMetadata()
+	{
+		return (metadata != null && !metadata.isEmpty());
+	}
+
+	public Map<String, String> getMetadata()
+	{
+		return (hasMetadata() ? Collections.unmodifiableMap(metadata) : Collections.emptyMap());
+	}
+
+	public Document withMetadata(String name, String value)
+	{
+		if (metadata == null) metadata = new HashMap<>();
+		metadata.put(name, value);
+		return this;
 	}
 
 	/**
