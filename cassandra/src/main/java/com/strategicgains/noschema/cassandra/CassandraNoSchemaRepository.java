@@ -22,7 +22,6 @@ import com.strategicgains.noschema.NoSchemaRepository;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider;
 import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider.Columns;
-import com.strategicgains.noschema.cassandra.document.DocumentStatementGenerator;
 import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
@@ -41,7 +40,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 	private CqlSession session;
 	private PrimaryTable table;
-	private DocumentStatementGenerator statementGenerator;
+	private CassandraNoSchemaStatementFactory statementGenerator;
 	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
 	private UnitOfWorkType unitOfWorkType;
 	private List<DocumentObserver> observers = new ArrayList<>();
@@ -58,7 +57,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		this.session = Objects.requireNonNull(session);
 		this.table = Objects.requireNonNull(table);
 		this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
-		this.statementGenerator = new DocumentStatementGenerator(session, table);
+		this.statementGenerator = new CassandraNoSchemaStatementFactory(session, table);
 		factoriesByView.put(table.name(), new CassandraDocumentFactory<>(table.keys()));
 		table.views().forEach(view ->
 			this.factoriesByView.put(view.name(), new CassandraDocumentFactory<>(view.keys()))
@@ -329,6 +328,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return asEntity(viewName, d);
 	}
 
+	//TODO: this should be in DocumentStatementFactory
 	private Document marshalDocument(Row row)
 	{
 		if (row == null)
@@ -346,6 +346,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		}
 
 		d.setType(row.getString(Columns.TYPE));
+		d.setMetadata(row.getMap(Columns.METADATA, String.class, String.class));
 		d.setCreatedAt(new Date(row.getInstant(Columns.CREATED_AT).getEpochSecond()));
 		d.setUpdatedAt(new Date(row.getInstant(Columns.UPDATED_AT).getEpochSecond()));
 		observers.forEach(o -> o.afterRead(d));

@@ -12,7 +12,6 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.DocumentChange;
-import com.strategicgains.noschema.cassandra.document.DocumentStatementGenerator;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkCommitStrategy;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
@@ -29,16 +28,16 @@ public class CassandraNoSchemaUnitOfWork
 implements UnitOfWork
 {
     private final CqlSession session;
-    private final DocumentStatementGenerator generator;
+    private final CassandraNoSchemaStatementFactory generator;
     private final UnitOfWorkChangeSet<Document> changeSet = new UnitOfWorkChangeSet<>();
     private final UnitOfWorkCommitStrategy commitStrategy;
 
-    public CassandraNoSchemaUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator)
+    public CassandraNoSchemaUnitOfWork(CqlSession session, CassandraNoSchemaStatementFactory statementGenerator)
     {
     	this(session, statementGenerator, UnitOfWorkType.LOGGED);
     }
 
-    public CassandraNoSchemaUnitOfWork(CqlSession session, DocumentStatementGenerator statementGenerator, UnitOfWorkType unitOfWorkType)
+    public CassandraNoSchemaUnitOfWork(CqlSession session, CassandraNoSchemaStatementFactory statementGenerator, UnitOfWorkType unitOfWorkType)
     {
         this.session = Objects.requireNonNull(session);
         this.generator = Objects.requireNonNull(statementGenerator);

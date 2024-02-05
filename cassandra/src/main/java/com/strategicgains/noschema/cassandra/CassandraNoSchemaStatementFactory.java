@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.cassandra.document;
+package com.strategicgains.noschema.cassandra;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,16 +6,16 @@ import java.util.Map;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.PrimaryTable;
+import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.document.Document;
 
-public class DocumentStatementGenerator
+public class CassandraNoSchemaStatementFactory
 {
 	private final Map<String, KeyDefinition> keysByView = new HashMap<>();
     private final Map<String, DocumentStatementFactory<Document>> factoriesByView = new HashMap<>();
 
-	public DocumentStatementGenerator(CqlSession session, PrimaryTable table)
+	public CassandraNoSchemaStatementFactory(CqlSession session, PrimaryTable table)
 	{
 		super();
 		table.stream().forEach(view -> {

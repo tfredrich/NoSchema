@@ -228,6 +228,11 @@ implements Identifiable
 		return (hasMetadata() ? Collections.unmodifiableMap(metadata) : Collections.emptyMap());
 	}
 
+	public void setMetadata(Map<String, String> map)
+	{
+		metadata = new HashMap<>(map);
+	}
+
 	public Document withMetadata(String name, String value)
 	{
 		if (metadata == null) metadata = new HashMap<>();
