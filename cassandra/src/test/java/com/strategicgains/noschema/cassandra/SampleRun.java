@@ -43,6 +43,28 @@ public class SampleRun {
 
 		try
 		{
+			System.out.println("*** READ ID (Not Found) ***");
+			try
+			{
+				flowers.read(flower.getIdentifier());
+				throw new RuntimeException("FAILED: Expected ItemNotFoundException (by ID)");
+			}
+			catch (ItemNotFoundException e)
+			{
+				System.out.println("Recieved expected exception: ItemNotFoundException: " + e.getMessage());
+			}
+
+			System.out.println("*** READ NAME (Not Found) ***");
+			try
+			{
+				flowers.read(FLOWERS_BY_NAME, new Identifier(accountId, "rose"));
+				throw new RuntimeException("FAILED: Expected ItemNotFoundException (by name)");
+			}
+			catch (ItemNotFoundException e)
+			{
+				System.out.println("Recieved expected exception: ItemNotFoundException: " + e.getMessage());
+			}
+
 			System.out.println("*** CREATE ***");
 			Flower written = flowers.create(flower);
 			System.out.println(written.toString());
@@ -51,7 +73,7 @@ public class SampleRun {
 			Flower read = flowers.read(new Identifier(id));
 			System.out.println(read.toString());
 
-			System.out.println("*** READ-NAME ***");
+			System.out.println("*** READ NAME ***");
 			read = flowers.read(FLOWERS_BY_NAME, new Identifier(accountId, "rose"));
 			System.out.println(read.toString());
 
@@ -74,7 +96,7 @@ public class SampleRun {
 			updated = flowers.update(updated, read);
 			System.out.println(updated.toString());
 
-			System.out.println("*** READ (again) ***");
+			System.out.println("*** RE-READ ***");
 			read = flowers.read(new Identifier(updated.getId()));
 			System.out.println(read.toString());
 		}
