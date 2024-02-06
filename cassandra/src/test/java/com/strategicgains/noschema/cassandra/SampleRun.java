@@ -74,6 +74,7 @@ public class SampleRun {
 			updated = flowers.update(updated, read);
 			System.out.println(updated.toString());
 
+			System.out.println("*** READ (again) ***");
 			read = flowers.read(new Identifier(updated.getId()));
 			System.out.println(read.toString());
 		}

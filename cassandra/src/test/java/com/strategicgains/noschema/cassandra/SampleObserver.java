@@ -9,6 +9,7 @@ extends AbstractDocumentObserver
 	@Override
 	public void afterEncoding(Document document)
 	{
+		System.out.println("SampleObserver.afterEncoding(): " + document.getIdentifier());
 		document
 			.withMetadata("todd", "Here? Check")
 			.withMetadata("foo", "bar");
@@ -17,6 +18,6 @@ extends AbstractDocumentObserver
 	@Override
 	public void afterRead(Document document)
 	{
-		System.out.println(document.getMetadata());
+		System.out.println("SampleObserver.afterRead(): " + document.getMetadata());
 	}
 }

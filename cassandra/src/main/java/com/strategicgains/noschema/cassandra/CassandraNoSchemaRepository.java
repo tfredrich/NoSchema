@@ -227,20 +227,23 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 			final T originalEntity = asEntity(table.name(), originalDocument.get());
 			final BSONObject bson = originalDocument.get().getObject();
-			final AtomicReference<Document> updatedDocument = new AtomicReference<>();
 
 			observers.forEach(o -> o.beforeUpdate(originalDocument.get()));
+
+			final AtomicReference<Document> updatedDocument = new AtomicReference<>();
 
 			table.stream().forEach(t -> {
 				final Document updatedViewDocument = asDocument(t.name(), entity);
 				final Document originalViewDocument = asDocument(t.name(), originalEntity, bson);
-				updatedViewDocument.setMetadata(originalDocument.get().getMetadata());
-				originalViewDocument.setMetadata(originalDocument.get().getMetadata());
 
 				if (updatedDocument.get() == null)
 				{
 					updatedDocument.set(updatedViewDocument);
 					observers.forEach(o-> o.afterEncoding(updatedViewDocument));
+				}
+				else
+				{
+					updatedViewDocument.setMetadata(updatedDocument.get().getMetadata());
 				}
 
 				// If identifier changed, must perform delete and create.
