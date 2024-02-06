@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.bson.BSONDecoder;
@@ -190,7 +192,10 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 	public boolean exists(String viewName, Identifier id)
 	{
-		return (session.execute(statementGenerator.exists(viewName, id)).one().getLong(0) > 0);
+		return session.executeAsync(statementGenerator.exists(viewName, id))
+			.thenApply(r -> (Boolean.valueOf(r.one().getLong(0) > 0)))
+			.toCompletableFuture()
+			.join();
 	}
 
 	@Override
@@ -201,8 +206,18 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
  
 	public T read(String viewName, Identifier id)
 	{
-		Row row = readRow(viewName, id);
-		return marshalEntity(viewName, row);
+		try
+		{
+			return readRow(viewName, id)
+				.thenApply(row -> marshalEntity(viewName, row))
+				.join();
+		}
+		catch (CompletionException e)
+		{
+			handleException(e);
+		}
+
+		return null;
 	}
 
 	@Override
@@ -227,7 +242,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			}
 			else
 			{
-				originalDocument.set(readAsDocument(entity.getIdentifier()));
+				originalDocument.set(readAsDocument(entity.getIdentifier()).join());
 				uow.registerClean(table.name(), originalDocument.get());
 				originalEntity = asEntity(table.name(), originalDocument.get());
 			}
@@ -324,27 +339,28 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return new CassandraNoSchemaUnitOfWork(session, statementGenerator, unitOfWorkType);
 	}
 
-	private Document readAsDocument(Identifier id)
+	private CompletableFuture<Document> readAsDocument(Identifier id)
 	throws ItemNotFoundException
 	{
-		Row row = readRow(table.name(), id);
-		Document document = marshalDocument(row);
-		T entity = asEntity(table.name(), document);
-		document.setIdentifier(entity.getIdentifier());
-		return document;
+		return readRow(table.name(), id)
+			.thenApply(row -> {
+				Document document = marshalDocument(row);
+				T entity = asEntity(table.name(), document);
+				document.setIdentifier(entity.getIdentifier());
+				return document;				
+			});
 	}
 
-	private Row readRow(String viewName, Identifier id)
+	private CompletableFuture<Row> readRow(String viewName, Identifier id)
 	{
 		observers.forEach(o -> o.beforeRead(id));
-		Row row = session.execute(statementGenerator.read(viewName, id)).one();
-
-		if (row == null)
-		{
-			throw new ItemNotFoundException(id.toString());
-		}
-
-		return row;
+		return session.executeAsync(statementGenerator.read(viewName, id))
+			.thenApply(rs -> rs.one())
+			.thenApply(row -> {
+				if (row == null) throw new ItemNotFoundException(id.toString());
+				return row;
+			})
+			.toCompletableFuture();
 	}
 
 	private T marshalEntity(String viewName, Row row)
@@ -403,7 +419,8 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return factoriesByView.get(viewName).asDocument(entity, bson);
 	}
 
-	private void handleException(UnitOfWorkCommitException e)
+	private void handleException(Exception e)
+	throws DuplicateItemException, InvalidIdentifierException, ItemNotFoundException, StorageException
 	{
 		if (e.getCause() instanceof DuplicateItemException duplicate)
 		{
@@ -413,6 +430,11 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		if (e.getCause() instanceof InvalidIdentifierException invalidId)
 		{
 			throw invalidId;
+		}
+
+		if (e.getCause() instanceof ItemNotFoundException notFound)
+		{
+			throw notFound;
 		}
 
 		throw new StorageException(e.getCause());
