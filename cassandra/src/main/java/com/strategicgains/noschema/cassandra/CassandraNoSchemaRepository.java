@@ -217,22 +217,31 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		try
 		{
 			CassandraNoSchemaUnitOfWork uow = createUnitOfWork();
-			AtomicReference<Document> originalDocument = new AtomicReference<>(asDocument(original));
+			AtomicReference<Document> originalDocument = new AtomicReference<>();
+			final T originalEntity;
 
-			if (originalDocument.get() == null)
+			if (original != null)
+			{
+				originalDocument.set(asDocument(original));
+				originalEntity = original;
+			}
+			else
 			{
 				originalDocument.set(readAsDocument(entity.getIdentifier()));
 				uow.registerClean(table.name(), originalDocument.get());
+				originalEntity = asEntity(table.name(), originalDocument.get());
 			}
 
-			final T originalEntity = asEntity(table.name(), originalDocument.get());
-			final BSONObject bson = originalDocument.get().getObject();
-
 			observers.forEach(o -> o.beforeUpdate(originalDocument.get()));
-
+			final BSONObject bson = originalDocument.get().getObject();
 			final AtomicReference<Document> updatedDocument = new AtomicReference<>();
 
 			table.stream().forEach(t -> {
+				if (updatedDocument.get() == null)
+				{
+					observers.forEach(o -> o.beforeEncoding(entity));
+				}
+
 				final Document updatedViewDocument = asDocument(t.name(), entity);
 				final Document originalViewDocument = asDocument(t.name(), originalEntity, bson);
 
@@ -277,14 +286,19 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		try
 		{
 			final AtomicReference<BSONObject> bson = new AtomicReference<>();
+			final AtomicReference<Document> updated = new AtomicReference<>();
 
 			table.stream().forEach(table -> {
 				final Document d;
 
 				if (bson.get() == null)
 				{
+					observers.forEach(o -> o.beforeEncoding(entity));
 					d = asDocument(table.name(), entity);
+					observers.forEach(o -> o.afterEncoding(d));
+					observers.forEach(o -> o.beforeUpdate(d));
 					bson.set(d.getObject());
+					updated.set(d);
 				}
 				else
 				{
@@ -295,6 +309,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			});
 
 			uow.commit();
+			observers.forEach(o -> o.afterUpdate(updated.get()));
 		}
 		catch (UnitOfWorkCommitException e)
 		{
