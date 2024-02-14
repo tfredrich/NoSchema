@@ -18,6 +18,7 @@
 		    <groupId>org.mongodb</groupId>
 		    <artifactId>bson</artifactId>
 		    <version>4.11.1</version>
+		    <scope>provided</scope>
 		</dependency>
 	</dependencies>
 </project>

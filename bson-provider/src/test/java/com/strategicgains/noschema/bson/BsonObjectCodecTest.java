@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.document;
+package com.strategicgains.noschema.bson;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -14,9 +14,9 @@ import org.junit.Test;
 
 import com.strategicgains.noschema.entity.Flower;
 
-public class NoSchemaEntityCodecTest
+public class BsonObjectCodecTest
 {
-	private ObjectCodecImpl<Flower> codec = new ObjectCodecImpl<>();
+	private BsonObjectCodec<Flower> codec = new BsonObjectCodec<>();
 
 	@Test
 	public void shouldEncodeAndDecode()

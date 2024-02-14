@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.document;
+package com.strategicgains.noschema.bson;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -9,7 +9,7 @@ import org.bson.BSONObject;
 
 import com.strategicgains.noschema.entity.Flower;
 
-public class EntityCodecTimer
+public class BsonCodecTimer
 {
 	private static final String FLOWER_NAME = "rose";
 	private static final long UPDATED_AT = 1648598130233L;
@@ -19,14 +19,14 @@ public class EntityCodecTimer
 	private static final List<String> COLORS = Arrays.asList("red", "white", "pink", "yellow");
 	private static final int SERIALIZATION_COUNT = 500000;
 
-	private ObjectCodecImpl<Flower> codec = new ObjectCodecImpl<>();
+	private BsonObjectCodec<Flower> codec = new BsonObjectCodec<>();
 	private long startedAt;
 	private long endedAt;
 	private int iterations;
 
 	public static void main(String[] args)
 	{
-		EntityCodecTimer timer = new EntityCodecTimer();
+		BsonCodecTimer timer = new BsonCodecTimer();
 		Flower flower = timer.setup();
 		System.out.println("Running...");
 		timer.start();

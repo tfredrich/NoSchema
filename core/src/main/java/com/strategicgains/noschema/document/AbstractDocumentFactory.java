@@ -18,11 +18,6 @@ public abstract class AbstractDocumentFactory<T>
 {
 	private ObjectCodec<T> codec;
 
-	protected AbstractDocumentFactory()
-	{
-		this(new ObjectCodecImpl<>());
-	}
-
 	protected AbstractDocumentFactory(ObjectCodec<T> codec)
 	{
 		super();

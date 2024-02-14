@@ -1,6 +1,7 @@
 package com.strategicgains.noschema.cassandra.document;
 
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.bson.BsonObjectCodec;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.document.AbstractDocumentFactory;
 import com.strategicgains.noschema.document.ObjectCodec;
@@ -14,7 +15,7 @@ extends AbstractDocumentFactory<T>
 
 	public CassandraDocumentFactory(KeyDefinition keys)
 	{
-		super();
+		super(new BsonObjectCodec<>());
 		setKeyDefinition(keys);
 	}
 

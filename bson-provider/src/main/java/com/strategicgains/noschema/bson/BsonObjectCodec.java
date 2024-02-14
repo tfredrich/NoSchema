@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.document;
+package com.strategicgains.noschema.bson;
 
 import static java.lang.String.format;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
@@ -30,9 +30,12 @@ import org.bson.codecs.ValueCodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.io.BasicOutputBuffer;
 
+import com.strategicgains.noschema.document.EntityDescriptor;
+import com.strategicgains.noschema.document.FieldDescriptor;
+import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DescriptorException;
 
-public final class ObjectCodecImpl<T>
+public final class BsonObjectCodec<T>
 implements ObjectCodec<T>
 {
 	public static final CodecRegistry DEFAULT_CODEC_REGISTRY =
@@ -63,7 +66,7 @@ implements ObjectCodec<T>
 	}
 
 	@SuppressWarnings("unchecked")
-	public byte[] asBytes(T object)
+	private byte[] asBytes(T object)
 	{
 		register((Class<T>) object.getClass());
 		BasicOutputBuffer output = new BasicOutputBuffer();
@@ -80,7 +83,7 @@ implements ObjectCodec<T>
 		return output.getInternalBuffer();
 	}
 
-	public T fromBytes(byte[] bytes, String className)
+	private T fromBytes(byte[] bytes, String className)
 	{
 		try (BsonBinaryReader bsonReader = new BsonBinaryReader(ByteBuffer.wrap(bytes)))
 		{

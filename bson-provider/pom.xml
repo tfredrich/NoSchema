@@ -2,9 +2,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<name>NoSchema Cassandra</name>
-	<description>The Cassandra-specific components of the NoSchema Java library</description>
-	<artifactId>noschema-cassandra</artifactId>
+	<name>NoSchema BSON Codec</name>
+	<description>BSON de/serialization provider for the NoSchema library.</description>
+	<artifactId>noschema-bson-provider</artifactId>
 	<packaging>jar</packaging>
 
 	<parent>
@@ -14,20 +14,19 @@
 	</parent>
 
 	<properties>
-		<driver.version>4.13.0</driver.version>
+		<bson.version>4.11.1</bson.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>com.strategicgains.noschema</groupId>
-			<artifactId>noschema-bson-provider</artifactId>
+			<artifactId>noschema-core</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.datastax.oss</groupId>
-			<artifactId>java-driver-core</artifactId>
-			<version>${driver.version}</version>
-			<scope>provided</scope>
+		    <groupId>org.mongodb</groupId>
+		    <artifactId>bson</artifactId>
+		    <version>${bson.version}</version>
 		</dependency>
 	</dependencies>
 </project>

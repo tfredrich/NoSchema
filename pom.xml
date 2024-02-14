@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<name>NoSchema</name>
-	<description>A Java library to store document-style JSON in any nosql DB, like Cassandra or Dynamodb</description>
+	<description>A Java library to store document-style JSON in any NoSQL DB, like Cassandra</description>
 	<url>https://github.com/tfredrich/noschema</url>
 	<groupId>com.strategicgains.noschema</groupId>
 	<artifactId>noschema-parent</artifactId>
@@ -19,6 +19,7 @@
 	<modules>
 		<module>core</module>
 		<module>cassandra</module>
+		<module>bson-provider</module>
 	</modules>
 
 	<dependencies>
