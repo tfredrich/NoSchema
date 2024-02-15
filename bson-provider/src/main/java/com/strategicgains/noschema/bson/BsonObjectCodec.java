@@ -55,7 +55,7 @@ implements ObjectCodec<T>
 			bson.flush();
 		}
 
-		return output.getInternalBuffer();
+		return output.toByteArray();
 	}
 
 	@Override
