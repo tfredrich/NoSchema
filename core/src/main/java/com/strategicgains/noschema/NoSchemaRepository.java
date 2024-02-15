@@ -72,7 +72,7 @@ public interface NoSchemaRepository<T>
 	 * 
 	 * @param ids the partition keys (identifiers) to select.
 	 */
-//	List<T> readIn(Identifier... ids);
+	List<T> readIn(Identifier... ids);
 
 	/**
 	 * Rewrite an entity to the database. The entity identifier must already exist

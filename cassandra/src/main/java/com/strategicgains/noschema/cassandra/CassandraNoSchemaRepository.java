@@ -3,6 +3,7 @@ package com.strategicgains.noschema.cassandra;
 import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +19,8 @@ import org.bson.BasicBSONDecoder;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.shaded.guava.common.collect.Streams;
+import com.datastax.oss.driver.shaded.guava.common.util.concurrent.Futures;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.NoSchemaRepository;
@@ -223,8 +226,37 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	@Override
 	public List<T> readAll(Object... parms)
 	{
-		// TODO Auto-generated method stub
+		return readAll(table.name(), parms);
+	}
+
+	public List<T> readAll(String viewName, Object... parms)
+	{
+		//TODO: Implement readAll()
 		return Collections.emptyList();
+	}
+
+	@Override
+	public List<T> readIn(Identifier... ids)
+	{
+		return readIn(table.name(), ids);
+	}
+
+	public List<T> readIn(String viewName, Identifier... ids)
+	{
+		//TODO: Implement readIn()
+		return Collections.emptyList();
+//		if (ids == null) return Collections.emptyList();
+//
+//		List<CompletableFuture<T>> futures = new ArrayList<>(ids.length);
+//
+//		Arrays.stream(ids).map(id -> 
+//			session.executeAsync(statementGenerator.read(viewName, id))
+//				.thenApply(rs -> rs.one())
+//				.thenApply(row -> marshalEntity(viewName, row))
+//				.toCompletableFuture()
+//		).forEach(f -> futures.add(f));
+//
+//		Futures.inCompletionOrder(futures);
 	}
 
 	public T update(T entity, T original)
