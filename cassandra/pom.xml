@@ -30,6 +30,12 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>com.strategicgains.noschema</groupId>
+			<artifactId>noschema-bson-provider</artifactId>
+			<version>${project.parent.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>com.datastax.oss</groupId>
 			<artifactId>java-driver-core</artifactId>
 			<version>${driver.version}</version>
