@@ -1,18 +1,25 @@
 package com.strategicgains.noschema.gson;
 
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.strategicgains.noschema.document.ObjectCodec;
 
 public class GsonObjectCodec<T>
 	implements ObjectCodec<T>
 {
+	private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 	private final Gson gson;
 
 	public GsonObjectCodec()
 	{
-		gson = new Gson();
+		gson = new GsonBuilder()
+			.disableHtmlEscaping()
+			.setDateFormat(TIMESTAMP_FORMAT)
+			.excludeFieldsWithModifiers(Modifier.TRANSIENT, Modifier.STATIC)
+			.create();
 	}
 
 	@Override

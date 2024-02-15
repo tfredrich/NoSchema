@@ -8,7 +8,6 @@ import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.bson.BsonObjectCodec;
 import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider;
 import com.strategicgains.noschema.cassandra.schema.SchemaRegistry;
 import com.strategicgains.noschema.document.ObjectCodec;
@@ -16,11 +15,12 @@ import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
+import com.strategicgains.noschema.gson.GsonObjectCodec;
 
 public class SampleRun {
 
 	private static final String FLOWERS_BY_NAME = "by_name";
-	private static final ObjectCodec<Flower> CODEC = new BsonObjectCodec<>();
+	private static final ObjectCodec<Flower> CODEC = new GsonObjectCodec<>();
 
 
 	public static void main(String[] args)

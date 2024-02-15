@@ -6,17 +6,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import com.strategicgains.noschema.bson.BsonObjectCodec;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
+import com.strategicgains.noschema.gson.GsonObjectCodec;
 
 public class DocumentFactoryTimer
 {
-	private static final ObjectCodec<Flower> CODEC = new BsonObjectCodec<>();
+	private static final ObjectCodec<Flower> CODEC = new GsonObjectCodec<>();
 
 	private static final String FLOWER_NAME = "rose";
 	private static final long UPDATED_AT = 1648598130233L;
