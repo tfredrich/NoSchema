@@ -1,9 +1,7 @@
 package com.strategicgains.noschema.document;
 
-import org.bson.BSONObject;
-
 public interface ObjectCodec<T>
 {
-	BSONObject encode(T object);
-	T decode(BSONObject bsonObject, String className);
+	byte[] serialize(T object);
+	T deserialize(byte[] bytes, Class<T> clazz);
 }

@@ -8,8 +8,10 @@ import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.bson.BsonObjectCodec;
 import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider;
 import com.strategicgains.noschema.cassandra.schema.SchemaRegistry;
+import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -18,6 +20,8 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
 public class SampleRun {
 
 	private static final String FLOWERS_BY_NAME = "by_name";
+	private static final ObjectCodec<Flower> CODEC = new BsonObjectCodec<>();
+
 
 	public static void main(String[] args)
 	throws KeyDefinitionException, InvalidIdentifierException, DuplicateItemException, ItemNotFoundException
@@ -33,7 +37,7 @@ public class SampleRun {
 		schemas.initializeAll(session)
 			.exportInitializeAll();
 
-		CassandraNoSchemaRepository<Flower> flowers = new CassandraNoSchemaRepository<>(session, flowersTable);
+		CassandraNoSchemaRepository<Flower> flowers = new CassandraNoSchemaRepository<>(session, flowersTable, CODEC);
 		flowers.withObserver(new SampleObserver());
 		flowers.ensureTables();
 

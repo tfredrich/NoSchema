@@ -6,14 +6,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import com.strategicgains.noschema.bson.BsonObjectCodec;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
 import com.strategicgains.noschema.document.Document;
+import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 public class DocumentFactoryTimer
 {
+	private static final ObjectCodec<Flower> CODEC = new BsonObjectCodec<>();
+
 	private static final String FLOWER_NAME = "rose";
 	private static final long UPDATED_AT = 1648598130233L;
 	private static final long CREATED_AT = 1648598130248L;
@@ -44,7 +48,7 @@ public class DocumentFactoryTimer
 	private Flower setup()
 	throws KeyDefinitionException
 	{
-		factory  = new CassandraDocumentFactory<>(KeyDefinitionParser.parse("account.id as account_id:UUID, name:text"));
+		factory  = new CassandraDocumentFactory<>(KeyDefinitionParser.parse("account.id as account_id:UUID, name:text"), CODEC);
 		Flower flower = new Flower(UUID.fromString(FLOWER_ID), FLOWER_NAME, true, 3.25f, COLORS);
 		flower.setAccountId(UUID.fromString(ACCOUNT_ID));
 		flower.setCreatedAt(new Date(CREATED_AT));

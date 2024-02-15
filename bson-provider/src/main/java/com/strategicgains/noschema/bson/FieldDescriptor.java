@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.document;
+package com.strategicgains.noschema.bson;
 
 import java.lang.reflect.Field;
 
@@ -20,7 +20,7 @@ public class FieldDescriptor
 	private Field field;
 
 	/**
-	 * The codec to process the field value. If null, there is no appropriate codec and is likely areferenced class.
+	 * The codec to process the field value. If null, there is no appropriate codec and is likely a referenced class.
 	 * In this case, the referenced class will be described by an EntityDescriptor in the 'reference' property.
 	 */
 	private Codec<? super Object> codec;

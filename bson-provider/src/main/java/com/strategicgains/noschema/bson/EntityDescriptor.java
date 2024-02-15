@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.document;
+package com.strategicgains.noschema.bson;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

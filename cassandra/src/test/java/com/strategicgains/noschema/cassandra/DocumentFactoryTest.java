@@ -13,14 +13,18 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.bson.BsonObjectCodec;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
 import com.strategicgains.noschema.document.Document;
+import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 public class DocumentFactoryTest
 {
+	private static final ObjectCodec<Flower> CODEC = new BsonObjectCodec<>();
+
 	private UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
 	private UUID accountId = UUID.fromString("a87d3bff-6997-4739-ab4e-ded0cc85700f");
 	private Date createdAt = new Date(1648598130248L);
@@ -41,7 +45,7 @@ public class DocumentFactoryTest
 	public void testUuidIdentifier()
 	throws KeyDefinitionException, InvalidIdentifierException
 	{
-		CassandraDocumentFactory<Flower> factory = new CassandraDocumentFactory<>(KeyDefinitionParser.parse("id:UUID"));
+		CassandraDocumentFactory<Flower> factory = new CassandraDocumentFactory<>(KeyDefinitionParser.parse("id:UUID"), CODEC);
 		Document document = factory.asDocument(flower);
 		assertEquals(new Identifier(id), document.getIdentifier());
 		makeDocumentAssertions(new Identifier(id), document);
@@ -54,7 +58,7 @@ public class DocumentFactoryTest
 	public void testMultipartIdentifier()
 	throws KeyDefinitionException, InvalidIdentifierException
 	{
-		CassandraDocumentFactory<Flower> factory = new CassandraDocumentFactory<>(KeyDefinitionParser.parse("account.id as account_id:UUID, name:text"));
+		CassandraDocumentFactory<Flower> factory = new CassandraDocumentFactory<>(KeyDefinitionParser.parse("account.id as account_id:UUID, name:text"), CODEC);
 		Document document = factory.asDocument(flower);
 		assertEquals(new Identifier(accountId, "rose"), document.getIdentifier());
 		makeDocumentAssertions(new Identifier(accountId, "rose"), document);

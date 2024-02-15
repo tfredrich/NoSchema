@@ -5,18 +5,16 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.bson.BSONEncoder;
-import org.bson.BasicBSONEncoder;
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.AbstractTable;
-import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.CqlStatementFactory;
+import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider.Columns;
 import com.strategicgains.noschema.document.Document;
+import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.InvalidObjectIdException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
@@ -24,8 +22,6 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
 public final class DocumentStatementFactory<T>
 implements CqlStatementFactory<T>
 {
-	private static final BSONEncoder ENCODER = new BasicBSONEncoder();
-
 	private static final String SELECT_COLUMNS = String.join(",", Columns.OBJECT, Columns.TYPE, Columns.METADATA, Columns.CREATED_AT, Columns.UPDATED_AT);
 	private static final String CREATE_CQL = "insert into %s.%s (%s, %s, %s, %s, %s, %s) values (%s)";
 	private static final String DELETE_CQL = "delete from %s.%s where %s";
@@ -53,9 +49,9 @@ implements CqlStatementFactory<T>
 	private CassandraDocumentFactory<T> documentFactory;
 	private boolean useLightweightTxns;
 
-	public DocumentStatementFactory(CqlSession session, AbstractTable table)
+	public DocumentStatementFactory(CqlSession session, AbstractTable table, ObjectCodec<T> codec)
 	{
-		this(session, table, new CassandraDocumentFactory<>(table.keys()));
+		this(session, table, new CassandraDocumentFactory<>(table.keys(), codec));
 	}
 
 	public DocumentStatementFactory(CqlSession session, AbstractTable table, CassandraDocumentFactory<T> factory)
@@ -226,7 +222,7 @@ implements CqlStatementFactory<T>
 		Object[] values = new Object[id.size() + 5]; // Identifier + object + metadata + createdAt + updatedAt.
 		fill(values, 0, id.components().toArray());
 		fill(values, id.size(),
-			(document.hasObject() ? ByteBuffer.wrap(ENCODER.encode(document.getObject())) : null),
+			(document.hasObject() ? ByteBuffer.wrap(document.getObject()) : ByteBuffer.wrap(new byte[0])),
 				document.getType(),
 				document.getMetadata(),
 				document.getCreatedAt().toInstant(),
@@ -241,7 +237,7 @@ implements CqlStatementFactory<T>
 		Identifier id = document.getIdentifier();
 		Object[] values = new Object[id.size() + 4];
 			fill(values, 0,
-				(document.hasObject() ? ByteBuffer.wrap(ENCODER.encode(document.getObject())) : null),
+				(document.hasObject() ? ByteBuffer.wrap(document.getObject()) : ByteBuffer.wrap(new byte[0])),
 					document.getType(),
 					document.getMetadata(),
 				    document.getUpdatedAt().toInstant());

@@ -9,13 +9,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import org.bson.BSONDecoder;
 import org.bson.BSONObject;
+import org.bson.BasicBSONDecoder;
 import org.junit.Test;
 
 import com.strategicgains.noschema.entity.Flower;
 
 public class BsonObjectCodecTest
 {
+	private static final BSONDecoder DECODER = new BasicBSONDecoder();
+
+
 	private BsonObjectCodec<Flower> codec = new BsonObjectCodec<>();
 
 	@Test
@@ -31,15 +36,16 @@ public class BsonObjectCodecTest
 		flower.setCreatedAt(createdAt);
 		flower.setUpdatedAt(updatedAt);
 
-		BSONObject bson = codec.encode(flower);
-		makeBsonAssertions(id, accountId, createdAt, updatedAt, bson);
+		byte[] bytes = codec.serialize(flower);
+		makeBsonAssertions(id, accountId, createdAt, updatedAt, bytes);
 
-		Flower decoded = codec.decode(bson, Flower.class.getName());
+		Flower decoded = codec.deserialize(bytes, Flower.class);
 		makeFlowerAssertions(id, accountId, createdAt, updatedAt, decoded);
 	}
 
-	private void makeBsonAssertions(UUID id, UUID accountId, Date created, Date updated, BSONObject bson)
+	private void makeBsonAssertions(UUID id, UUID accountId, Date created, Date updated, byte[] bytes)
 	{
+		BSONObject bson = DECODER.readObject(bytes);
 		assertNotNull(bson);
 		assertNotNull(bson.get("id"));
 		assertNotNull(((BSONObject) bson.get("account")).get("id"));

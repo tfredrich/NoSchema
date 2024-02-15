@@ -3,7 +3,6 @@ package com.strategicgains.noschema.cassandra;
 import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -13,14 +12,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.bson.BSONDecoder;
-import org.bson.BSONObject;
-import org.bson.BasicBSONDecoder;
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.shaded.guava.common.collect.Streams;
-import com.datastax.oss.driver.shaded.guava.common.util.concurrent.Futures;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.NoSchemaRepository;
@@ -31,6 +24,7 @@ import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.DocumentObserver;
+import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -41,31 +35,29 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 public class CassandraNoSchemaRepository<T extends Identifiable>
 implements NoSchemaRepository<T>, SchemaWriter<T>
 {
-	private static final BSONDecoder DECODER = new BasicBSONDecoder();
-
 	private CqlSession session;
 	private PrimaryTable table;
-	private CassandraNoSchemaStatementFactory statementGenerator;
+	private CassandraNoSchemaStatementFactory<T> statementGenerator;
 	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
 	private UnitOfWorkType unitOfWorkType;
 	private List<DocumentObserver> observers = new ArrayList<>();
 
 
-	protected CassandraNoSchemaRepository(CqlSession session, PrimaryTable table)
+	protected CassandraNoSchemaRepository(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
 	{
-		this(session, table, UnitOfWorkType.LOGGED);
+		this(session, table, UnitOfWorkType.LOGGED, codec);
 	}
 
-	protected CassandraNoSchemaRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType)
+	protected CassandraNoSchemaRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, ObjectCodec<T> codec)
 	{
 		super();
 		this.session = Objects.requireNonNull(session);
 		this.table = Objects.requireNonNull(table);
 		this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
-		this.statementGenerator = new CassandraNoSchemaStatementFactory(session, table);
-		factoriesByView.put(table.name(), new CassandraDocumentFactory<>(table.keys()));
+		this.statementGenerator = new CassandraNoSchemaStatementFactory<>(session, table, codec);
+		factoriesByView.put(table.name(), new CassandraDocumentFactory<>(table.keys(), codec));
 		table.views().forEach(view ->
-			this.factoriesByView.put(view.name(), new CassandraDocumentFactory<>(view.keys()))
+			this.factoriesByView.put(view.name(), new CassandraDocumentFactory<>(view.keys(), codec))
 		);
 	}
 
@@ -113,24 +105,24 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 		try
 		{
-			final AtomicReference<BSONObject> bson = new AtomicReference<>();
+			final AtomicReference<byte[]> serialized = new AtomicReference<>();
 			final AtomicReference<Document> primaryDocument = new AtomicReference<>();
 
 			table.stream().forEach(t -> {
 				final Document d;
 
-				if (bson.get() == null)
+				if (serialized.get() == null)
 				{
 					observers.forEach(o -> o.beforeEncoding(entity));
 					d = asDocument(t.name(), entity);
 					primaryDocument.set(d);
-					bson.set(d.getObject());
+					serialized.set(d.getObject());
 					observers.forEach(o -> o.afterEncoding(primaryDocument.get()));
 					observers.forEach(o -> o.beforeCreate(primaryDocument.get()));
 				}
 				else
 				{
-					d = asDocument(t.name(), entity, bson.get());
+					d = asDocument(t.name(), entity, serialized.get());
 					d.setMetadata(primaryDocument.get().getMetadata());
 				}
 
@@ -154,24 +146,24 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		{
 			CassandraNoSchemaUnitOfWork uow = createUnitOfWork();
 			final T entity = read(id);
-			final AtomicReference<BSONObject> bson = new AtomicReference<>();
+			final AtomicReference<byte[]> serialized = new AtomicReference<>();
 			final AtomicReference<Document> primaryDocument = new AtomicReference<>();
 
 			table.stream().forEach(t -> {
 				final Document d;
 
-				if (bson.get() == null)
+				if (serialized.get() == null)
 				{
 					observers.forEach(o -> o.beforeEncoding(entity));
 					d = asDocument(t.name(), entity);
 					primaryDocument.set(d);
-					bson.set(d.getObject());
+					serialized.set(d.getObject());
 					observers.forEach(o -> o.afterEncoding(primaryDocument.get()));
 					observers.forEach(o -> o.beforeDelete(primaryDocument.get()));
 				}
 				else
 				{
-					d = asDocument(t.name(), entity, bson.get());
+					d = asDocument(t.name(), entity, serialized.get());
 				}
 
 				uow.registerDeleted(t.name(), d);
@@ -280,7 +272,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			}
 
 			observers.forEach(o -> o.beforeUpdate(originalDocument.get()));
-			final BSONObject bson = originalDocument.get().getObject();
+			final byte[] serialized = originalDocument.get().getObject();
 			final AtomicReference<Document> updatedDocument = new AtomicReference<>();
 
 			table.stream().forEach(t -> {
@@ -290,7 +282,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 				}
 
 				final Document updatedViewDocument = asDocument(t.name(), entity);
-				final Document originalViewDocument = asDocument(t.name(), originalEntity, bson);
+				final Document originalViewDocument = asDocument(t.name(), originalEntity, serialized);
 
 				if (updatedDocument.get() == null)
 				{
@@ -332,16 +324,16 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 		try
 		{
-			final AtomicReference<BSONObject> bson = new AtomicReference<>();
+			final AtomicReference<byte[]> bson = new AtomicReference<>();
 			final AtomicReference<Document> updated = new AtomicReference<>();
 
-			table.stream().forEach(table -> {
+			table.stream().forEach(view -> {
 				final Document d;
 
 				if (bson.get() == null)
 				{
 					observers.forEach(o -> o.beforeEncoding(entity));
-					d = asDocument(table.name(), entity);
+					d = asDocument(view.name(), entity);
 					observers.forEach(o -> o.afterEncoding(d));
 					observers.forEach(o -> o.beforeUpdate(d));
 					bson.set(d.getObject());
@@ -349,10 +341,10 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 				}
 				else
 				{
-					d = asDocument(table.name(), entity, bson.get());
+					d = asDocument(view.name(), entity, bson.get());
 				}
 
-				uow.registerDirty(table.name(), d);
+				uow.registerDirty(view.name(), d);
 			});
 
 			uow.commit();
@@ -418,7 +410,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		if (b != null && b.hasArray())
 		{
 			//Force the reading of all the bytes.
-			d.setObject(DECODER.readObject(b.array()));
+			d.setObject((b.array()));
 		}
 
 		d.setType(row.getString(Columns.TYPE));
@@ -445,10 +437,10 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return factoriesByView.get(viewName).asDocument(entity);
 	}
 
-	private Document asDocument(String viewName, T entity, BSONObject bson)
+	private Document asDocument(String viewName, T entity, byte[] bytes)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		return factoriesByView.get(viewName).asDocument(entity, bson);
+		return factoriesByView.get(viewName).asDocument(entity, bytes);
 	}
 
 	private void handleException(Exception e)

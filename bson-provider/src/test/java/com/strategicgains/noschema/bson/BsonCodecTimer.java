@@ -5,8 +5,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import org.bson.BSONObject;
-
 import com.strategicgains.noschema.entity.Flower;
 
 public class BsonCodecTimer
@@ -55,8 +53,8 @@ public class BsonCodecTimer
 
 		for (int i = 0; i < iterations; i++)
 		{
-			BSONObject bson = codec.encode(flower);
-			codec.decode(bson, Flower.class.getName());
+			byte[] bson = codec.serialize(flower);
+			codec.deserialize(bson, Flower.class);
 		}
 	}
 

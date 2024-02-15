@@ -5,14 +5,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.bson.BSONObject;
-
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
 /**
  * The Document class implements the Identifiable interface. It represents a document that can be stored in a key/value
- * or columnar store. The document is represented as a BSON object and has an associated type.
+ * or columnar store. The document represents an object serialized as a byte array and has an associated type so it 
+ * can be reconstituted as a POJO.
  */
 public class Document
 implements Identifiable
@@ -33,13 +32,13 @@ implements Identifiable
 	private Date updatedAt;
 
 	/**
-	 * The contents of the entity contained by this document as BSON.
+	 * The serialized contents of the entity contained by this document.
 	 */
-	private BSONObject bson;
+	private byte[] bytes;
 
 	/**
-	 * The fully-qualified class name of the object stored in this document as BSON. This is used to instantiate the
-	 * BSON as a POJO
+	 * The fully-qualified class name of the object stored in this document. This is used to instantiate the
+	 * bytes as a POJO
 	 */
 	private String type;
 
@@ -70,25 +69,25 @@ implements Identifiable
 	/**
 	 * Constructor with BSON object and type parameters.
 	 * 
-	 * @param bson The BSON object to be stored.
-	 * @param type The class of the object that is serialized as BSON.
+	 * @param bytes The serialized object as a byte array.
+	 * @param type The class of the object that is serialized.
 	 */
-	public Document(BSONObject bson, Class<?> type)
+	public Document(byte[] bytes, Class<?> type)
 	{
 		this(type);
-		setObject(bson);
+		setObject(bytes);
 	}
 
 	/**
 	 * Constructor with identifier, BSON object, and type parameters.
 	 * 
 	 * @param id   The identifier of the document.
-	 * @param bson The BSON object to be stored.
-	 * @param type The class of the object to be stored as BSON.
+	 * @param bytes The serialized object as a byte array.
+	 * @param type The class of the object to be stored.
 	 */
-	public Document(Identifier id, BSONObject bson, Class<?> type)
+	public Document(Identifier id, byte[] bytes, Class<?> type)
 	{
-		this(bson, type);
+		this(bytes, type);
 		setIdentifier(id);
 		setType(type.getName());
 
@@ -135,31 +134,32 @@ implements Identifiable
 	 */
 	public boolean hasObject()
 	{
-		return (bson != null);
+		return (bytes != null);
 	}
 
 	/**
-	 * Returns the BSON object of the document.
+	 * Returns the serialized data contained in this document.
 	 * 
-	 * @return The BSON object of the document.
+	 * @return The serialized object in the document.
 	 */
-	public BSONObject getObject()
+	public byte[] getObject()
 	{
-		return bson;
+		return bytes;
 	}
 
 	/**
-	 * Sets the BSON object of the document.
+	 * Sets the serialized object for the document.
 	 * 
-	 * @param bson The BSON object to be set.
+	 * @param serialized The serialized byte data to be set.
 	 */
-	public void setObject(BSONObject bson)
+	public void setObject(byte[] serialized)
 	{
-		this.bson = bson;
+		this.bytes = serialized;
 	}
 
 	/**
-	 * Returns the type of the document.
+	 * Returns the type of the document. This is the fully-qualified class name of the serialized object
+	 * so it can be deserialized into a POJO.
 	 * 
 	 * @return The type of the document.
 	 */
@@ -168,14 +168,37 @@ implements Identifiable
 		return type;
 	}
 
+	public Class<?> getTypeAsClass()
+	{
+		try
+		{
+			return Class.forName(type);
+		}
+		catch (ClassNotFoundException e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+
 	/**
-	 * Sets the type of the document.
+	 * Sets the type of the document. This is the fully-qualified class name of the serialized object
+	 * so it can be deserialized into a POJO.
 	 * 
 	 * @param type The type to be set.
 	 */
 	public void setType(String type)
 	{
 		this.type = type;
+	}
+
+	/**
+	 * Sets the type of the document from a Class instance (instead of String).
+	 * 
+	 * @param type The class of the object to be set.
+	 */
+	public void setType(Class<?> type)
+	{
+		setType(type.getClass());
 	}
 
 	/**

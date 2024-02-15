@@ -1,6 +1,5 @@
 package com.strategicgains.noschema.bson;
 
-import static java.lang.String.format;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 
 import java.lang.reflect.InvocationTargetException;
@@ -10,11 +9,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.bson.AbstractBsonReader.State;
-import org.bson.BSONDecoder;
-import org.bson.BSONEncoder;
-import org.bson.BSONObject;
-import org.bson.BasicBSONDecoder;
-import org.bson.BasicBSONEncoder;
 import org.bson.BsonBinaryReader;
 import org.bson.BsonBinaryWriter;
 import org.bson.BsonInvalidOperationException;
@@ -30,8 +24,6 @@ import org.bson.codecs.ValueCodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.io.BasicOutputBuffer;
 
-import com.strategicgains.noschema.document.EntityDescriptor;
-import com.strategicgains.noschema.document.FieldDescriptor;
 import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DescriptorException;
 
@@ -47,28 +39,11 @@ implements ObjectCodec<T>
 				new EnumCodecProvider()
 			));
 
-	private static final BSONDecoder DECODER = new BasicBSONDecoder();
-	private static final BSONEncoder ENCODER = new BasicBSONEncoder();
-
-	private Map<String, Class<T>> discriminators = new HashMap<>();
 	Map<Class<?>, EntityDescriptor> descriptorsByClass = new HashMap<>();
 
 	@Override
-	public BSONObject encode(T object)
+	public byte[] serialize(T object)
 	{
-		return DECODER.readObject(asBytes(object));
-	}
-
-	@Override
-	public T decode(BSONObject bsonObject, String className)
-	{
-		return fromBytes(ENCODER.encode(bsonObject), className);
-	}
-
-	@SuppressWarnings("unchecked")
-	private byte[] asBytes(T object)
-	{
-		register((Class<T>) object.getClass());
 		BasicOutputBuffer output = new BasicOutputBuffer();
 
 		try (BsonBinaryWriter bson = new BsonBinaryWriter(output))
@@ -83,13 +58,14 @@ implements ObjectCodec<T>
 		return output.getInternalBuffer();
 	}
 
-	private T fromBytes(byte[] bytes, String className)
+	@Override
+	public  T deserialize(byte[] bytes, Class<T> clazz)
 	{
 		try (BsonBinaryReader bsonReader = new BsonBinaryReader(ByteBuffer.wrap(bytes)))
 		{
 			bsonReader.readStartDocument();
 			DecoderContext context = DecoderContext.builder().build();
-			T instance = readProperties(bsonReader, getClassFor(className), context);
+			T instance = readProperties(bsonReader, clazz, context);
 			bsonReader.readEndDocument();
 			return instance;
 		}
@@ -100,7 +76,7 @@ implements ObjectCodec<T>
 		T entity;
 		try
 		{
-			entity = classFor.getDeclaredConstructor(new Class<?>[0]).newInstance();
+			entity = classFor.getDeclaredConstructor().newInstance();
 		}
 		catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| NoSuchMethodException | SecurityException e)
@@ -192,44 +168,5 @@ implements ObjectCodec<T>
 		bson.writeStartDocument(descriptor.getName());
 		writeProperties(bson, descriptor.getReference(), value, context);
 		bson.writeEndDocument();
-	}
-
-	private Class<T> getClassFor(final String discriminator)
-	{
-		Class<T> clazz = discriminators.get(discriminator);
-
-		if (clazz != null) return clazz;
-
-		clazz = getClassForName(discriminator);
-
-		if (clazz == null)
-		{
-			throw new DescriptorException(format("A class could not be found for the discriminator: '%s'.", discriminator));
-		}
-
-		register(clazz);
-		return clazz;
-	}
-
-	@SuppressWarnings("unchecked")
-	private Class<T> getClassForName(final String discriminator)
-	{
-		Class<T> clazz = null;
-
-		try
-		{
-			clazz = (Class<T>) Class.forName(discriminator);
-		}
-		catch (final ClassNotFoundException e)
-		{
-			// Ignore
-		}
-
-		return clazz;
-	}
-
-	private void register(Class<T> clazz)
-	{
-		discriminators.putIfAbsent(clazz.getName(), clazz);
 	}
 }

@@ -2,9 +2,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<name>NoSchema Cassandra</name>
-	<description>The Cassandra-specific components of the NoSchema Java library</description>
-	<artifactId>noschema-cassandra</artifactId>
+	<name>NoSchema GSON Codec</name>
+	<description>GSON de/serialization provider for the NoSchema library.</description>
+	<artifactId>noschema-gson-provider</artifactId>
 	<packaging>jar</packaging>
 
 	<parent>
@@ -14,7 +14,7 @@
 	</parent>
 
 	<properties>
-		<driver.version>4.13.0</driver.version>
+		<gson.version>2.10.1</gson.version>
 	</properties>
 
 	<dependencies>
@@ -24,16 +24,9 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.strategicgains.noschema</groupId>
-			<artifactId>noschema-bson-provider</artifactId>
-			<version>${project.parent.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.datastax.oss</groupId>
-			<artifactId>java-driver-core</artifactId>
-			<version>${driver.version}</version>
-			<scope>provided</scope>
+		    <groupId>com.google.code.gson</groupId>
+		    <artifactId>gson</artifactId>
+		    <version>${gson.version}</version>
 		</dependency>
 	</dependencies>
 </project>

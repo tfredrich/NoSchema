@@ -1,7 +1,5 @@
 package com.strategicgains.noschema.document;
 
-import org.bson.BSONObject;
-
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
@@ -32,20 +30,21 @@ public abstract class AbstractDocumentFactory<T>
 	public Document asDocument(T entity)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		BSONObject bson = codec.encode(entity);
+		byte[] bson = codec.serialize(entity);
 		return asDocument(entity, bson);
 	}
 
-	public Document asDocument(T entity, BSONObject bson)
+	public Document asDocument(T entity, byte[] bson)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		Identifier id = extractIdentifier(entity);
 		return new Document(id, bson, entity.getClass());		
 	}
 
+	@SuppressWarnings("unchecked")
 	public T asPojo(Document document)
 	{
-		return codec.decode(document.getObject(), document.getType());
+		return codec.deserialize(document.getObject(), (Class<T>) document.getTypeAsClass());
 	}
 
 	protected abstract Identifier extractIdentifier(T entity)

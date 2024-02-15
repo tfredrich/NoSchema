@@ -5,21 +5,22 @@ import java.util.Map;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
-import com.strategicgains.noschema.document.Document;
+import com.strategicgains.noschema.document.ObjectCodec;
 
-public class CassandraNoSchemaStatementFactory
+public class CassandraNoSchemaStatementFactory<T extends Identifiable>
 {
 	private final Map<String, KeyDefinition> keysByView = new HashMap<>();
-    private final Map<String, DocumentStatementFactory<Document>> factoriesByView = new HashMap<>();
+    private final Map<String, DocumentStatementFactory<T>> factoriesByView = new HashMap<>();
 
-	public CassandraNoSchemaStatementFactory(CqlSession session, PrimaryTable table)
+	public CassandraNoSchemaStatementFactory(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
 	{
 		super();
 		table.stream().forEach(view -> {
-			put(view.name(), new DocumentStatementFactory<>(session, view));
+			put(view.name(), new DocumentStatementFactory<>(session, view, codec));
 			put(view.name(), view.keys());				
 		});
 	}
@@ -34,12 +35,12 @@ public class CassandraNoSchemaStatementFactory
 		return get(viewName).delete(id);
 	}
 
-	public BoundStatement create(String viewName, Document entity)
+	public BoundStatement create(String viewName, T entity)
 	{
 		return get(viewName).create(entity);
 	}
 
-	public BoundStatement update(String viewName, Document entity)
+	public BoundStatement update(String viewName, T entity)
 	{
 		return get(viewName).update(entity);
 	}
@@ -54,7 +55,7 @@ public class CassandraNoSchemaStatementFactory
 		return keysByView.get(viewName).isUnique();
 	}
 
-	private void put(String viewName, DocumentStatementFactory<Document> factory)
+	private void put(String viewName, DocumentStatementFactory<T> factory)
 	{
 		factoriesByView.put(viewName, factory);
 	}
@@ -64,9 +65,9 @@ public class CassandraNoSchemaStatementFactory
 		this.keysByView.put(viewName, keys);
 	}
 
-	private DocumentStatementFactory<Document> get(String viewName)
+	private DocumentStatementFactory<T> get(String viewName)
 	{
-		DocumentStatementFactory<Document> factory = factoriesByView.get(viewName);
+		DocumentStatementFactory<T> factory = factoriesByView.get(viewName);
 
 //		if (factory == null) throw new InvalidViewNameException(viewName);
 
