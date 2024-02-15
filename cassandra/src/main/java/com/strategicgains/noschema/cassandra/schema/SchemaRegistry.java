@@ -27,6 +27,11 @@ public class SchemaRegistry
 		return INSTANCE;
 	}
 
+	public static SchemaRegistry clear()
+	{
+		return instance().clearAll();
+	}
+
 	public static SchemaRegistry keyspace(String keyspace)
 	{
 		instance().setKeyspace(keyspace);
@@ -46,6 +51,13 @@ public class SchemaRegistry
 	public SchemaRegistry setKeyspace(String keyspace)
 	{
 		this.keyspace = keyspace;
+		return this;
+	}
+
+	public SchemaRegistry clearAll()
+	{
+		setKeyspace(null);
+		schemas.clear();
 		return this;
 	}
 
