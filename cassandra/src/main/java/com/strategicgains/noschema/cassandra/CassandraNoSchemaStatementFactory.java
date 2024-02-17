@@ -30,6 +30,11 @@ public class CassandraNoSchemaStatementFactory<T extends Identifiable>
 		return get(viewName).read(id);
 	}
 
+	public BoundStatement readAll(String viewName, Object... parameters)
+	{
+		return get(viewName).readAll(parameters);
+	}
+
 	public BoundStatement delete(String viewName, Identifier id)
 	{
 		return get(viewName).delete(id);

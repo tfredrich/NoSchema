@@ -56,9 +56,10 @@ public interface NoSchemaRepository<T>
 	throws ItemNotFoundException, InvalidIdentifierException;
 
 	/**
-	 * Retrieve many entities from the table using the given parameters.
+	 * Retrieve many entities from the table using the given [partial] identifier.
+	 * Note that values for the partition key portion MUST be included.
 	 * 
-	 * @param parms
+	 * @param parms properties making up a partial key or identifier.
 	 * @return
 	 */
 	List<T> readAll(Object... parms);
@@ -72,7 +73,7 @@ public interface NoSchemaRepository<T>
 	 * 
 	 * @param ids the partition keys (identifiers) to select.
 	 */
-	List<T> readIn(Identifier... ids);
+	List<T> readIn(List<Identifier> ids);
 
 	/**
 	 * Rewrite an entity to the database. The entity identifier must already exist

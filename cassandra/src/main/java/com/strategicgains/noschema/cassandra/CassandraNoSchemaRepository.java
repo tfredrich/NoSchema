@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -223,32 +224,55 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 	public List<T> readAll(String viewName, Object... parms)
 	{
-		//TODO: Implement readAll()
+		try
+		{
+			return readRows(viewName, parms)
+				.thenApply(rows -> rows.stream()
+				.map(row -> marshalEntity(viewName, row))
+				.toList()
+			).join();
+		}
+		catch (CompletionException e)
+		{
+			handleException(e);
+		}
+
 		return Collections.emptyList();
 	}
 
 	@Override
-	public List<T> readIn(Identifier... ids)
+	public List<T> readIn(List<Identifier> ids)
 	{
 		return readIn(table.name(), ids);
 	}
 
-	public List<T> readIn(String viewName, Identifier... ids)
+	public List<T> readIn(String viewName, List<Identifier> ids)
 	{
-		//TODO: Implement readIn()
-		return Collections.emptyList();
-//		if (ids == null) return Collections.emptyList();
-//
-//		List<CompletableFuture<T>> futures = new ArrayList<>(ids.length);
-//
-//		Arrays.stream(ids).map(id -> 
-//			session.executeAsync(statementGenerator.read(viewName, id))
-//				.thenApply(rs -> rs.one())
-//				.thenApply(row -> marshalEntity(viewName, row))
-//				.toCompletableFuture()
-//		).forEach(f -> futures.add(f));
-//
-//		Futures.inCompletionOrder(futures);
+		if (ids == null) return Collections.emptyList();
+
+		List<CompletableFuture<T>> futures = ids.stream().map(id -> 
+			session.executeAsync(statementGenerator.read(viewName, id))
+				.thenApply(rs -> rs.one())
+				.thenApply(row -> marshalEntity(viewName, row))
+				.toCompletableFuture()
+		).toList();
+
+		CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+		CompletableFuture<List<T>> allCompletableFuture = allFutures.thenApply(v ->
+			futures.stream()
+				.map(CompletableFuture::join)
+				.toList()
+		);
+
+		try
+		{
+			return allCompletableFuture.get();
+		}
+		catch (InterruptedException | ExecutionException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	public T update(T entity, T original)
@@ -383,6 +407,18 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			.thenApply(row -> {
 				if (row == null) throw new ItemNotFoundException(id.toString());
 				return row;
+			})
+			.toCompletableFuture();
+	}
+
+	private CompletableFuture<List<Row>> readRows(String viewName, Object... parameters)
+	{
+		observers.forEach(o -> o.beforeRead(new Identifier(parameters)));
+		return session.executeAsync(statementGenerator.readAll(viewName, parameters))
+			.thenApply(rs -> {
+				List<Row> rows = new ArrayList<>();
+				rs.currentPage().iterator().forEachRemaining(rows::add);
+				return rows;
 			})
 			.toCompletableFuture();
 	}
