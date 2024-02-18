@@ -224,6 +224,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 	public List<T> readAll(String viewName, Object... parms)
 	{
+		//TODO: Handle range query
 		try
 		{
 			return readRows(viewName, parms)

@@ -149,5 +149,10 @@ public class SampleRun {
 		System.out.println("*** RE-READ ***");
 		read = flowers.read(new Identifier(updated.getId()));
 		System.out.println(read.toString());
+
+		System.out.println("*** READ ALL ***");
+		List<Flower> all = flowers.readAll(FLOWERS_BY_NAME, accountId);
+		System.out.println("Size: " + all.size());
+		System.out.println(all.get(0));
 	}
 }
