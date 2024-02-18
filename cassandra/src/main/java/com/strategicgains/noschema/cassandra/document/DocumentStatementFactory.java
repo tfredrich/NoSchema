@@ -161,7 +161,7 @@ implements CqlStatementFactory<T>
 				table.keys().asSelectProperties(),
 				table.keyspace(),
 				table.asTableName(),
-				table.keys().asPartitionIdentityClause()))
+				table.keys().asIdentityClause(keyCount)))
 		);
 	}
 

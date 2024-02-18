@@ -252,22 +252,20 @@ public class KeyDefinition
 
 	public String asIdentityClause()
 	{
-		StringBuilder sb = new StringBuilder();
-		appendAsAssignments(partitionKey, sb, AND);
-
-		if (hasClusteringKey())
-		{
-			sb.append(AND);
-			appendAsAssignments(clusteringKey, sb, AND);
-		}
-
-		return sb.toString();
+		return asIdentityClause(partitionKey.size() + clusteringKey.size());
 	}
 
-	public Object asPartitionIdentityClause()
+	public String asIdentityClause(int keyCount)
 	{
 		StringBuilder sb = new StringBuilder();
-		appendAsAssignments(partitionKey, sb, AND);
+		appendAsAssignments(partitionKey, sb, AND, Math.min(keyCount, partitionKey.size()));
+
+		if (hasClusteringKey() && partitionKey.size() < keyCount)
+		{
+			sb.append(AND);
+			appendAsAssignments(clusteringKey, sb, AND, Math.max(clusteringKey.size(), keyCount - partitionKey.size()));
+		}
+
 		return sb.toString();
 	}
 
@@ -362,16 +360,17 @@ public class KeyDefinition
 		builder.append(result);
 	}
 
-	private void appendAsAssignments(List<? extends KeyComponent> components, StringBuilder builder, String delimiter)
+	private void appendAsAssignments(List<? extends KeyComponent> components, StringBuilder builder, String delimiter, int keyCount)
 	{
 		if (components == null || components.isEmpty()) return;
-	
-		String assignments = components.stream()
+
+		builder.append(
+			components.stream()
+			.limit(keyCount)
 			.map(component -> component.column() + ASSIGNMENT_PLACEHOLDER)
-			.collect(Collectors.joining(delimiter));
-	
-		builder.append(assignments);
+			.collect(Collectors.joining(delimiter)));
 	}
+
 
 	private boolean hasDescendingSort(List<ClusteringKeyComponent> components)
 	{
