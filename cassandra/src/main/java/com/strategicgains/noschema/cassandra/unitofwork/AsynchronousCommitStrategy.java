@@ -25,11 +25,11 @@ implements UnitOfWorkCommitStrategy
 	public CompletableFuture<Void> commit(List<BoundStatement> statements)
 	throws UnitOfWorkCommitException
 	{
-		CompletableFuture<?>[] futuresArray = statements.stream()
+		CompletableFuture<?>[] futures = statements.stream()
 				.map(s -> session.executeAsync(s).toCompletableFuture())
 				.toArray(CompletableFuture[]::new);
 
-			return CompletableFuture.allOf(futuresArray);
+			return CompletableFuture.allOf(futures);
 	}
 
 

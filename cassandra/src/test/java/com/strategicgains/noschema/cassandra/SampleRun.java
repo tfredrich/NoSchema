@@ -11,6 +11,7 @@ import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.bson.BsonObjectCodec;
 import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider;
 import com.strategicgains.noschema.cassandra.schema.SchemaRegistry;
+import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -23,6 +24,7 @@ public class SampleRun {
 	private static final String FLOWERS_BY_NAME = "by_name";
 	private static final ObjectCodec<Flower> GSON_CODEC = new GsonObjectCodec<>();
 	private static final ObjectCodec<Flower> BSON_CODEC = new BsonObjectCodec<>();
+	private static final UnitOfWorkType unitOfWorkType = UnitOfWorkType.ASYNC;
 
 	public static void main(String[] args)
 	throws KeyDefinitionException, InvalidIdentifierException, DuplicateItemException, ItemNotFoundException
@@ -65,7 +67,7 @@ public class SampleRun {
 		SchemaRegistry.keyspace(keyspace);
 		PrimaryTable flowersTable = new PrimaryTable(keyspace, "flowers", "id:UUID unique")
 			.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique");
-		testCassandra(keyspace, session, flowersTable, BSON_CODEC);
+		testCassandra(keyspace, session, flowersTable, unitOfWorkType, BSON_CODEC);
 		SchemaRegistry.clear();
 	}
 
@@ -74,18 +76,18 @@ public class SampleRun {
 		SchemaRegistry.keyspace(keyspace);
 		PrimaryTable flowersTable = new PrimaryTable(keyspace, "flowers", "id:UUID unique")
 			.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique");
-		testCassandra(keyspace, session, flowersTable, GSON_CODEC);
+		testCassandra(keyspace, session, flowersTable, unitOfWorkType, GSON_CODEC);
 		SchemaRegistry.clear();
 	}
 
-	private static void testCassandra(String keyspace, CqlSession session, PrimaryTable flowersTable, ObjectCodec<Flower> codec)
+	private static void testCassandra(String keyspace, CqlSession session, PrimaryTable flowersTable, UnitOfWorkType uowType, ObjectCodec<Flower> codec)
 	{
 		SchemaRegistry schemas = SchemaRegistry.instance();
 		flowersTable.stream().forEach(v -> schemas.withProvider(new DocumentTableSchemaProvider(v)));
 		schemas.initializeAll(session)
 			.exportInitializeAll();
 
-		CassandraNoSchemaRepository<Flower> flowers = new CassandraNoSchemaRepository<>(session, flowersTable, codec);
+		CassandraNoSchemaRepository<Flower> flowers = new CassandraNoSchemaRepository<>(session, flowersTable, uowType, codec);
 		flowers.withObserver(new SampleObserver());
 		flowers.ensureTables();
 
