@@ -27,7 +27,7 @@ implements CqlStatementFactory<T>
 	private static final String DELETE_CQL = "delete from %s.%s where %s";
 	private static final String EXISTS_CQL = "select count(*) from %s.%s  where %s limit 1";
 	private static final String READ_CQL = "select %s," + SELECT_COLUMNS + " from %s.%s where %s limit 1";
-	private static final String READ_ALL_CQL = "select %s" + SELECT_COLUMNS + " from %s.%s where %s";
+	private static final String READ_ALL_CQL = "select %s," + SELECT_COLUMNS + " from %s.%s where %s";
 	private static final String UPDATE_CQL = "update %s.%s set %s = ?, %s = ?, %s = ?, %s = ? where %s";
 
 	// These are used IFF there is a single primary table (with no views) and it is unique.
@@ -39,7 +39,7 @@ implements CqlStatementFactory<T>
 	private static final String DELETE = "delete";
 	private static final String EXISTS = "exists";
 	private static final String READ = "read";
-	private static final String READ_ALL = "readAll";
+	private static final String READ_ALL = "readAll_";
 	private static final String UPDATE = "update";
 	private static final String UPSERT = "upsert";
 
@@ -153,9 +153,9 @@ implements CqlStatementFactory<T>
 		);
 	}
 
-	private PreparedStatement prepareReadAll()
+	private PreparedStatement prepareReadAll(int keyCount)
 	{
-		return statements.computeIfAbsent(READ_ALL, k -> 
+		return statements.computeIfAbsent(READ_ALL + keyCount, k -> 
 		session.prepare(
 			String.format(READ_ALL_CQL,
 				table.keys().asSelectProperties(),
@@ -204,7 +204,7 @@ implements CqlStatementFactory<T>
 	@Override
 	public BoundStatement readAll(Object... parameters)
 	{
-		return prepareReadAll().bind(parameters);
+		return prepareReadAll(parameters.length).bind(parameters);
 	}
 
 	protected BoundStatement bindIdentity(PreparedStatement bs, Identifier id)
