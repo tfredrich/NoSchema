@@ -36,6 +36,11 @@ implements Comparable<Identifier>
 
 	private List<Object> components = new ArrayList<>();
 
+	public static Identifier newUuid()
+	{
+		return new Identifier(java.util.UUID.randomUUID());
+	}
+
 	/**
 	 * Create an empty identifier.
 	 */
