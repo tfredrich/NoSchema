@@ -2,20 +2,20 @@
 
 NoSchema is a Java library offering a document-oriented repository pattern for Cassandra storage. It eliminates the need for a predefined schema, thereby providing significant flexibility in domain modeling without necessitating data migrations.
 
-In NoSchema, only the keys that form an object's identifier are stored. These keys are extracted from the entity at storage time. The object itself is serialized into a storage format through a pluggable serialization process and stored as a binary blob. Currently, NoSchema supports BSON (similar to MongoDB) and GSON serialization formats.
+In NoSchema, only the keys that form an object's identifier are stored as individual columns. These keys are extracted from the entity at storage time. The object itself is serialized into a storage format through a pluggable serialization process and stored as a binary blob. Currently, NoSchema supports BSON (similar to MongoDB) and GSON serialization formats.
 
-Given that materialized views and indexes in Cassandra are often discouraged in high-throughput scenarios, NoSchema introduces the concepts of PrimaryTables and Views. These are fully managed and encapsulated within a Repository pattern that implements UnitOfWork. This ensures that multiple, denormalized tables are written for each key format, enhancing time-to-market, developer efficiency and software performance.
+Given that usage of materialized views and indexes in Cassandra are discouraged (at least in high-throughput scenarios), NoSchema introduces the concepts of a PrimaryTable and Views. These are fully managed and encapsulated within a Repository pattern that implements UnitOfWork. This ensures that multiple, denormalized tables are written; one for each key format, eliminating complex coding, reducing time-to-market, increasing developer efficiency and software performance.
 
-NoSchema simplifies the management of resource-oriented Plain Old Java Objects (PoJos) with multiple, denormalized views. This is achieved through a straightforward Repository pattern, making it an ideal choice for developers building APIs to simplify their data storage in Cassandra.
+NoSchema simplifies the management of resource-oriented Plain Old Java Objects (PoJos) with multiple, denormalized views. This is achieved through a straightforward Repository pattern, making it an ideal choice for developers building RESTful APIs to simplify their data storage in Cassandra.
 
 ## Features
-* **Primary Table**: A `PrimaryTable` which is typically identified by a single-unique identifier (like a UUID) is easily defined using the PrimaryTable DSL.
+* **Primary Table**: A `PrimaryTable`  is typically identified by a single-unique identifier (like a UUID) is easily defined using the PrimaryTable DSL.
 
 * **Views**: A `View` of a primary table with a completely different key structure is easily created and maintained automatically along with the `PrimaryTable` CRUD operations.
 
-* **UnitOfWork**: NoSchema includes a UnitOfWork class that provides pseudo-transactions across `PrimaryTable`s and `View`s. There are several implementations that honor various consistency levels.
+* **UnitOfWork**: NoSchema includes a built-in UnitOfWork class that provides pseudo-transactions across `PrimaryTable`s and `View`s. There are implementations that honor various consistency levels.
 
-* **Repository Pattern**: The project provides a default repository implementation, `CassandraNoSchemaRepository` to enable quick and easy CRUD operations on for storing and retrieving PoJos on Cassandra.
+* **Repository Pattern**: The project provides a default repository implementation, `CassandraNoSchemaRepository` to enable quick and easy CRUD operations for storing and retrieving PoJos on Cassandra.
 
 * **Repository Observer**: When you need to "get in the game" of the repository, the `DocumentObserver` class can be implemented to inject your own code into the processing chain. The default, do-nothing implementation is `AbstractDocumentObserver` which can be extended when only a method or two need overriding.
 
@@ -28,20 +28,20 @@ The project is divided into four main modules:
 
 1. **core**: This module provides the base classes and interfaces such as `Identifiable` and `Identifier`.
 
-1. **cassandra**: This module provides the base Respository class for Cassandra database operations and also includes the UnitOfWork implementation, which is used the Repository.
+1. **cassandra**: This module provides the base Respository class for Cassandra database operations and also includes the UnitOfWork implementation, which is used by the Repository.
 
 1. **bson-provider**: This module provides the BsonObjectCodec class for BSON serialization and deserialization. The class implements the ObjectCodec interface and provides methods for serializing and deserializing objects to and from BSON format.
 
 1. **gson-provider**: This module provides the GsonObjectCodec class for Gson serialization and deserialization. The class implements the ObjectCodec interface and provides methods for serializing and deserializing objects to and from Gson format. The class is located in the com.strategicgains.noschema.gson package.
 
 ## Getting Started
-1. One requirement for NoSchema is that entities **MUST** implement the `Identifiable` interface which needs a `getId()` method returning an `Identifier` instance containing the primary identifier components for the entity.
+1. One requirement for using NoSchema is that entities **MUST** implement the `Identifiable` interface which needs a `getId()` method returning an `Identifier` instance containing the primary identifier components for the entity.
 
 1. Choose a serialization provider: BSON (recommended) and GSON are built-in. But if you want to use something that's already in your project, implement the `ObjectCodec` interface.
 
-1. Override the CassandraNoSchemaRepository for your PoJos, defining the `PrimaryTable`s and `View`s for the resources (See: *Key Structure*, below).
+1. Override the CassandraNoSchemaRepository for each PoJo, defining the `PrimaryTable`s and `View`s for the resource (See: *Defining Keys*, below).
 
-1. Override any methods needed in `AbstractDocumentObserver` to process entities before or after encoding or before or after storage. For example, encryption/decryption of the entity, event streaming for CUD operations, etc.
+1. Override any methods needed in `AbstractDocumentObserver` to process entities before or after encoding or before or after storage. For example, encryption/decryption of the entity, event streaming for CUD operations, etc. Add your observer to the repository constructor using the `.withObserver()` DSL setter.
 
 1. Determine the UnitOfWork consistency level. The default is to use the capabilities of the Cassandra client driver to distribute and manage the multiple statements across the views as completely asynchronous operations. It is also possible to use LOGGED and UNLOGGED batch operations, but know that these are *anti-patterns in Cassandra due to them likely being cross-partition writes and will impact performance.*
 
@@ -85,22 +85,27 @@ You will likely want to override it to scope it to your own resources.:
 public static void main(String[] args)
 throws KeyDefinitionException, InvalidIdentifierException, DuplicateItemException, ItemNotFoundException
 {
-	CqlSession session = ...
+	CqlSession session = ... // create the CqlSession as usual.
+
+	// Define a table and its views.
 	PrimaryTable albumsTable = new PrimaryTable("sample_keyspace", "albums", "id:UUID unique")
 		.withView("by_name", "(account.id as account_id:UUID), name:text unique");
 
 	try
 	{
+		// Create a Repository instance.
+		// This one uses the asyncronous UnitOfWork and BSON serialization.
 		CassandraNoSchemaRepository<Album> albums = new CassandraNoSchemaRepository<>(session, albumsTable, UnitOfWorkType.ASYNC, new BsonObjectCodec());
 
 		// this creates any missing underlying Cassandra tables (for both PrimaryTable and any Views)
 		albums.ensureTables();
 
-		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
-		UUID accountId = UUID.fromString("a87d3bff-6997-4739-ab4e-ded0cc85700f");
-		Album album = new Album(accountId, id, ...);
+		// Create a new in-memory Album instance.
+		UUID id = UUID.randomUUID();
+		UUID accountId = UUID.randomUUID();
+		Album album = new Album(accountId, id, "AC/DC", "Back In Black", ...);
 
-		// Create a new Album, writing both PrimaryTable and View at once.
+		// Write the Album, writing both PrimaryTable and View at once, ensuring uniqueness of both the primary table and `by_name` view.
 		Album written = albums.create(album);
 		System.out.println(written.toString());
 
@@ -117,7 +122,6 @@ throws KeyDefinitionException, InvalidIdentifierException, DuplicateItemExceptio
 		session.close();
 	}
 }
-
 ```
 
 ### Defining Keys
