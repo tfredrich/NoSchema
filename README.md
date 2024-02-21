@@ -1,8 +1,8 @@
-# Project Title: NoSchema
+# NoSchema
 
-NoSchema is a Java library offering a document-oriented repository pattern for Cassandra storage. It eliminates the need for a predefined schema, thereby providing significant flexibility in domain modeling without necessitating data migrations.
+NoSchema is a Java library offering a document-oriented repository pattern for Cassandra storage. It eliminates the need for a predefined schema, thereby providing significant flexibility in domain modeling without necessitating table data migrations.
 
-In NoSchema, only the keys that form an object's identifier are stored as individual columns. These keys are extracted from the entity at storage time. The object itself is serialized into a storage format through a pluggable serialization process and stored as a binary blob. Currently, NoSchema supports BSON (similar to MongoDB) and GSON serialization formats.
+In NoSchema, only the keys that form an object's identifier are stored as individual columns. These keys are extracted from the entity at storage time. The object itself is serialized into a storage format through a pluggable serialization process and stored as a binary blob. Currently, NoSchema supports BSON (like MongoDB) and GSON (JSON) serialization formats.
 
 Given that usage of materialized views and indexes in Cassandra are discouraged (at least in high-throughput scenarios), NoSchema introduces the concepts of a PrimaryTable and Views. These are fully managed and encapsulated within a Repository pattern that implements UnitOfWork. This ensures that multiple, denormalized tables are written; one for each key format, eliminating complex coding, reducing time-to-market, increasing developer efficiency and software performance.
 
