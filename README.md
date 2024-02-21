@@ -1,4 +1,4 @@
-#Project Title: NoSchema
+# Project Title: NoSchema
 
 NoSchema is a Java library offering a document-oriented repository pattern for Cassandra storage. It eliminates the need for a predefined schema, thereby providing significant flexibility in domain modeling without necessitating data migrations.
 
@@ -8,8 +8,8 @@ Given that materialized views and indexes in Cassandra are often discouraged in 
 
 NoSchema simplifies the management of resource-oriented Plain Old Java Objects (PoJos) with multiple, denormalized views. This is achieved through a straightforward Repository pattern, making it an ideal choice for developers building APIs to simplify their data storage in Cassandra.
 
-##Features
-* **Primary Tables**: A `PrimaryTable` which is typically identified by a single-unique identifier (like a UUID) is easily defined using the PrimaryTable DSL.
+## Features
+* **Primary Table**: A `PrimaryTable` which is typically identified by a single-unique identifier (like a UUID) is easily defined using the PrimaryTable DSL.
 
 * **Views**: A `View` of a primary table with a completely different key structure is easily created and maintained automatically along with the `PrimaryTable` CRUD operations.
 
@@ -23,7 +23,7 @@ NoSchema simplifies the management of resource-oriented Plain Old Java Objects (
 
 * **Pluggable Serialization**: The project includes `BsonObjectCodec` and `GsonObjectCodec` classes that provide methods for serializing and deserializing objects to and from BSON and Gson formats respectively. If Jackson is already used in your project, simply implement the `ObjectCodec` interface and pass an instance in to the repository.
 
-##Modules
+## Modules
 The project is divided into four main modules:
 
 1. **core**: This module provides the base classes and interfaces such as `Identifiable` and `Identifier`.
@@ -34,7 +34,7 @@ The project is divided into four main modules:
 
 1. **gson-provider**: This module provides the GsonObjectCodec class for Gson serialization and deserialization. The class implements the ObjectCodec interface and provides methods for serializing and deserializing objects to and from Gson format. The class is located in the com.strategicgains.noschema.gson package.
 
-##Getting Started
+## Getting Started
 1. One requirement for NoSchema is that entities **MUST** implement the `Identifiable` interface which needs a `getId()` method returning an `Identifier` instance containing the primary identifier components for the entity.
 
 1. Choose a serialization provider: BSON (recommended) and GSON are built-in. But if you want to use something that's already in your project, implement the `ObjectCodec` interface.
@@ -75,7 +75,7 @@ If GSON is desired instead:
 </dependency>
 ```
 
-##Usage
+## Usage
 Here is a basic example of how to use NoSchema.
 
 Note that this example doesn't override the default `CassandraNoSchemaRepository` but uses it raw for illustration purposes.
@@ -158,8 +158,8 @@ The class throws a `KeyDefinitionException` if the string is invalid. This can o
 The class throws an `InvalidIdentifierException` if the entity is missing any property values required by the key definition while the identifier is being extracted from a PoJo at storage time.
 
 
-##Contributing
+## Contributing
 Contributions are welcome! Submit a pull request from your own clone of this GitHub repo.
 
-##License
+## License
 This project is licensed under the terms of the Apache 2.0 license.
