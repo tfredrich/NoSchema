@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,7 +39,7 @@ implements Comparable<Identifier>
 
 	public static Identifier newUuid()
 	{
-		return new Identifier(java.util.UUID.randomUUID());
+		return new Identifier(UUID.randomUUID());
 	}
 
 	/**
