@@ -3,18 +3,42 @@ package com.strategicgains.noschema.cassandra.key;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 /**
- * Used to parse key definition strings into Cassandra keys and something that can pull values from a BSONObject.
+ * The KeyDefinitionParser class is a utility class used to parse key definition strings into a KeyDefinition instance that can extract values from an entity to create Identifiers.
  * 
- * The structure is "((partition-key) clustering-key) modifier" where:
- * partition-key = name-value-pair | [, name-value-pair]
- * clustering-key = clustering-key-component | [, clustering-key-component]
- * modifier = 'unique' #is optional.
- * clustering-key-component = [+|-]name-value-pair #where '+' implies ascending order, '-' implies descending. Default is ascending.
- * name-value-pair = name:type
+ * The static method, KeyDefinitionParser.parse(String) parses the key definition string into a KeyDefinition instance.
+ * The string is expected to follow a specific format, which is defined as follows:
+ * <pre>
+ * key-definition ::= "(" partition-key ")" clustering-key modifier
+ * partition-key ::= column-definition | column-definition "," column-definition
+ * clustering-key ::= clustering-key-component | clustering-key "," clustering-key-component
+ * modifier ::= "unique" | ε
+ * clustering-key-component ::= "+" column-definition | "-" column-definition | column-definition
+ * column-definition ::= name-type-pair | property-name " as " name-type-pair
+ * name-type-pair ::= name ":" type
+ * property-name ::= [a-zA-Z0-9_]+
+ * </pre>
+ * 
+ * In the above BNF-style diagram:
+ * - The partition-key is a comma-separated list of column-definitions enclosed in parentheses.
+ * - The clustering-key is a comma-separated list of clustering-key-components.
+ * - The modifier is an optional "unique" keyword which causes the UnitOfWork to enforce uniqueness on create/update and requires presence on delete. Note this causes read-before-write on create/update/delete.
+ * - The clustering-key-component is a name-value-pair, optionally prefixed with a "+" or "-" to indicate ascending or descending order, respectively.
+ * - The column-definition is a name-type-pair, optionally prefixed with a property-name and "as" to indicate a different name in the entity.
+ * - The name-type-pair is a property name and a type separated by a colon.
+ * - The property-name is a string of alphanumeric characters and underscores; a PoJo property name.
+ * 
+ * Examples:
+ * <pre>
+ * (id:uuid)	// partition key only
+ * ((id:uuid) name:text unique)	// partition key of id, clustering key of name, with unique modifier.
+ * ((id:uuid, name:text), -created:timestamp, +age:int)	// partition key of id and name + clustering key of created and age, with sort order on each.
+ * </pre>
+ * 
+ * The class throws a KeyDefinitionException if the string is invalid. This can occur if the string is null or empty, if it contains too many parentheses, if a parenthesis is misplaced, or if the parentheses are unmatched.
  * 
  * @author tfredrich
  * @since 1 Sept 2016
- * @see KeyComponent
+ * @see KeyDefinition
  */
 public final class KeyDefinitionParser
 {

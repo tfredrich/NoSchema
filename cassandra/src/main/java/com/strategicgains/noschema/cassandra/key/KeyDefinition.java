@@ -15,6 +15,26 @@ import com.strategicgains.noschema.cassandra.key.ClusteringKeyComponent.Ordering
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
+/**
+ * The KeyDefinition class is responsible for defining the keys used in Cassandra tables for Primary Tables and Views.
+ * It provides methods to add partition keys and clustering keys, which are essential components of Cassandra's and NoSchema's key model.
+ * 
+ * The class maintains a list of KeyComponent objects for partition keys and ClusteringKeyComponent objects for clustering keys.
+ * It also maintains a map of key fields, which are cached at runtime for performance.
+ * 
+ * The class provides methods to add keys, check the size and presence of keys, and generate identifiers from an entity.
+ * It also provides methods to generate string representations of the keys for use in Cassandra queries.
+ * 
+ * The class also provides methods to check if the key definition is unique and valid, and to set the uniqueness of the key definition.
+ * 
+ * The class uses Java reflection to find fields in an entity that correspond to the keys and to extract their values.
+ * It also uses Java streams to process the keys and generate string representations of them.
+ * 
+ * @author Todd Fredrich
+ * @throws KeyDefinitionException if the entity is missing any fields required by the key definition.
+ * @throws InvalidIdentifierException if the entity is missing any property values required by the key definition.
+ * @see KeyDefinitionParser
+ */
 public class KeyDefinition
 {
 	private static final String ASSIGNMENT_PLACEHOLDER = " = ?";
