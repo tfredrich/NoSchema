@@ -3,6 +3,12 @@
  */
 package com.strategicgains.noschema.cassandra.key;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.UnaryOperator;
+
+import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 /**
@@ -14,11 +20,17 @@ public class KeyComponent
 	// the name of the DB column.
 	private String column;
 
+	// the type of the DB column.
+	private DataTypes type;
+
 	// the name of the object property to map to the DB column (using the 'as' clause).
 	private String property;
 
-	// the type of the DB column.
-	private DataTypes type;
+	// the function to map the extracted property value from the object into the column value.
+	private UnaryOperator<Object> extractor;
+
+	// Cached during runtime extraction: Access Fields by property name. Used to extract values from objects.
+	private List<Field> keyFields;
 
 	public KeyComponent(String column, DataTypes type)
 	throws KeyDefinitionException
@@ -50,6 +62,24 @@ public class KeyComponent
 
 		this.column = column;
 		return this;
+	}
+
+	public KeyComponent extractor(UnaryOperator<Object> extractor)
+	{
+		this.extractor = extractor;
+		return this;
+	}
+
+	private boolean hasExtractor()
+	{
+		return (extractor != null);
+	}
+
+	public Object extract(Object object)
+	{
+		Object value = findValue(object);
+		if (value == null) return null;
+		return (hasExtractor() ? extractor.apply(value) : value);
 	}
 
 	public String property()
@@ -111,5 +141,88 @@ public class KeyComponent
 	protected static String[] splitColumnDefinition(String phrase)
 	{
 		return phrase.split("\\s*:\\s*");
+	}
+
+	private Object findValue(Object entity)
+	{
+		List<Field> fields = getKeyFields(entity);
+
+		try
+		{
+			if (fields.size() == 1) return fields.get(0).get(entity);
+	
+			int i = 0;
+			Object obj = entity;
+			do
+			{
+				obj = fields.get(i++).get(obj);
+				if (obj == null) return null;
+			}
+			while (i < fields.size());
+	
+			return obj;
+		}
+		catch(IllegalAccessException e)
+		{
+			throw new InvalidIdentifierException("Unable to access field: " + property, e);
+		}
+	}
+
+	private List<Field> getKeyFields(Object entity)
+	throws KeyDefinitionException
+	{
+		// Return the cached value, if available.
+		if (keyFields != null) return keyFields;
+
+		// Otherwise, find the fields and cache them.
+		keyFields = findFields(property, entity);
+		return keyFields;
+	}
+
+	private List<Field> findFields(String property, Object entity)
+	throws KeyDefinitionException
+	{
+		String[] path = property.split("\\.");
+		int i = 0;
+		List<Field> fields = new ArrayList<>(path.length);
+		Object current = entity;
+		do
+		{
+			Field field = findFieldInHierarchy(path[i++], current);
+			field.setAccessible(true);
+			fields.add(field);
+			try
+			{
+				current = field.get(current);
+			}
+			catch (IllegalArgumentException | IllegalAccessException e)
+			{
+				throw new KeyDefinitionException("Missing field: " + property, e);
+			}
+		}
+		while (i < path.length);
+
+		return fields;
+	}
+
+	private Field findFieldInHierarchy(String property, Object entity)
+	throws KeyDefinitionException
+	{
+		Class<?> currentClass = entity.getClass();
+
+		do
+		{
+			try
+			{
+				return currentClass.getDeclaredField(property);
+			}
+			catch (NoSuchFieldException e)
+			{
+				currentClass = currentClass.getSuperclass();
+			}
+		}
+		while (currentClass != null);
+
+		throw new KeyDefinitionException("Missing field: " + property);
 	}
 }

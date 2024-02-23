@@ -1,12 +1,10 @@
 package com.strategicgains.noschema.cassandra.key;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -50,9 +48,6 @@ public class KeyDefinition
 	 * upsert is used with no uniqueness enforcement.
 	 */
 	private boolean isUnique;
-
-	// Cached at runtime: Access Fields by property name.
-	private Map<String, List<Field>> keyFields;
 
 	public KeyDefinition addPartitionKey(String column, DataTypes type)
 	throws KeyDefinitionException
@@ -121,60 +116,51 @@ public class KeyDefinition
 	{
 		Identifier identifier = new Identifier();
 		List<String> missingProperties = new ArrayList<>(0);
-		Map<String, List<Field>> fields = buildKeyFields(entity);
+		AtomicBoolean isKDE = new AtomicBoolean(false);
 
-		fields.entrySet().stream().forEach(e -> {
-			Object value = findValue(e.getKey(), e.getValue(), entity);
-
-			if (value != null) identifier.add(value);
-			else missingProperties.add(e.getKey());
-		});
-
-		if (identifier.size() != size())
+		partitionKey.stream().forEach(k ->
 		{
-			throw new InvalidIdentifierException("Missing properties: " + String.join(", ", missingProperties));
-		}
-
-		return identifier;
-	}
-
-	private Map<String, List<Field>> buildKeyFields(Object entity)
-	throws KeyDefinitionException
-	{
-		if (keyFields != null) return keyFields;
-
-		keyFields = new LinkedHashMap<>();
-		List<String> missingFields = new ArrayList<>();
-		partitionKey.stream().forEach(k -> {
 			try
 			{
-				keyFields.put(k.property(), findFields(k.property(), entity));
+				Object value = k.extract(entity);
+				if (value != null) identifier.add(value);
+				else missingProperties.add(k.property());
 			}
 			catch (KeyDefinitionException | InvalidIdentifierException e)
 			{
-				missingFields.add(k.property());
+				if (e instanceof KeyDefinitionException) isKDE.set(true);
+				missingProperties.add(k.property());
 			}
 		});
+
 		if (hasClusteringKey())
 		{
-			clusteringKey.stream().forEach(k -> {
+			clusteringKey.stream().forEach(k ->
+			{
 				try
 				{
-					keyFields.put(k.property(), findFields(k.property(), entity));
+					Object value = k.extract(entity);
+					if (value != null) identifier.add(value);
+					else missingProperties.add(k.property());
 				}
 				catch (KeyDefinitionException | InvalidIdentifierException e)
 				{
-					missingFields.add(k.property());
+					if (e instanceof KeyDefinitionException) isKDE.set(true);
+					missingProperties.add(k.property());
 				}
 			});
 		}
 
-		if (!missingFields.isEmpty())
+		if (identifier.size() != size())
 		{
-			throw new KeyDefinitionException("Missing fields: " + String.join(", ", missingFields));
+			if (isKDE.get())
+			{
+				throw new KeyDefinitionException("Missing fields: " + String.join(", ", missingProperties));
+			}
+			else throw new InvalidIdentifierException("Missing properties: " + String.join(", ", missingProperties));
 		}
 
-		return keyFields;
+		return identifier;
 	}
 
 	public boolean isUnique()
@@ -287,77 +273,6 @@ public class KeyDefinition
 		}
 
 		return sb.toString();
-	}
-
-	private List<Field> findFields(String property, Object entity)
-	throws KeyDefinitionException, InvalidIdentifierException
-	{
-		String[] path = property.split("\\.");
-		int i = 0;
-		List<Field> fields = new ArrayList<>(path.length);
-		Object current = entity;
-		do
-		{
-			Field field = findFieldInHierarchy(path[i++], current);
-			field.setAccessible(true);
-			fields.add(field);
-			try
-			{
-				current = field.get(current);
-			}
-			catch (IllegalArgumentException | IllegalAccessException e)
-			{
-				throw new KeyDefinitionException(property, e);
-			}
-		}
-		while (i < path.length);
-
-		return fields;
-	}
-
-	private Field findFieldInHierarchy(String property, Object entity)
-	throws InvalidIdentifierException
-	{
-		Class<?> currentClass = entity.getClass();
-
-		do
-		{
-			try
-			{
-				return currentClass.getDeclaredField(property);
-			}
-			catch (NoSuchFieldException e)
-			{
-				currentClass = currentClass.getSuperclass();
-			}
-		}
-		while (currentClass != null);
-
-		throw new InvalidIdentifierException(property);
-	}
-
-	private Object findValue(String property, List<Field> fields, Object entity)
-	{
-		try
-		{
-			if (fields.size() == 1) return fields.get(0).get(entity);
-	
-			int i = 0;
-			Object obj = entity;
-			do
-			{
-				obj = fields.get(i++).get(obj);
-				if (obj == null) return null;
-			}
-			while (i < fields.size());
-	
-			return obj;
-		}
-		catch(IllegalAccessException e)
-		{
-			return null;
-//			throw new InvalidIdentifierException(property, e);
-		}
 	}
 
 	private void appendAsColumns(List<? extends KeyComponent> components, StringBuilder builder)
