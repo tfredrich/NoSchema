@@ -330,7 +330,6 @@ public class KeyDefinition
 
 	public List<KeyComponent> components()
 	{
-		return Stream.concat(partitionKey.stream(), clusteringKey.stream())
-			.collect(Collectors.toList());
+		return Stream.concat(partitionKey.stream(), clusteringKey.stream()).toList();
 	}
 }
