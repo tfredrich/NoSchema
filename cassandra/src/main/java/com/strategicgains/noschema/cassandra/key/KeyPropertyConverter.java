@@ -34,9 +34,14 @@ public class KeyPropertyConverter
 			case INTEGER: return row.getInt(property);
 			case TEXT: return row.getString(property);
 			case TIMESTAMP: return row.getInstant(property);
-			case TIMEUUID:
-			case UUID:  return row.getUuid(property);
+			case TIMEUUID,
+				UUID: return row.getUuid(property);
 			default: throw new UnsupportedOperationException("Conversion of property type: " + type.toString());
 		}
     }
+
+	private KeyPropertyConverter()
+	{
+		// Prevents instantiation.
+	}
 }
