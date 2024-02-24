@@ -104,10 +104,8 @@ public class KeyDefinition
 	 * Pulls the properties from an entity that correspond to this KeyDefinition
 	 * into an Identifier instance.
 	 * 
-	 * If one or more of the properties are missing, returns null.
-	 * 
 	 * @param entity a POJO from which to extract an identifier.
-	 * @return an Identifier instance or null.
+	 * @return an Identifier instance if successful.
 	 * @throws KeyDefinitionException if the entity is missing any fields required by the key definition. 
 	 * @throws InvalidIdentifierException if the entity is missing any property values required by the key definition.
 	 */
@@ -116,44 +114,18 @@ public class KeyDefinition
 	{
 		Identifier identifier = new Identifier();
 		List<String> missingProperties = new ArrayList<>(0);
-		AtomicBoolean isKDE = new AtomicBoolean(false);
+		AtomicBoolean kdeOccurred = new AtomicBoolean(false);
 
-		partitionKey.stream().forEach(k ->
-		{
-			try
-			{
-				Object value = k.extract(entity);
-				if (value != null) identifier.add(value);
-				else missingProperties.add(k.property());
-			}
-			catch (KeyDefinitionException | InvalidIdentifierException e)
-			{
-				if (e instanceof KeyDefinitionException) isKDE.set(true);
-				missingProperties.add(k.property());
-			}
-		});
+		kdeOccurred.compareAndSet(false, extractKey(entity, partitionKey, identifier, missingProperties));
 
 		if (hasClusteringKey())
 		{
-			clusteringKey.stream().forEach(k ->
-			{
-				try
-				{
-					Object value = k.extract(entity);
-					if (value != null) identifier.add(value);
-					else missingProperties.add(k.property());
-				}
-				catch (KeyDefinitionException | InvalidIdentifierException e)
-				{
-					if (e instanceof KeyDefinitionException) isKDE.set(true);
-					missingProperties.add(k.property());
-				}
-			});
+			kdeOccurred.compareAndSet(false, extractKey(entity, clusteringKey, identifier, missingProperties));
 		}
 
 		if (identifier.size() != size())
 		{
-			if (isKDE.get())
+			if (kdeOccurred.get())
 			{
 				throw new KeyDefinitionException("Missing fields: " + String.join(", ", missingProperties));
 			}
@@ -161,6 +133,37 @@ public class KeyDefinition
 		}
 
 		return identifier;
+	}
+
+	private <T extends KeyComponent> boolean extractKey(Object entity, List<T> keys, Identifier identifier, List<String> missingProperties)
+	{
+		AtomicBoolean kdeOccurred = new AtomicBoolean(false);
+
+		keys
+			.stream()
+			.forEach(k -> {
+				boolean kde = extractComponent(entity, k, identifier, missingProperties);
+				kdeOccurred.compareAndSet(false, kde);
+			});
+
+		return kdeOccurred.get();
+	}
+
+	private boolean extractComponent(Object entity, KeyComponent k, Identifier identifier, List<String> missingProperties)
+	{
+		try
+		{
+			Object value = k.extract(entity);
+			if (value != null) identifier.add(value);
+			else missingProperties.add(k.property());
+		}
+		catch (KeyDefinitionException | InvalidIdentifierException e)
+		{
+			missingProperties.add(k.property());
+			if (e instanceof KeyDefinitionException) return true;
+		}
+
+		return false;
 	}
 
 	public boolean isUnique()
