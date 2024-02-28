@@ -56,15 +56,6 @@ public interface NoSchemaRepository<T>
 	throws ItemNotFoundException, InvalidIdentifierException;
 
 	/**
-	 * Retrieve many entities from the table using the given [partial] identifier.
-	 * Note that values for the partition key portion MUST be included.
-	 * 
-	 * @param parms properties making up a partial key or identifier.
-	 * @return
-	 */
-	List<T> readAll(Object... parms);
-
-	/**
 	 * Read all given identifiers.
 	 * 
 	 * Leverages the token-awareness of the driver to optimally query each node directly instead of invoking a

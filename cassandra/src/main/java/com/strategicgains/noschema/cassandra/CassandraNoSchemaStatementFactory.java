@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.protocol.internal.util.Bytes;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
@@ -30,9 +31,18 @@ public class CassandraNoSchemaStatementFactory<T extends Identifiable>
 		return get(viewName).read(id);
 	}
 
-	public BoundStatement readAll(String viewName, Object... parameters)
+	public BoundStatement readAll(String viewName, int limit, String cursor, Object... parameters)
 	{
-		return get(viewName).readAll(parameters);
+		BoundStatement stmt = get(viewName)
+			.readAll(parameters)
+			.setPageSize(limit);
+
+		if (cursor != null)
+		{
+			stmt.setPagingState(Bytes.fromHexString(cursor));
+		}
+
+		return stmt;
 	}
 
 	public BoundStatement delete(String viewName, Identifier id)

@@ -153,7 +153,7 @@ public class SampleRun {
 		System.out.println(read.toString());
 
 		System.out.println("*** READ ALL ***");
-		List<Flower> all = flowers.readAll(FLOWERS_BY_NAME, accountId);
+		PagedResponse<Flower> all = flowers.readAll(FLOWERS_BY_NAME, 20, null, accountId);
 		System.out.println("Size: " + all.size());
 		System.out.println(all.get(0));
 	}

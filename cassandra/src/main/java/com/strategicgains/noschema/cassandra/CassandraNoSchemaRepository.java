@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.protocol.internal.util.Bytes;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.NoSchemaRepository;
@@ -216,29 +217,41 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return null;
 	}
 
-	@Override
-	public List<T> readAll(Object... parms)
+	/**
+	 * Retrieve many entities from the repository using the given [partial] identifier.
+	 * Note that values for the partition key portion MUST be included.
+	 * 
+	 * @param limit the maximum number of rows to return.
+	 * @param cursor a hex string representing the page state to start the query.
+	 * @param parms properties making up a partial key or identifier.
+	 * @return
+	 */
+	public PagedResponse<T> readAll(int limit, String cursor, Object... parms)
 	{
-		return readAll(table.name(), parms);
+		return readAll(table.name(), limit, cursor, parms);
 	}
 
-	public List<T> readAll(String viewName, Object... parms)
+	public PagedResponse<T> readAll(String viewName, int limit, String cursor, Object... parms)
 	{
 		//TODO: Handle range query
+		PagedResponse<T> response = new PagedResponse<>();
 		try
 		{
-			return readRows(viewName, parms)
-				.thenApply(rows -> rows.stream()
-				.map(row -> marshalEntity(viewName, row))
-				.toList()
-			).join();
+			readRows(viewName, limit, cursor, parms)
+				.thenAccept(rows -> {
+					response.cursor(rows.cursor());
+					rows
+						.stream()
+						.map(row -> marshalEntity(viewName, row))
+						.forEach(response::add);
+				});
 		}
 		catch (CompletionException e)
 		{
 			handleException(e);
 		}
 
-		return Collections.emptyList();
+		return response;
 	}
 
 	@Override
@@ -412,12 +425,13 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			.toCompletableFuture();
 	}
 
-	private CompletableFuture<List<Row>> readRows(String viewName, Object... parameters)
+	private CompletableFuture<PagedRows> readRows(String viewName, int limit, String cursor, Object... parameters)
 	{
 		observers.forEach(o -> o.beforeRead(new Identifier(parameters)));
-		return session.executeAsync(statementGenerator.readAll(viewName, parameters))
+		return session.executeAsync(statementGenerator.readAll(viewName, limit, cursor, parameters))
 			.thenApply(rs -> {
-				List<Row> rows = new ArrayList<>();
+				PagedRows rows = new PagedRows();
+				rows.cursor(Bytes.toHexString(rs.getExecutionInfo().getPagingState()));
 				rs.currentPage().iterator().forEachRemaining(rows::add);
 				return rows;
 			})
