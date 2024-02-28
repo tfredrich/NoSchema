@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.UUID;
 
@@ -88,7 +89,6 @@ public class KeyDefinitionTest
 		thrown.expect(InvalidIdentifierException.class);
 	    thrown.expectMessage("Missing properties: account.id, name, height");
 	    kd.identifier(new Flower());
-		kd.identifier(new Flower());
 	}
 
 	@Test
@@ -213,7 +213,16 @@ public class KeyDefinitionTest
 	public void shouldCreateIdentifier()
 	throws KeyDefinitionException, InvalidIdentifierException
 	{
-		KeyDefinition defn = KeyDefinitionParser.parse("(account.id as account_id:uuid), name:text, id:uuid");
+		KeyDefinition defn = KeyDefinitionParser.parse("(account.id as account_id:uuid), name:text, id:uuid, createdAt as year:int");
+		defn.component(3).extractor(k -> {
+			if (k instanceof Date)
+			{
+				GregorianCalendar cal = new GregorianCalendar();
+				cal.setTime((Date) k);
+				return cal.get(GregorianCalendar.YEAR);
+			}
+            return k;
+        });
 
 		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
 		UUID accountId = UUID.fromString("a87d3bff-6997-4739-ab4e-ded0cc85700f");
@@ -226,10 +235,11 @@ public class KeyDefinitionTest
 		flower.setUpdatedAt(updatedAt);		
 
 		Identifier identifier = defn.identifier(flower);
-		assertEquals(3, identifier.size());
+		assertEquals(4, identifier.size());
 		List<Object> components = identifier.components();
 		assertEquals(accountId, components.get(0));
 		assertEquals("rose", components.get(1));
 		assertEquals(id, components.get(2));
+		assertEquals(2022, components.get(3));
 	}
 }

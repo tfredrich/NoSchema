@@ -332,4 +332,9 @@ public class KeyDefinition
 	{
 		return Stream.concat(partitionKey.stream(), clusteringKey.stream()).toList();
 	}
+
+	public KeyComponent component(int index)
+	{
+		return (index < partitionKey.size() ? partitionKey.get(index) : clusteringKey.get(index - partitionKey.size()));
+	}
 }
