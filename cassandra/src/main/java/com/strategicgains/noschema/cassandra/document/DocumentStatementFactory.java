@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.protocol.internal.util.Bytes;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.AbstractTable;
 import com.strategicgains.noschema.cassandra.CqlStatementFactory;
