@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.strategicgains.noschema.Identifiable;
 
 public class PagedRows
 {
@@ -24,7 +23,7 @@ public class PagedRows
 
 	public String cursor()
 	{
-		return cursor();
+		return cursor;
 	}
 
 	public void add(Row row)
@@ -35,12 +34,5 @@ public class PagedRows
 	public Stream<Row> stream()
 	{
 		return rows.stream();
-	}
-
-	public <T extends Identifiable> PagedResponse<T> asReadAllResponse()
-	{
-		PagedResponse<T> r = new PagedResponse<>();
-		r.cursor(cursor);
-		return r;
 	}
 }

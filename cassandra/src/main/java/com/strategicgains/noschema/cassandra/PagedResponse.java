@@ -22,7 +22,7 @@ public class PagedResponse<T extends Identifiable>
 
 	public String cursor()
 	{
-		return cursor();
+		return cursor;
 	}
 
 	public void add(T item)
@@ -48,5 +48,10 @@ public class PagedResponse<T extends Identifiable>
 	public T get(int i)
 	{
 		return (hasItems() ? items.get(i) : null);
+	}
+
+	public List<T> items()
+	{
+		return items;
 	}
 }

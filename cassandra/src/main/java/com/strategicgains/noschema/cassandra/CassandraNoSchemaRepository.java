@@ -233,18 +233,14 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 	public PagedResponse<T> readAll(String viewName, int limit, String cursor, Object... parms)
 	{
-		//TODO: Handle range query
-		PagedResponse<T> response = new PagedResponse<>();
+		final PagedResponse<T> response = new PagedResponse<>();
 		try
 		{
 			readRows(viewName, limit, cursor, parms)
-				.thenAccept(rows -> {
-					response.cursor(rows.cursor());
-					rows
-						.stream()
-						.map(row -> marshalEntity(viewName, row))
-						.forEach(response::add);
-				});
+			    .thenAccept(page -> {
+                    response.cursor(page.cursor());
+                    page.stream().forEach(row -> response.add(marshalEntity(viewName, row)));
+            }).join();
 		}
 		catch (CompletionException e)
 		{
