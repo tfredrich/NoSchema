@@ -1,8 +1,14 @@
 package com.strategicgains.noschema.cassandra.document;
 
+import java.nio.ByteBuffer;
+import java.sql.Date;
+
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.document.AbstractDocumentFactory;
+import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
@@ -22,6 +28,30 @@ extends AbstractDocumentFactory<T>
 	{
 		super(codec);
 		setKeyDefinition(keys);
+	}
+
+	public Document asDocument(Row row)
+	{
+		if (row == null)
+		{
+			return null;
+		}
+
+		Document d = new Document();
+		ByteBuffer b = row.getByteBuffer(Columns.OBJECT);
+
+		if (b != null && b.hasArray())
+		{
+			//Force the reading of all the bytes.
+			d.setObject((b.array()));
+		}
+
+		//TODO: map the columns to the Document Identifier.
+		d.setType(row.getString(Columns.TYPE));
+		d.setMetadata(row.getMap(Columns.METADATA, String.class, String.class));
+		d.setCreatedAt(new Date(row.getInstant(Columns.CREATED_AT).getEpochSecond()));
+		d.setUpdatedAt(new Date(row.getInstant(Columns.UPDATED_AT).getEpochSecond()));
+		return d;
 	}
 
 	private void setKeyDefinition(KeyDefinition keys)

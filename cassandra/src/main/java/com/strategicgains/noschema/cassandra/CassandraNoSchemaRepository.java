@@ -1,7 +1,5 @@
 package com.strategicgains.noschema.cassandra;
 
-import java.nio.ByteBuffer;
-import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -12,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -21,7 +20,6 @@ import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.NoSchemaRepository;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider;
-import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
@@ -206,7 +204,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		try
 		{
 			return readRow(viewName, id)
-				.thenApply(row -> marshalEntity(viewName, row))
+				.thenApply(row -> asEntity(viewName, row))
 				.join();
 		}
 		catch (CompletionException e)
@@ -218,7 +216,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	}
 
 	/**
-	 * Retrieve many entities from the repository using the given [partial] identifier.
+	 * Retrieve many entities from the primary table using the given [partial] identifier.
 	 * Note that values for the partition key portion MUST be included.
 	 * 
 	 * @param limit the maximum number of rows to return.
@@ -231,6 +229,16 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return readAll(table.name(), limit, cursor, parms);
 	}
 
+	/**
+	 * Retrieve many entities from a view using the given [partial] identifier.
+	 * Note that values for the partition key portion MUST be included.
+	 * 
+	 * @param viewName the name of the view to query.
+	 * @param limit the maximum number of rows to return.
+	 * @param cursor a hex string representing the page state to start the query.
+	 * @param parms properties making up a partial key or identifier.
+	 * @return
+	 */
 	public PagedResponse<T> readAll(String viewName, int limit, String cursor, Object... parms)
 	{
 		final PagedResponse<T> response = new PagedResponse<>();
@@ -239,7 +247,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			readRows(viewName, limit, cursor, parms)
 			    .thenAccept(page -> {
                     response.cursor(page.cursor());
-                    page.stream().forEach(row -> response.add(marshalEntity(viewName, row)));
+                    page.stream().forEach(row -> response.add(asEntity(viewName, row)));
             }).join();
 		}
 		catch (CompletionException e)
@@ -263,7 +271,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		List<CompletableFuture<T>> futures = ids.stream().map(id -> 
 			session.executeAsync(statementGenerator.read(viewName, id))
 				.thenApply(rs -> rs.one())
-				.thenApply(row -> marshalEntity(viewName, row))
+				.thenApply(row -> asEntity(viewName, row))
 				.toCompletableFuture()
 		).toList();
 
@@ -279,7 +287,12 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		{
 			return allCompletableFuture.get();
 		}
-		catch (InterruptedException | ExecutionException e)
+		catch (InterruptedException i)
+		{
+			Thread.currentThread().interrupt();
+			throw new RuntimeException(i);
+		}
+		catch (ExecutionException e)
 		{
 			throw new RuntimeException(e);
 		}
@@ -402,8 +415,9 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	{
 		return readRow(table.name(), id)
 			.thenApply(row -> {
-				Document document = marshalDocument(row);
+				Document document = asDocument(table.name(), row);
 				T entity = asEntity(table.name(), document);
+				// TODO: This is a hack. Need to load this from the database.
 				document.setIdentifier(entity.getIdentifier());
 				return document;				
 			});
@@ -434,38 +448,18 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			.toCompletableFuture();
 	}
 
-	private T marshalEntity(String viewName, Row row)
+	private T asEntity(String viewName, Row row)
 	{
-		Document d = marshalDocument(row);
+		Document d = asDocument(viewName, row);
 
 		if (d == null) return null;
 
 		return asEntity(viewName, d);
 	}
 
-	//TODO: this should be in DocumentStatementFactory
-	private Document marshalDocument(Row row)
+	private Document asDocument(String viewName, Row row)
 	{
-		if (row == null)
-		{
-			return null;
-		}
-
-		Document d = new Document();
-		ByteBuffer b = row.getByteBuffer(Columns.OBJECT);
-
-		if (b != null && b.hasArray())
-		{
-			//Force the reading of all the bytes.
-			d.setObject((b.array()));
-		}
-
-		d.setType(row.getString(Columns.TYPE));
-		d.setMetadata(row.getMap(Columns.METADATA, String.class, String.class));
-		d.setCreatedAt(new Date(row.getInstant(Columns.CREATED_AT).getEpochSecond()));
-		d.setUpdatedAt(new Date(row.getInstant(Columns.UPDATED_AT).getEpochSecond()));
-		observers.forEach(o -> o.afterRead(d));
-		return d;
+		return factoriesByView.get(viewName).asDocument(row);
 	}
 
 	private T asEntity(String viewName, Document d)
@@ -509,5 +503,31 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		}
 
 		throw new StorageException(e.getCause());
+	}
+
+	private class PagedRows
+	{
+		private String cursor;
+		private List<Row> rows = new ArrayList<>();
+
+		void cursor(String hexString)
+		{
+			this.cursor = hexString;
+		}
+
+		String cursor()
+		{
+			return cursor;
+		}
+
+		void add(Row row)
+		{
+			rows.add(row);
+		}
+
+		Stream<Row> stream()
+		{
+			return rows.stream();
+		}
 	}
 }
