@@ -3,6 +3,7 @@ package com.strategicgains.noschema.cassandra;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -10,7 +11,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -247,7 +247,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			readRows(viewName, limit, cursor, parms)
 				.thenAccept(page -> {
 					response.cursor(page.cursor());
-					page.stream().forEach(row -> response.add(asEntity(viewName, row)));
+					page.iterator().forEachRemaining(row -> response.add(asEntity(viewName, row)));
 				})
 				.join();
 		}
@@ -443,7 +443,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			.thenApply(rs -> {
 				PagedRows rows = new PagedRows();
 				rows.cursor(Bytes.toHexString(rs.getExecutionInfo().getPagingState()));
-				rs.currentPage().iterator().forEachRemaining(rows::add);
+				rows.currentPage(rs.currentPage());
 				return rows;
 			})
 			.toCompletableFuture();
@@ -509,7 +509,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	private class PagedRows
 	{
 		private String cursor;
-		private List<Row> rows = new ArrayList<>();
+		private Iterable<Row> currentPage;
 
 		void cursor(String hexString)
 		{
@@ -521,14 +521,14 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			return cursor;
 		}
 
-		void add(Row row)
+		void currentPage(Iterable<Row> rows)
 		{
-			rows.add(row);
+			this.currentPage = rows;
 		}
 
-		Stream<Row> stream()
-		{
-			return rows.stream();
+		Iterator<Row> iterator()
+        {
+			return currentPage.iterator();
 		}
 	}
 }
