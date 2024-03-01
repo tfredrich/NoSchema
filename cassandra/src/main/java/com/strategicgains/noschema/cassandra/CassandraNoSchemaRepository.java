@@ -245,10 +245,11 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		try
 		{
 			readRows(viewName, limit, cursor, parms)
-			    .thenAccept(page -> {
-                    response.cursor(page.cursor());
-                    page.stream().forEach(row -> response.add(asEntity(viewName, row)));
-            }).join();
+				.thenAccept(page -> {
+					response.cursor(page.cursor());
+					page.stream().forEach(row -> response.add(asEntity(viewName, row)));
+				})
+				.join();
 		}
 		catch (CompletionException e)
 		{
