@@ -39,7 +39,7 @@ public class CassandraNoSchemaStatementFactory<T extends Identifiable>
 
 		if (cursor != null)
 		{
-			stmt.setPagingState(Bytes.fromHexString(cursor));
+			stmt = stmt.setPagingState(Bytes.fromHexString(cursor));
 		}
 
 		return stmt;
