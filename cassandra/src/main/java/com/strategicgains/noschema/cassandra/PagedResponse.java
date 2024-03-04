@@ -1,6 +1,7 @@
 package com.strategicgains.noschema.cassandra;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.strategicgains.noschema.Identifiable;
@@ -52,6 +53,6 @@ public class PagedResponse<T extends Identifiable>
 
 	public List<T> items()
 	{
-		return items;
+		return (hasItems() ? items : Collections.emptyList());
 	}
 }
