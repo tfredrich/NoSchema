@@ -99,6 +99,15 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return this;
 	}
 
+	/**
+	 * This method is responsible for creating a new entity in the database.
+	 * It first serializes the entity, then registers it in the UnitOfWork for 
+	 * the primary table each view, then commits the UnitOfWork.
+	 *
+	 * @param entity The entity to be created.
+	 * @return The created entity.
+	 * @throws UnitOfWorkCommitException If there is an error during the commit operation.
+	 */
 	public T create(T entity)
 	{
 		CassandraNoSchemaUnitOfWork uow = createUnitOfWork();
@@ -140,6 +149,15 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return entity;
 	}
 
+	/**
+	 * This method is responsible for deleting an entity from the database.
+	 * It first identifies the entity by its Identifier, then registers it
+	 * for deletion in the UnitOfWork for the primary table and each view,
+	 * and finally commits the UnitOfWork.
+	 *
+	 * @param id The Identifier of the entity to be deleted.
+	 * @throws UnitOfWorkCommitException If there is an error during the commit operation.
+	 */
 	public void delete(Identifier id)
 	{
 		try
@@ -178,6 +196,15 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		}
 	}
 
+	/**
+	 * This method checks if an entity exists in the primary table.
+	 * It executes an asynchronous query to check if the entity exists,
+	 * returning true if the id exists, and false otherwise.
+	 *
+	 * @param id The Identifier of the entity to check.
+	 * @return true if the entity exists, false otherwise.
+	 * @throws InvalidIdentifierException If the provided Identifier is invalid.
+	 */
 	@Override
 	public boolean exists(Identifier id)
 	throws InvalidIdentifierException
@@ -185,6 +212,15 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return exists(table.name(), id);
 	}
 
+	/**
+	 * This method checks if an entity exists in a specific view of the database.
+	 * It executes an asynchronous query to check if the entity exists in the
+	 * view, returning true if the id exists, and false otherwise.
+	 *
+	 * @param viewName The name of the view to check.
+	 * @param id The Identifier of the entity to check.
+	 * @return true if the entity exists in the view, false otherwise.
+	 */
 	public boolean exists(String viewName, Identifier id)
 	{
 		return session.executeAsync(statementGenerator.exists(viewName, id))
@@ -193,12 +229,29 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			.join();
 	}
 
+	/**
+	 * This method reads an entity from the primary table.
+	 * It executes an asynchronous query to read the entity, and then returns the result.
+	 *
+	 * @param id The Identifier of the entity to read.
+	 * @return The read entity.
+	 * @throws ItemNotFoundException If the entity is not found.
+	 */
 	@Override
 	public T read(Identifier id)
 	{
 		return read(table.name(), id);
 	}
  
+	/**
+	 * This method reads an entity from a specific view in the database.
+	 * It executes an asynchronous query to read the entity from the view, and then returns the result.
+	 *
+	 * @param viewName The name of the view to read from.
+	 * @param id The Identifier of the entity to read.
+	 * @return The read entity.
+	 * @throws ItemNotFoundException If the entity is not found.
+	 */
 	public T read(String viewName, Identifier id)
 	{
 		try
@@ -259,12 +312,40 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return response;
 	}
 
+	/**
+	 * Reads multiple entities from the primary table.
+	 * It executes asynchronous queries to read the entities,
+	 * waits for all of them to complete, and then returns the results.
+	 * Entities that are not found are not included in the result.
+	 * 
+	 * Note: the order of the returned entities is not guaranteed.
+	 *
+	 * @param ids The Identifiers of the entities to read.
+	 * @return The list of read entities.
+	 */
 	@Override
 	public List<T> readIn(List<Identifier> ids)
 	{
 		return readIn(table.name(), ids);
 	}
 
+	/**
+	 * This method reads multiple entities from a specific view.
+	 * It executes asynchronous queries to read the entities from the view,
+	 * waits for all of them to complete, and then returns the results.
+	 * Entities that are not found are not included in the result.
+	 * 
+	 * This method uses asynchronous queries to read the entities, which
+	 * means the client itself is the coordinator instead of issuing all
+	 * the queries to a single node. This is more efficient from the
+	 * server perspective, but it can load up the client.
+	 * 
+	 * Note: the order of the returned entities is not guaranteed.
+	 *
+	 * @param viewName The name of the view to read from.
+	 * @param ids The Identifiers of the entities to read.
+	 * @return The list of read entities.
+	 */
 	public List<T> readIn(String viewName, List<Identifier> ids)
 	{
 		if (ids == null) return Collections.emptyList();
@@ -299,6 +380,17 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		}
 	}
 
+	/**
+	 * This method updates an entity in the database.
+	 * It first creates a UnitOfWork, then registers the original entity in it
+	 * for the primary table and all its views. If the original entity is not
+	 * provided (null), it reads it from the database using the identifier for the
+	 * provided entity.
+	 *
+	 * @param entity The new entity data.
+	 * @param original The original entity data. If null, the method will read it from the database.
+	 * @return The updated entity.
+	 */
 	public T update(T entity, T original)
 	{
 		try
@@ -366,6 +458,15 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return entity;
 	}
 
+	/**
+	 * This method upserts (updates or inserts) an entity into the database.
+	 * It has the benefit of not incurring any reads before update, as it 
+	 * doesn't check for existence before updating. If the entity already
+	 * exists in the database, it is updated; otherwise, it is inserted.
+	 *
+	 * @param entity The entity to be upserted.
+	 * @return The upserted entity.
+	 */
 	public T upsert(T entity)
 	{
 		CassandraNoSchemaUnitOfWork uow = createUnitOfWork();
