@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.bson.BsonObjectCodec;
-import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider;
 import com.strategicgains.noschema.cassandra.schema.SchemaRegistry;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.ObjectCodec;
@@ -19,9 +17,8 @@ import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 import com.strategicgains.noschema.gson.GsonObjectCodec;
 
-public class SampleRun {
-
-	private static final String FLOWERS_BY_NAME = "by_name";
+public class SampleRun
+{
 	private static final ObjectCodec<Flower> GSON_CODEC = new GsonObjectCodec<>();
 	private static final ObjectCodec<Flower> BSON_CODEC = new BsonObjectCodec<>();
 	private static final UnitOfWorkType unitOfWorkType = UnitOfWorkType.ASYNC;
@@ -65,70 +62,98 @@ public class SampleRun {
 	private static void testBson(CqlSession session, String keyspace)
 	{
 		SchemaRegistry.keyspace(keyspace);
-		PrimaryTable flowersTable = new PrimaryTable(keyspace, "flowers", "id:UUID unique")
-			.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique");
-		testCassandra(keyspace, session, flowersTable, unitOfWorkType, BSON_CODEC);
+		testCassandra(keyspace, session, unitOfWorkType, BSON_CODEC);
 		SchemaRegistry.clear();
 	}
 
 	private static void testGson(CqlSession session, String keyspace)
 	{
 		SchemaRegistry.keyspace(keyspace);
-		PrimaryTable flowersTable = new PrimaryTable(keyspace, "flowers", "id:UUID unique")
-			.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique");
-		testCassandra(keyspace, session, flowersTable, unitOfWorkType, GSON_CODEC);
+		testCassandra(keyspace, session, unitOfWorkType, GSON_CODEC);
 		SchemaRegistry.clear();
 	}
 
-	private static void testCassandra(String keyspace, CqlSession session, PrimaryTable flowersTable, UnitOfWorkType uowType, ObjectCodec<Flower> codec)
+	private static void testCassandra(String keyspace, CqlSession session, UnitOfWorkType uowType, ObjectCodec<Flower> codec)
 	{
-		SchemaRegistry schemas = SchemaRegistry.instance();
-		flowersTable.stream().forEach(v -> schemas.withProvider(new DocumentTableSchemaProvider(v)));
-		schemas.initializeAll(session)
-			.exportInitializeAll();
+		// Create the keyspace, if needed.
+		SchemaRegistry.instance().initializeAll(session);
 
-		CassandraNoSchemaRepository<Flower> flowers = new CassandraNoSchemaRepository<>(session, flowersTable, uowType, codec);
+		FlowerRepository flowers = new FlowerRepository(session, keyspace, uowType, codec);
 		flowers.withObserver(new SampleObserver());
+
+		// Ensure the tables exist.
 		flowers.ensureTables();
 
 		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
 		UUID accountId = UUID.fromString("a87d3bff-6997-4739-ab4e-ded0cc85700f");
 		Flower flower = instantiateFlower(accountId, id);
 
+		shouldThrowOnNotFoundById(flowers, flower.getId());
+
+		shouldThrowOnNotFoundByName(flowers, accountId, flower.getName());
+
+		shouldCreate(flowers, flower);
+
+		Flower read = shouldReadById(flowers, id);
+
+		shouldReadByName(flowers, accountId, "rose");
+
+		shouldThrowOnDuplicate(flowers, flower);
+
+		Flower updated = shouldUpdate(flowers, read);
+		shouldReadUpdated(flowers, updated.getAccountId(), "rose-updated");
+
+		shouldReadAll(flowers, accountId);
+	}
+
+	private static void shouldThrowOnNotFoundById(FlowerRepository flowers, UUID id) {
 		System.out.println("*** READ ID (Not Found) ***");
 		try
 		{
-			flowers.read(flower.getIdentifier());
+			flowers.read(id);
 			throw new RuntimeException("FAILED: Expected ItemNotFoundException (by ID)");
 		}
 		catch (ItemNotFoundException e)
 		{
 			System.out.println("Recieved expected exception: ItemNotFoundException: " + e.getMessage());
 		}
+	}
 
+	private static void shouldThrowOnNotFoundByName(FlowerRepository flowers, UUID accountId, String name) {
 		System.out.println("*** READ NAME (Not Found) ***");
 		try
 		{
-			flowers.read(FLOWERS_BY_NAME, new Identifier(accountId, "rose"));
+			flowers.readByName(accountId, name);
 			throw new RuntimeException("FAILED: Expected ItemNotFoundException (by name)");
 		}
 		catch (ItemNotFoundException e)
 		{
 			System.out.println("Recieved expected exception: ItemNotFoundException: " + e.getMessage());
 		}
+	}
 
+	private static void shouldCreate(FlowerRepository flowers, Flower flower) {
 		System.out.println("*** CREATE ***");
 		Flower written = flowers.create(flower);
 		System.out.println(written.toString());
+	}
 
+	private static Flower shouldReadById(FlowerRepository flowers, UUID id) {
 		System.out.println("*** READ ID ***");
-		Flower read = flowers.read(new Identifier(id));
+		Flower read = flowers.read(id);
 		System.out.println(read.toString());
+		return read;
+	}
 
+	private static Flower shouldReadByName(FlowerRepository flowers, UUID accountId, String name) {
+		Flower read;
 		System.out.println("*** READ NAME ***");
-		read = flowers.read(FLOWERS_BY_NAME, new Identifier(accountId, "rose"));
+		read = flowers.readByName(accountId, name);
 		System.out.println(read.toString());
+		return read;
+	}
 
+	private static void shouldThrowOnDuplicate(FlowerRepository flowers, Flower flower) {
 		System.out.println("*** CREATE DUPLICATE ***");
 		try
 		{
@@ -139,7 +164,9 @@ public class SampleRun {
 		{
 			System.out.println("Recieved expected exception: DuplicateItemException: " + e.getMessage());
 		}
+	}
 
+	private static Flower shouldUpdate(FlowerRepository flowers, Flower read) {
 		System.out.println("*** UPDATE ***");
 		Flower updated = new Flower(read);
 		updated.setName(read.getName() + "-updated");
@@ -147,13 +174,19 @@ public class SampleRun {
 		updated.setColors(Arrays.asList("blue", "green", "yellow"));
 		updated = flowers.update(updated, read);
 		System.out.println(updated.toString());
+		return updated;
+	}
 
+	private static void shouldReadUpdated(FlowerRepository flowers, UUID accountId, String name) {
+		Flower read;
 		System.out.println("*** RE-READ ***");
-		read = flowers.read(new Identifier(updated.getId()));
+		read = flowers.readByName(accountId, name);
 		System.out.println(read.toString());
+	}
 
+	private static void shouldReadAll(FlowerRepository flowers, UUID accountId) {
 		System.out.println("*** READ ALL ***");
-		PagedResponse<Flower> all = flowers.readAll(FLOWERS_BY_NAME, 20, null, accountId);
+		PagedResponse<Flower> all = flowers.readAllByName(20, null, accountId);
 		System.out.println("Size: " + all.size());
 		System.out.println(all.get(0));
 	}
