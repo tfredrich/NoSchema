@@ -10,6 +10,19 @@ import com.strategicgains.noschema.cassandra.key.builder.KeyDefinitionBuilder;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.ObjectCodec;
 
+/**
+ * A repository for the Flower entity. It manages three tables: flowers, flowers_by_name, and flowers_by_height,
+ * all of which are in the same keyspace but have different partition keys and clustering keys.
+ * 
+ * This particular implementation is a little more complex than it needs to be as it support the SampleRun class
+ * which demonstrates how to use this repository with both Gson and Bson codecs in different namespaces.
+ * 
+ * In all likelihood, Repository implementations could use containment instead of inheritance to reduce the scope of the 
+ * methods exposed to the client. But, for the purposes of this example, it's easier to demonstrate the use of the
+ * underlying methods by extending the CassandraNoSchemaRepository class.
+ * 
+ * @author Todd Fredrich
+ */
 public class FlowerRepository
 extends CassandraNoSchemaRepository<Flower>
 {
@@ -19,12 +32,23 @@ extends CassandraNoSchemaRepository<Flower>
 	public FlowerRepository(CqlSession session, String keyspace, UnitOfWorkType unitOfWorkType, ObjectCodec<Flower> codec)
 	{
 		super(session,
+			/**
+			 * A primary table with a unique key that is the 'id' property of type UUID. The column and the entity property are the same.
+			 */
 			new PrimaryTable(keyspace, "flowers", "id:UUID unique")
 
-				// A view by name, where the name is unique within an account.
+				/**
+				 * A view by name, where the name is unique within an account.
+				 * The partition key is extracted from the entity via dot notation (account.id) and the column is account_id of type UUID.
+				 * The clustering key is the name, which is a text field.
+				 */
 				.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique")
 
-				// A view by height, where the partition key is a bucket of heights (int) and the clustering key is the height (float).
+				/**
+				 * A view by height, where the partition key is a bucket of heights (int) and the clustering key is the height (float).
+				 * This uses a lambda function to extract the partition key from the entity's height property.
+				 * The clustering key is the height property of the entity of type float.
+				 */
 				.withView(FLOWERS_BY_HEIGHT, new KeyDefinitionBuilder()
 					.withPartitionKey("height_bucket", "height", DataTypes.INTEGER)
 						.withExtractor(f -> ((Float) f).intValue())
