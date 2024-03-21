@@ -29,6 +29,16 @@ public abstract class AbstractKeyComponentBuilder
 		return parent.withClusteringKey(columnName, propertyName, type, ordering);
 	}
 
+	public KeyDefinitionBuilder isUnique()
+	{
+		return parent.isUnique();
+	}
+
+	public KeyDefinitionBuilder notUnique()
+	{
+		return parent.notUnique();
+	}
+
 	public KeyDefinition build()
 	{
 		return parent.build();

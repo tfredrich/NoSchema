@@ -19,6 +19,12 @@ public class KeyDefinitionBuilder
 		super();
     }
 
+	public KeyDefinitionBuilder(boolean isUnique)
+	{
+		super();
+		keyDefinition.setUnique(isUnique);
+	}
+
 	public KeyComponentBuilder withPartitionKey(String partitionKey)
 	throws KeyDefinitionException
 	{
@@ -61,6 +67,18 @@ public class KeyDefinitionBuilder
 		ClusteringKeyComponentBuilder builder = new ClusteringKeyComponentBuilder(this, new ClusteringKeyComponent(columnName, propertyName, type, ordering));
 		keyDefinition.addClusteringKey(builder.getKeyComponent());
 		return builder;
+	}
+
+	public KeyDefinitionBuilder isUnique()
+	{
+		keyDefinition.setUnique(true);
+		return this;
+	}
+
+	public KeyDefinitionBuilder notUnique()
+	{
+		keyDefinition.setUnique(false);
+		return this;
 	}
 
 	public KeyDefinition build()
