@@ -39,13 +39,24 @@ public class SampleRun
 		}
 	}
 
-	private static Flower instantiateFlower(UUID accountId, UUID id)
+	private static Flower newRose(UUID accountId, UUID id)
 	{
+		List<String> colors = Arrays.asList("red", "white", "pink", "yellow");
+		return instantiateFlower(accountId, id, "rose", true, 3.25f, colors);
+	}
+
+	private static Flower createSunflower(UUID accountId, UUID id)
+	{
+		List<String> colors = Arrays.asList("yellow", "orange");
+		return instantiateFlower(accountId, id, "sunflower", true, 3.75f, colors);
+	}
+
+	private static Flower instantiateFlower(UUID accountId, UUID id, String name, Boolean isBlooming, Float height, List<String> colors)
+	{
+		Flower flower = new Flower(id, name, isBlooming, height, colors);
+		flower.setAccountId(accountId);
 		Date createdAt = new Date(1648598130248L);
 		Date updatedAt = new Date(1648598130233L);
-		List<String> colors = Arrays.asList("red", "white", "pink", "yellow");
-		Flower flower = new Flower(id, "rose", true, 3.25f, colors);
-		flower.setAccountId(accountId);
 		flower.setCreatedAt(createdAt);
 		flower.setUpdatedAt(updatedAt);
 		return flower;
@@ -86,7 +97,7 @@ public class SampleRun
 
 		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
 		UUID accountId = UUID.fromString("a87d3bff-6997-4739-ab4e-ded0cc85700f");
-		Flower flower = instantiateFlower(accountId, id);
+		Flower flower = newRose(accountId, id);
 
 		shouldThrowOnNotFoundById(flowers, flower.getId());
 
@@ -102,6 +113,9 @@ public class SampleRun
 
 		Flower updated = shouldUpdate(flowers, read);
 		shouldReadUpdated(flowers, updated.getAccountId(), "rose-updated");
+
+		UUID id2 = UUID.fromString("c9e71479-3b47-4aa6-84e7-97044e7f2a3c");
+		flowers.create(createSunflower(accountId, id2));
 
 		shouldReadAll(flowers, accountId);
 	}
@@ -188,6 +202,6 @@ public class SampleRun
 		System.out.println("*** READ ALL ***");
 		PagedResponse<Flower> all = flowers.readAllByName(20, null, accountId);
 		System.out.println("Size: " + all.size());
-		System.out.println(all.get(0));
+		System.out.println(String.join(" | ", all.get(0).toString(), all.get(1).toString()));
 	}
 }
