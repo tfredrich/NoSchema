@@ -90,7 +90,7 @@ public class KeyComponent
 	private KeyComponent property(String property)
 	throws KeyDefinitionException
 	{
-		if (property == null || column.isEmpty() || column.contains(" "))
+		if (property == null || property.isEmpty() || property.contains(" "))
 		{
 			throw new KeyDefinitionException("Invalid property value: " + property);
 		}

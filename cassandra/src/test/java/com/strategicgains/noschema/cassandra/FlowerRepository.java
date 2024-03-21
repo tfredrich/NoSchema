@@ -6,8 +6,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.key.ClusteringKeyComponent;
 import com.strategicgains.noschema.cassandra.key.DataTypes;
-import com.strategicgains.noschema.cassandra.key.KeyComponent;
-import com.strategicgains.noschema.cassandra.key.KeyDefinition;
+import com.strategicgains.noschema.cassandra.key.builder.KeyDefinitionBuilder;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.ObjectCodec;
 
@@ -21,13 +20,16 @@ extends CassandraNoSchemaRepository<Flower>
 	{
 		super(session,
 			new PrimaryTable(keyspace, "flowers", "id:UUID unique")
+
+				// A view by name, where the name is unique within an account.
 				.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique")
-				.withView(FLOWERS_BY_HEIGHT, new KeyDefinition()
-					.addPartitionKey(
-						new KeyComponent("height_bucket", "height", DataTypes.INTEGER)
-							.extractor(f -> ((Float) f).intValue())
-					)
-					.addClusteringKey("height", DataTypes.FLOAT, ClusteringKeyComponent.Ordering.ASC)
+
+				// A view by height, where the partition key is a bucket of heights (int) and the clustering key is the height (float).
+				.withView(FLOWERS_BY_HEIGHT, new KeyDefinitionBuilder()
+					.withPartitionKey("height_bucket", "height", DataTypes.INTEGER)
+						.withExtractor(f -> ((Float) f).intValue())
+					.withClusteringKey("height", DataTypes.FLOAT, ClusteringKeyComponent.Ordering.ASC)
+					.build()
 				),
 			unitOfWorkType,
 			codec);
