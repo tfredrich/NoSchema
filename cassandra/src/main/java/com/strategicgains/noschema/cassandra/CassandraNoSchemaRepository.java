@@ -32,14 +32,33 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
 import com.strategicgains.noschema.exception.StorageException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 
+/**
+ * A CassandraNoSchemaRepository is a NoSchemaRepository that uses Cassandra as its
+ * underlying data store. It is responsible for creating, reading, updating, and
+ * deleting entities in the database. It also provides methods for checking if an
+ * entity exists, and for reading multiple entities at once.
+ * 
+ * This class is abstract and is meant to be extended by concrete implementations
+ * that provide the necessary information to connect to the Cassandra cluster and
+ * to define the schema for the entities to be stored.
+ * 
+ * Also, the repository can create and drop the underlying tables necessary to
+ * store the entities.
+ */
 public class CassandraNoSchemaRepository<T extends Identifiable>
 implements NoSchemaRepository<T>, SchemaWriter<T>
 {
+	// The session used to connect to the Cassandra cluster.
 	private CqlSession session;
+	// The primary table and its views.
 	private PrimaryTable table;
+	// The statement generator used to create the CQL statements for the UnitOfWork.
 	private CassandraNoSchemaStatementFactory<T> statementGenerator;
+	// The factories used to encode and decode entities.
 	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
+	// The type of UnitOfWork to create.
 	private UnitOfWorkType unitOfWorkType;
+	// The observers used to observe the encoding, creation, update, and deletion of entities.
 	private List<DocumentObserver> observers = new ArrayList<>();
 
 

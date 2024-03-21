@@ -9,6 +9,29 @@ import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
+/**
+ * A PrimaryTable is a Cassandra table that has a primary key. It may also have one or more views.
+ * 
+ * A view can be attached to a PrimaryTable and is a table that is defined with a different primary
+ * key than the parent table. It is a different table that is defined within the same keyspace. It
+ * is not a materialized view, but a separate table with its own primary key and related to the 
+ * PrimaryTable only in that operations against the PrimaryTable are also performed against the view
+ * via a UnitOfWork instance.
+ * 
+ * The primary table and its views are all defined within the same keyspace. Create, update, and
+ * delete operations are managed via a UnitOfWork instance, which is responsible for ensuring that
+ * all operations are performed against all the tables at once.
+ * 
+ * Time-to-live (TTL) is supported at the table level. If a table has a TTL defined, then all rows
+ * inserted into the table and its views will have that TTL applied.
+ * 
+ * The primary key of tables and views is defined by a KeyDefinition instance, which defines which
+ * columns are part of the primary key and their types.
+ * 
+ * @author Todd Fredrich
+ * @see KeyDefinition
+ * @see View
+ */
 public class PrimaryTable
 extends AbstractTable
 {
@@ -21,7 +44,7 @@ extends AbstractTable
 	}
 
 	/**
-	 * Creates a new Table instance with a primary key of 'id' with a type of 'uuid'
+	 * Creates a new Table instance with a primary key of 'id' of type 'uuid'
 	 * 
 	 * @param keyspace
 	 * @param name
