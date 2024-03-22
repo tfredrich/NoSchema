@@ -12,7 +12,7 @@ import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.AbstractTable;
 import com.strategicgains.noschema.cassandra.CqlStatementFactory;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
-import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider.Columns;
+import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -26,8 +26,8 @@ implements CqlStatementFactory<T>
 	private static final String CREATE_CQL = "insert into %s.%s (%s, %s, %s, %s, %s, %s) values (%s)";
 	private static final String DELETE_CQL = "delete from %s.%s where %s";
 	private static final String EXISTS_CQL = "select count(*) from %s.%s  where %s limit 1";
-	private static final String READ_CQL = "select %s," + SELECT_COLUMNS + " from %s.%s where %s limit 1";
-	private static final String READ_ALL_CQL = "select %s," + SELECT_COLUMNS + " from %s.%s where %s";
+	private static final String READ_CQL = "select " + SELECT_COLUMNS + " from %s.%s where %s limit 1";
+	private static final String READ_ALL_CQL = "select " + SELECT_COLUMNS + " from %s.%s where %s";
 	private static final String UPDATE_CQL = "update %s.%s set %s = ?, %s = ?, %s = ?, %s = ? where %s";
 
 	// These are used IFF there is a single primary table (with no views) and it is unique.
@@ -146,7 +146,6 @@ implements CqlStatementFactory<T>
 		return statements.computeIfAbsent(READ, k -> 
 		session.prepare(
 			String.format(READ_CQL,
-				table.keys().asSelectProperties(),
 				table.keyspace(),
 				table.asTableName(),
 				table.keys().asIdentityClause()))
@@ -158,7 +157,6 @@ implements CqlStatementFactory<T>
 		return statements.computeIfAbsent(READ_ALL + keyCount, k -> 
 		session.prepare(
 			String.format(READ_ALL_CQL,
-				table.keys().asSelectProperties(),
 				table.keyspace(),
 				table.asTableName(),
 				table.keys().asIdentityClause(keyCount)))

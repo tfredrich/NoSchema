@@ -5,7 +5,7 @@ import java.sql.Date;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.document.DocumentTableSchemaProvider.Columns;
+import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.document.AbstractDocumentFactory;
 import com.strategicgains.noschema.document.Document;
@@ -46,7 +46,6 @@ extends AbstractDocumentFactory<T>
 			d.setObject((b.array()));
 		}
 
-		//TODO: map the columns to the Document Identifier.
 		d.setType(row.getString(Columns.TYPE));
 		d.setMetadata(row.getMap(Columns.METADATA, String.class, String.class));
 		d.setCreatedAt(new Date(row.getInstant(Columns.CREATED_AT).getEpochSecond()));

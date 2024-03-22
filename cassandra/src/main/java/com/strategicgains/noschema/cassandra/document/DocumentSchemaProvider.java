@@ -4,7 +4,7 @@ import com.strategicgains.noschema.cassandra.AbstractTable;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.cassandra.schema.AbstractSchemaProvider;
 
-public class DocumentTableSchemaProvider
+public class DocumentSchemaProvider
 extends AbstractSchemaProvider
 {
 	public static class Columns
@@ -40,7 +40,7 @@ extends AbstractSchemaProvider
 	private String table;
 	private KeyDefinition keys;
 
-	public DocumentTableSchemaProvider(AbstractTable table)
+	public DocumentSchemaProvider(AbstractTable table)
 	{
 		super();
 		this.keyspace = table.keyspace();
