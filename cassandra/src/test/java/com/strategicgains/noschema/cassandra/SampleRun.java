@@ -45,7 +45,7 @@ public class SampleRun
 		return instantiateFlower(accountId, id, "rose", true, 3.25f, colors);
 	}
 
-	private static Flower createSunflower(UUID accountId, UUID id)
+	private static Flower newSunflower(UUID accountId, UUID id)
 	{
 		List<String> colors = Arrays.asList("yellow", "orange");
 		return instantiateFlower(accountId, id, "sunflower", true, 3.75f, colors);
@@ -87,7 +87,7 @@ public class SampleRun
 	private static void testCassandra(String keyspace, CqlSession session, UnitOfWorkType uowType, ObjectCodec<Flower> codec)
 	{
 		// Create the keyspace, if needed.
-		SchemaRegistry.instance().initializeAll(session);
+		SchemaRegistry.initialize(session);
 
 		FlowerRepository flowers = new FlowerRepository(session, keyspace, uowType, codec);
 		flowers.withObserver(new SampleObserver());
@@ -115,7 +115,7 @@ public class SampleRun
 		shouldReadUpdated(flowers, updated.getAccountId(), "rose-updated");
 
 		UUID id2 = UUID.fromString("c9e71479-3b47-4aa6-84e7-97044e7f2a3c");
-		flowers.create(createSunflower(accountId, id2));
+		flowers.create(newSunflower(accountId, id2));
 
 		shouldReadAll(flowers, accountId);
 	}
