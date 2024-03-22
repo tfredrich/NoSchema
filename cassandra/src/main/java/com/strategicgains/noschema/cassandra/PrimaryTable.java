@@ -189,9 +189,13 @@ extends AbstractTable
 		return (hasIndexes() ? indexes.size() : 0);
 	}
 
+	/**
+	 * A stream of the primary table and all its views. Indexes are not included.
+	 * 
+	 * @return a Stream of the primary table and its views.
+	 */
 	public Stream<AbstractTable> stream()
 	{
-		return Stream.of(Stream.of(this), views(), indexes())
-			.flatMap(s -> s);
+		return Stream.concat(Stream.of(this), views());
 	}
 }

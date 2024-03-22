@@ -9,13 +9,14 @@ import com.datastax.oss.protocol.internal.util.Bytes;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
+import com.strategicgains.noschema.cassandra.index.IndexStatementFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.document.ObjectCodec;
 
 public class CassandraStatementFactory<T extends Identifiable>
 {
-	private final Map<String, KeyDefinition> keysByView = new HashMap<>();
-    private final Map<String, DocumentStatementFactory<T>> factoriesByView = new HashMap<>();
+	private final Map<String, KeyDefinition> keysByTable = new HashMap<>();
+    private final Map<String, CqlStatementFactory<T>> factoriesByTable = new HashMap<>();
 
 	public CassandraStatementFactory(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
 	{
@@ -24,16 +25,20 @@ public class CassandraStatementFactory<T extends Identifiable>
 			put(view.name(), new DocumentStatementFactory<>(session, view, codec));
 			put(view.name(), view.keys());				
 		});
+		table.indexes().forEach(index -> {
+			put(index.name(), new IndexStatementFactory<>(session, index, codec));
+			put(index.name(), index.keys());				
+		});
 	}
 
-	public BoundStatement read(String viewName, Identifier id)
+	public BoundStatement read(String tableName, Identifier id)
 	{
-		return get(viewName).read(id);
+		return get(tableName).read(id);
 	}
 
-	public BoundStatement readAll(String viewName, int limit, String cursor, Object... parameters)
+	public BoundStatement readAll(String tableName, int limit, String cursor, Object... parameters)
 	{
-		BoundStatement stmt = get(viewName)
+		BoundStatement stmt = get(tableName)
 			.readAll(parameters)
 			.setPageSize(limit);
 
@@ -45,46 +50,46 @@ public class CassandraStatementFactory<T extends Identifiable>
 		return stmt;
 	}
 
-	public BoundStatement delete(String viewName, Identifier id)
+	public BoundStatement delete(String tableName, Identifier id)
 	{
-		return get(viewName).delete(id);
+		return get(tableName).delete(id);
 	}
 
-	public BoundStatement create(String viewName, T entity)
+	public BoundStatement create(String tableName, T entity)
 	{
-		return get(viewName).create(entity);
+		return get(tableName).create(entity);
 	}
 
-	public BoundStatement update(String viewName, T entity)
+	public BoundStatement update(String tableName, T entity)
 	{
-		return get(viewName).update(entity);
+		return get(tableName).update(entity);
 	}
 
-	public BoundStatement exists(String viewName, Identifier id)
+	public BoundStatement exists(String tableName, Identifier id)
 	{
-		return get(viewName).exists(id);
+		return get(tableName).exists(id);
 	}
 
-	public boolean isViewUnique(String viewName)
+	public boolean isViewUnique(String tableName)
 	{
-		return keysByView.get(viewName).isUnique();
+		return keysByTable.get(tableName).isUnique();
 	}
 
-	private void put(String viewName, DocumentStatementFactory<T> factory)
+	private void put(String tableName, CqlStatementFactory<T> factory)
 	{
-		factoriesByView.put(viewName, factory);
+		factoriesByTable.put(tableName, factory);
 	}
 
-	private void put(String viewName, KeyDefinition keys)
+	private void put(String tableName, KeyDefinition keys)
 	{
-		this.keysByView.put(viewName, keys);
+		this.keysByTable.put(tableName, keys);
 	}
 
-	private DocumentStatementFactory<T> get(String viewName)
+	private CqlStatementFactory<T> get(String tableName)
 	{
-		DocumentStatementFactory<T> factory = factoriesByView.get(viewName);
+		CqlStatementFactory<T> factory = factoriesByTable.get(tableName);
 
-//		if (factory == null) throw new InvalidViewNameException(viewName);
+//		if (factory == null) throw new InvalidViewNameException(tableName);
 
 		return factory;
 	}

@@ -34,14 +34,15 @@ import com.strategicgains.noschema.exception.StorageException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 
 /**
- * A CassandraRepository is a NoSchemaRepository that uses Cassandra as its
- * underlying data store. It is responsible for creating, reading, updating, and
- * deleting entities in the database. It also provides methods for checking if an
- * entity exists, and for reading multiple entities at once.
+ * A CassandraRepository is a NoSchemaRepository implementation that uses
+ * Cassandra as its underlying data store. It is responsible for creating,
+ * reading, updating, and deleting entities in the database. It also provides
+ * methods for checking if an entity exists, and for reading multiple entities
+ * at once.
  * 
- * This class is abstract and is meant to be extended by concrete implementations
- * that provide the necessary information to connect to the Cassandra cluster and
- * to define the schema for the entities to be stored.
+ * This class is abstract and is meant to be extended by concrete
+ * implementations that provide the necessary information to connect to the
+ * Cassandra cluster and to define the schema for the entities to be stored.
  * 
  * Also, the repository can create and drop the underlying tables necessary to
  * store the entities.
@@ -53,10 +54,10 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	private CqlSession session;
 	// The primary table and its views.
 	private PrimaryTable table;
-	// The statement generator used to create the CQL statements for the UnitOfWork.
-	private CassandraStatementFactory<T> statementGenerator;
+	// The statement factory used to create the CQL statements within the UnitOfWork.
+	private CassandraStatementFactory<T> statementFactory;
 	// The factories used to encode and decode entities.
-	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
+	private Map<String, CassandraDocumentFactory<T>> factoriesByTable = new HashMap<>();
 	// The type of UnitOfWork to create.
 	private UnitOfWorkType unitOfWorkType;
 	// The observers used to observe the encoding, creation, update, and deletion of entities.
@@ -74,10 +75,10 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		this.session = Objects.requireNonNull(session);
 		this.table = Objects.requireNonNull(table);
 		this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
-		this.statementGenerator = new CassandraStatementFactory<>(session, table, codec);
-		factoriesByView.put(table.name(), new CassandraDocumentFactory<>(table.keys(), codec));
+		this.statementFactory = new CassandraStatementFactory<>(session, table, codec);
+		factoriesByTable.put(table.name(), new CassandraDocumentFactory<>(table.keys(), codec));
 		table.views().forEach(view ->
-			this.factoriesByView.put(view.name(), new CassandraDocumentFactory<>(view.keys(), codec))
+			this.factoriesByTable.put(view.name(), new CassandraDocumentFactory<>(view.keys(), codec))
 		);
 	}
 
@@ -243,7 +244,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	 */
 	public boolean exists(String viewName, Identifier id)
 	{
-		return session.executeAsync(statementGenerator.exists(viewName, id))
+		return session.executeAsync(statementFactory.exists(viewName, id))
 			.thenApply(r -> (Boolean.valueOf(r.one().getLong(0) > 0)))
 			.toCompletableFuture()
 			.join();
@@ -371,7 +372,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		if (ids == null) return Collections.emptyList();
 
 		List<CompletableFuture<T>> futures = ids.stream().map(id -> 
-			session.executeAsync(statementGenerator.read(viewName, id))
+			session.executeAsync(statementFactory.read(viewName, id))
 				.thenApply(rs -> rs.one())
 				.thenApply(row -> asEntity(viewName, row))
 				.toCompletableFuture()
@@ -529,7 +530,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 	protected CassandraUnitOfWork createUnitOfWork()
 	{
-		return new CassandraUnitOfWork(session, statementGenerator, unitOfWorkType);
+		return new CassandraUnitOfWork(session, statementFactory, unitOfWorkType);
 	}
 
 	private CompletableFuture<Document> readAsDocument(Identifier id)
@@ -548,7 +549,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	private CompletableFuture<Row> readRow(String viewName, Identifier id)
 	{
 		observers.forEach(o -> o.beforeRead(id));
-		return session.executeAsync(statementGenerator.read(viewName, id))
+		return session.executeAsync(statementFactory.read(viewName, id))
 			.thenApply(rs -> rs.one())
 			.thenApply(row -> {
 				if (row == null) throw new ItemNotFoundException(id.toString());
@@ -560,7 +561,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	private CompletableFuture<PagedRows> readRows(String viewName, int limit, String cursor, Object... parameters)
 	{
 		observers.forEach(o -> o.beforeRead(new Identifier(parameters)));
-		return session.executeAsync(statementGenerator.readAll(viewName, limit, cursor, parameters))
+		return session.executeAsync(statementFactory.readAll(viewName, limit, cursor, parameters))
 			.thenApply(rs -> {
 				PagedRows rows = new PagedRows();
 				rows.cursor(Bytes.toHexString(rs.getExecutionInfo().getPagingState()));
@@ -581,12 +582,12 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 	private Document asDocument(String viewName, Row row)
 	{
-		return factoriesByView.get(viewName).asDocument(row);
+		return factoriesByTable.get(viewName).asDocument(row);
 	}
 
 	private T asEntity(String viewName, Document d)
 	{
-		return factoriesByView.get(viewName).asPojo(d);
+		return factoriesByTable.get(viewName).asPojo(d);
 	}
 
 	protected Document asDocument(T entity)
@@ -597,13 +598,13 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	private Document asDocument(String viewName, T entity)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		return factoriesByView.get(viewName).asDocument(entity);
+		return factoriesByTable.get(viewName).asDocument(entity);
 	}
 
 	private Document asDocument(String viewName, T entity, byte[] bytes)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		return factoriesByView.get(viewName).asDocument(entity, bytes);
+		return factoriesByTable.get(viewName).asDocument(entity, bytes);
 	}
 
 	private void handleException(Exception e)

@@ -10,6 +10,7 @@ import java.util.concurrent.CompletionStage;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.CassandraStatementFactory;
 import com.strategicgains.noschema.document.Document;
@@ -27,19 +28,19 @@ public class CassandraUnitOfWork
 implements UnitOfWork
 {
     private final CqlSession session;
-    private final CassandraStatementFactory generator;
+    private final CassandraStatementFactory<? extends Identifiable> statementFactory;
     private final UnitOfWorkChangeSet<Document> changeSet = new UnitOfWorkChangeSet<>();
     private final UnitOfWorkCommitStrategy commitStrategy;
 
-    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory statementGenerator)
+    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory<? extends Identifiable> statementFactory)
     {
-    	this(session, statementGenerator, UnitOfWorkType.LOGGED);
+    	this(session, statementFactory, UnitOfWorkType.LOGGED);
     }
 
-    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory statementGenerator, UnitOfWorkType unitOfWorkType)
+    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory<? extends Identifiable> statementFactory, UnitOfWorkType unitOfWorkType)
     {
         this.session = Objects.requireNonNull(session);
-        this.generator = Objects.requireNonNull(statementGenerator);
+        this.statementFactory = Objects.requireNonNull(statementFactory);
         this.commitStrategy = Objects.requireNonNull(unitOfWorkType)
         	.asCommitStrategy(session);
     }
@@ -146,9 +147,9 @@ implements UnitOfWork
 	{
 		String viewName = change.getView();
 
-		if (generator.isViewUnique(viewName))
+		if (statementFactory.isViewUnique(viewName))
 		{
-			return Optional.of(session.executeAsync(generator.exists(viewName, change.getId()))
+			return Optional.of(session.executeAsync(statementFactory.exists(viewName, change.getId()))
 				.thenApply(r -> r.one().getLong(0) > 0L)
 					.thenCompose(exists -> checkExistenceRules(change, exists)));
 		}
@@ -183,11 +184,11 @@ implements UnitOfWork
 		switch(change.getState())
 		{
 			case DELETED:
-				return Optional.of(generator.delete(viewName, change.getId()));
+				return Optional.of(statementFactory.delete(viewName, change.getId()));
 			case DIRTY:
-				return Optional.of(generator.update(viewName, change.getEntity()));
+				return Optional.of(statementFactory.update(viewName, change.getEntity()));
 			case NEW:
-				return Optional.of(generator.create(viewName, change.getEntity()));
+				return Optional.of(statementFactory.create(viewName, change.getEntity()));
 			default:
 				break;
 		}
