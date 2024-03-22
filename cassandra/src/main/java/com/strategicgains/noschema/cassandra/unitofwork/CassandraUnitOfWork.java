@@ -1,4 +1,4 @@
-package com.strategicgains.noschema.cassandra;
+package com.strategicgains.noschema.cassandra.unitofwork;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,33 +11,32 @@ import java.util.concurrent.CompletionStage;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.document.DocumentChange;
-import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkCommitStrategy;
-import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
+import com.strategicgains.noschema.cassandra.CassandraStatementFactory;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.unitofwork.Change;
+import com.strategicgains.noschema.unitofwork.DocumentChange;
 import com.strategicgains.noschema.unitofwork.EntityState;
 import com.strategicgains.noschema.unitofwork.UnitOfWork;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkChangeSet;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
-public class CassandraNoSchemaUnitOfWork
+public class CassandraUnitOfWork
 implements UnitOfWork
 {
     private final CqlSession session;
-    private final CassandraNoSchemaStatementFactory generator;
+    private final CassandraStatementFactory generator;
     private final UnitOfWorkChangeSet<Document> changeSet = new UnitOfWorkChangeSet<>();
     private final UnitOfWorkCommitStrategy commitStrategy;
 
-    public CassandraNoSchemaUnitOfWork(CqlSession session, CassandraNoSchemaStatementFactory statementGenerator)
+    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory statementGenerator)
     {
     	this(session, statementGenerator, UnitOfWorkType.LOGGED);
     }
 
-    public CassandraNoSchemaUnitOfWork(CqlSession session, CassandraNoSchemaStatementFactory statementGenerator, UnitOfWorkType unitOfWorkType)
+    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory statementGenerator, UnitOfWorkType unitOfWorkType)
     {
         this.session = Objects.requireNonNull(session);
         this.generator = Objects.requireNonNull(statementGenerator);
@@ -54,7 +53,7 @@ implements UnitOfWork
 	 *
 	 * @param entity the new entity to register.
 	 */
-	public CassandraNoSchemaUnitOfWork registerNew(String viewName, Document entity)
+	public CassandraUnitOfWork registerNew(String viewName, Document entity)
 	{
 		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.NEW));
 		return this;
@@ -65,7 +64,7 @@ implements UnitOfWork
 	 *
 	 * @param entity the entity in its dirty state (after update).
 	 */
-	public CassandraNoSchemaUnitOfWork registerDirty(String viewName, Document entity)
+	public CassandraUnitOfWork registerDirty(String viewName, Document entity)
 	{
 		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.DIRTY));
 		return this;
@@ -76,7 +75,7 @@ implements UnitOfWork
 	 *
 	 * @param entity the entity in its clean state (before removal).
 	 */
-	public CassandraNoSchemaUnitOfWork registerDeleted(String viewName, Document entity)
+	public CassandraUnitOfWork registerDeleted(String viewName, Document entity)
 	{
 		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.DELETED));
 		return this;
@@ -90,7 +89,7 @@ implements UnitOfWork
 	 * change the copy that is registered as clean, making registration useless. Copy your
 	 * own objects either before registering them as clean or before mutating them.
 	 */
-	public CassandraNoSchemaUnitOfWork registerClean(String viewName, Document entity)
+	public CassandraUnitOfWork registerClean(String viewName, Document entity)
 	{
 		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.CLEAN));
 		return this;

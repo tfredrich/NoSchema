@@ -12,12 +12,12 @@ import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.document.ObjectCodec;
 
-public class CassandraNoSchemaStatementFactory<T extends Identifiable>
+public class CassandraStatementFactory<T extends Identifiable>
 {
 	private final Map<String, KeyDefinition> keysByView = new HashMap<>();
     private final Map<String, DocumentStatementFactory<T>> factoriesByView = new HashMap<>();
 
-	public CassandraNoSchemaStatementFactory(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
+	public CassandraStatementFactory(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
 	{
 		super();
 		table.stream().forEach(view -> {

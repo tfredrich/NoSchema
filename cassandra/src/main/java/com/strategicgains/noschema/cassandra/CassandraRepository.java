@@ -21,6 +21,7 @@ import com.strategicgains.noschema.NoSchemaRepository;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
 import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
+import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.DocumentObserver;
@@ -33,7 +34,7 @@ import com.strategicgains.noschema.exception.StorageException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 
 /**
- * A CassandraNoSchemaRepository is a NoSchemaRepository that uses Cassandra as its
+ * A CassandraRepository is a NoSchemaRepository that uses Cassandra as its
  * underlying data store. It is responsible for creating, reading, updating, and
  * deleting entities in the database. It also provides methods for checking if an
  * entity exists, and for reading multiple entities at once.
@@ -45,7 +46,7 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
  * Also, the repository can create and drop the underlying tables necessary to
  * store the entities.
  */
-public class CassandraNoSchemaRepository<T extends Identifiable>
+public class CassandraRepository<T extends Identifiable>
 implements NoSchemaRepository<T>, SchemaWriter<T>
 {
 	// The session used to connect to the Cassandra cluster.
@@ -53,7 +54,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	// The primary table and its views.
 	private PrimaryTable table;
 	// The statement generator used to create the CQL statements for the UnitOfWork.
-	private CassandraNoSchemaStatementFactory<T> statementGenerator;
+	private CassandraStatementFactory<T> statementGenerator;
 	// The factories used to encode and decode entities.
 	private Map<String, CassandraDocumentFactory<T>> factoriesByView = new HashMap<>();
 	// The type of UnitOfWork to create.
@@ -62,18 +63,18 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	private List<DocumentObserver> observers = new ArrayList<>();
 
 
-	protected CassandraNoSchemaRepository(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
 	{
 		this(session, table, UnitOfWorkType.LOGGED, codec);
 	}
 
-	protected CassandraNoSchemaRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, ObjectCodec<T> codec)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, ObjectCodec<T> codec)
 	{
 		super();
 		this.session = Objects.requireNonNull(session);
 		this.table = Objects.requireNonNull(table);
 		this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
-		this.statementGenerator = new CassandraNoSchemaStatementFactory<>(session, table, codec);
+		this.statementGenerator = new CassandraStatementFactory<>(session, table, codec);
 		factoriesByView.put(table.name(), new CassandraDocumentFactory<>(table.keys(), codec));
 		table.views().forEach(view ->
 			this.factoriesByView.put(view.name(), new CassandraDocumentFactory<>(view.keys(), codec))
@@ -112,7 +113,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return table.name();
 	}
 
-	public CassandraNoSchemaRepository<T> withObserver(DocumentObserver observer)
+	public CassandraRepository<T> withObserver(DocumentObserver observer)
 	{
 		observers.add(observer);
 		return this;
@@ -129,7 +130,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	 */
 	public T create(T entity)
 	{
-		CassandraNoSchemaUnitOfWork uow = createUnitOfWork();
+		CassandraUnitOfWork uow = createUnitOfWork();
 
 		try
 		{
@@ -181,7 +182,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	{
 		try
 		{
-			CassandraNoSchemaUnitOfWork uow = createUnitOfWork();
+			CassandraUnitOfWork uow = createUnitOfWork();
 			final T entity = read(id);
 			final AtomicReference<byte[]> serialized = new AtomicReference<>();
 			final AtomicReference<Document> primaryDocument = new AtomicReference<>();
@@ -414,7 +415,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	{
 		try
 		{
-			CassandraNoSchemaUnitOfWork uow = createUnitOfWork();
+			CassandraUnitOfWork uow = createUnitOfWork();
 			AtomicReference<Document> originalDocument = new AtomicReference<>();
 			final T originalEntity;
 
@@ -488,7 +489,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	 */
 	public T upsert(T entity)
 	{
-		CassandraNoSchemaUnitOfWork uow = createUnitOfWork();
+		CassandraUnitOfWork uow = createUnitOfWork();
 
 		try
 		{
@@ -526,9 +527,9 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return entity;
 	}
 
-	protected CassandraNoSchemaUnitOfWork createUnitOfWork()
+	protected CassandraUnitOfWork createUnitOfWork()
 	{
-		return new CassandraNoSchemaUnitOfWork(session, statementGenerator, unitOfWorkType);
+		return new CassandraUnitOfWork(session, statementGenerator, unitOfWorkType);
 	}
 
 	private CompletableFuture<Document> readAsDocument(Identifier id)

@@ -37,6 +37,7 @@ extends AbstractTable
 {
 	private static final String DEFAULT_KEYS = "id:uuid unique";
 	private List<View> views;
+	private List<Index> indexes;
 
 	public PrimaryTable()
 	{
@@ -50,58 +51,57 @@ extends AbstractTable
 	 * @param name
 	 * @throws KeyDefinitionException
 	 */
-	public PrimaryTable(String keyspace, String name)
+	public PrimaryTable(String keyspaceName, String name)
 	throws KeyDefinitionException
 	{
-		this(keyspace, name, DEFAULT_KEYS);
-		keyspace(keyspace);
+		this(keyspaceName, name, DEFAULT_KEYS);
+		keyspace(keyspaceName);
 
 	}
 
-	public PrimaryTable(String keyspace, String name, String keys)
+	public PrimaryTable(String keyspaceName, String tableName, String keys)
 	throws KeyDefinitionException
 	{
-		this(keyspace, name, KeyDefinitionParser.parse(keys));
+		this(keyspaceName, tableName, KeyDefinitionParser.parse(keys));
 	}
 
-	public PrimaryTable(String keyspace, String name, String keys, long ttl)
+	public PrimaryTable(String keyspaceName, String tableName, String keys, long ttl)
 	throws KeyDefinitionException
 	{
-		this(keyspace, name, KeyDefinitionParser.parse(keys), ttl);
+		this(keyspaceName, tableName, KeyDefinitionParser.parse(keys), ttl);
 	}
 
-	public PrimaryTable(String keyspace, String name, KeyDefinition keys)
+	public PrimaryTable(String keyspaceName, String tableName, KeyDefinition keys)
 	{
-		this(keyspace, name, keys, 0l);
+		this(keyspaceName, tableName, keys, 0l);
 	}
 
-	public PrimaryTable(String keyspace, String name, KeyDefinition keys, long ttl)
+	public PrimaryTable(String keyspaceName, String tableName, KeyDefinition keys, long ttl)
 	{
-		super(keyspace, name, keys, ttl);
+		super(keyspaceName, tableName, keys, ttl);
 	}
 
-
-	public PrimaryTable withView(String name, String keys)
+	public PrimaryTable withView(String viewName, String keys)
 	throws KeyDefinitionException
 	{
-		return withView(name, keys, 0l);
+		return withView(viewName, keys, 0l);
 	}
 
-	public PrimaryTable withView(String name, String keys, long ttl)
+	public PrimaryTable withView(String viewName, String keys, long ttl)
 	throws KeyDefinitionException
 	{
-		addView(new View(this, name, keys, ttl));
+		addView(new View(this, viewName, keys, ttl));
 		return this;
 	}
 
-	public PrimaryTable withView(String name, KeyDefinition keys)
+	public PrimaryTable withView(String viewName, KeyDefinition keys)
 	{
-		return withView(name, keys, 0l);
+		return withView(viewName, keys, 0l);
 	}
 
-	public PrimaryTable withView(String name, KeyDefinition keys, long ttl)
+	public PrimaryTable withView(String viewName, KeyDefinition keys, long ttl)
 	{
-		addView(new View(this, name, keys, ttl));
+		addView(new View(this, viewName, keys, ttl));
 		return this;
 	}
 
@@ -139,8 +139,59 @@ extends AbstractTable
 		return (hasViews() ? views.size() : 0);
 	}
 
+	public PrimaryTable withIndex(String indexName, String keys)
+	throws KeyDefinitionException
+	{
+		return withIndex(indexName, keys, 0l);
+	}
+
+	public PrimaryTable withIndex(String indexName, String keys, long ttl)
+	throws KeyDefinitionException
+	{
+		addIndex(new Index(this, indexName, keys, ttl));
+		return this;
+	}
+
+	public PrimaryTable withIndex(String indexName, KeyDefinition keys)
+	{
+		return withIndex(indexName, keys, 0l);
+	}
+
+	public PrimaryTable withIndex(String indexName, KeyDefinition keys, long ttl)
+	{
+		addIndex(new Index(this, indexName, keys, ttl));
+		return this;
+	}
+
+	public void addIndex(Index index)
+	{
+		if (indexes == null)
+		{
+			indexes = new ArrayList<>();
+		}
+
+		index.parent(this);
+		indexes.add(index);
+	}
+
+	public boolean hasIndexes()
+	{
+		return (indexes != null && !indexes.isEmpty());
+	}
+
+	public Stream<Index> indexes()
+	{
+		return (hasIndexes() ? Collections.unmodifiableList(indexes).stream() : Stream.empty());
+	}
+
+	public int getIndexCount()
+	{
+		return (hasIndexes() ? indexes.size() : 0);
+	}
+
 	public Stream<AbstractTable> stream()
 	{
-		return Stream.concat(Stream.of(this), views());
+		return Stream.of(Stream.of(this), views(), indexes())
+			.flatMap(s -> s);
 	}
 }

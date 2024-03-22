@@ -1,10 +1,8 @@
-package com.strategicgains.noschema.cassandra.document;
+package com.strategicgains.noschema.unitofwork;
 
 import java.util.Objects;
 
 import com.strategicgains.noschema.document.Document;
-import com.strategicgains.noschema.unitofwork.Change;
-import com.strategicgains.noschema.unitofwork.EntityState;
 
 public class DocumentChange
 extends Change<Document>

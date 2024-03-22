@@ -19,12 +19,12 @@ import com.strategicgains.noschema.document.ObjectCodec;
  * 
  * In all likelihood, Repository implementations could use containment instead of inheritance to reduce the scope of the 
  * methods exposed to the client. But, for the purposes of this example, it's easier to demonstrate the use of the
- * underlying methods by extending the CassandraNoSchemaRepository class.
+ * underlying methods by extending the CassandraRepository class.
  * 
  * @author Todd Fredrich
  */
 public class FlowerRepository
-extends CassandraNoSchemaRepository<Flower>
+extends CassandraRepository<Flower>
 {
 	private static final String FLOWERS_BY_HEIGHT = "by_height";
 	private static final String FLOWERS_BY_NAME = "by_name";
@@ -54,7 +54,12 @@ extends CassandraNoSchemaRepository<Flower>
 						.withExtractor(f -> ((Float) f).intValue())
 					.withClusteringKey("height", DataTypes.FLOAT, ClusteringKeyComponent.Ordering.ASC)
 					.build()
-				),
+				)
+
+				/**
+				 * An index that contains no data, only the key definition and an ID pointing to the Flower of the primary table.
+				 */
+				.withIndex(FLOWERS_BY_NAME + "_idx", "(account.id as account_id:UUID), name:text unique"),
 			unitOfWorkType,
 			codec);
 	}
