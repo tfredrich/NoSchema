@@ -2,6 +2,8 @@ package com.strategicgains.noschema.cassandra.schema;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 
@@ -22,41 +24,125 @@ public class SchemaRegistry
 		// prevents instantiation.
 	}
 
-	public static SchemaRegistry instance()
+	/**
+	 * Retrieve the singleton instance of the SchemaRegistry.
+	 * 
+	 * @return the singleton instance of the SchemaRegistry.
+	 */
+	private static SchemaRegistry instance()
 	{
 		return INSTANCE;
 	}
 
+	/**
+	 * Clear all schema providers from the registry.
+	 * 
+	 * @return this schema registry to enable method chaining.
+	 */
 	public static SchemaRegistry clear()
 	{
-		return instance().clearAll();
+		return instance()._clearAll();
 	}
 
+	/**
+	 * Initialize the database schema using the given CQL session.
+	 * 
+	 * @param session a Cassandra CQL session.
+	 * @return this schema registry to enable method chaining.
+	 */
+	public static SchemaRegistry initialize(CqlSession session)
+    {
+        return instance()._initializeAll(session);
+    }
+
+	/**
+	 * Register a keyspace with the SchemaRegistry. Causes the registration of a KeyspaceProvider
+	 * which will create a very basic keyspace in Cassandra if it does not already exist when
+	 * initializing the schema.
+	 * 
+	 * @param keyspace
+	 * @return
+	 */
 	public static SchemaRegistry keyspace(String keyspace)
 	{
-		instance().setKeyspace(keyspace);
-		return instance().withProvider(new KeyspaceProvider(keyspace));
+		instance()._setKeyspace(keyspace);
+		return instance()._addProvider(new KeyspaceProvider(keyspace));
 	}
 
+	/**
+	 * Retrieve the keyspace name registered with the SchemaRegistry.
+	 * 
+	 * @return the keyspace name registered with the SchemaRegistry.
+	 */
 	public static String keyspace()
 	{
-		return instance().getKeyspace();
+		return instance()._getKeyspace();
 	}
 
-	public String getKeyspace()
+	/**
+	 * Execute the CQL script to create all schemas on this session.
+	 * 
+	 * @param session a Cassandra CQL session.
+	 */
+	public static void createAll(CqlSession session)
+	{
+		instance()._createAll(session);
+	}
+
+	/**
+	 * Execute the CQL script to drop all schemas on this session.
+	 * 
+	 * @param session a Cassandra CQL session.
+	 */
+	public static void dropAll(CqlSession session)
+	{
+		instance()._dropAll(session);
+	}
+
+	/**
+	 * Retrieve the CQL script to create all schemas.
+	 * 
+	 * @return a CQL script to create all schemas.
+	 */
+	public static String getCreateAllSchema()
+	{
+		return instance()._exportCreateAll();
+	}
+
+	/**
+	 * Retrieve the CQL script to drop all schemas.
+	 * 
+	 * @return a CQL script to drop all schemas.
+	 */
+	public static String getDropAllSchema()
+	{
+		return instance()._exportDropAll();
+	}
+
+	/**
+	 * Retrieve the CQL script to drop all schemas, then create them.
+	 * 
+	 * @return a CQL script to drop all schemas, then create them.
+	 */
+	public static String getInitializeSchema()
+	{
+		return instance()._exportInitializeAll();
+	}
+
+	private String _getKeyspace()
 	{
 		return keyspace;
 	}
 
-	public SchemaRegistry setKeyspace(String keyspace)
+	private SchemaRegistry _setKeyspace(String keyspace)
 	{
 		this.keyspace = keyspace;
 		return this;
 	}
 
-	public SchemaRegistry clearAll()
+	private SchemaRegistry _clearAll()
 	{
-		setKeyspace(null);
+		_setKeyspace(null);
 		schemas.clear();
 		return this;
 	}
@@ -67,7 +153,7 @@ public class SchemaRegistry
 	 * @param provider
 	 * @return this schema registry
 	 */
-	public SchemaRegistry withProvider(SchemaProvider provider)
+	private SchemaRegistry _addProvider(SchemaProvider provider)
 	{
 		if (provider != null)
 		{
@@ -77,35 +163,32 @@ public class SchemaRegistry
 		return this;
 	}
 
-	public SchemaRegistry exportCreateAll()
+	private String _exportCreateAll()
 	{
-		schemas.forEach(p -> System.out.println(p.asCreateScript()));
-		return this;
+		return schemas.stream()
+			.map(p -> p.asCreateScript())
+			.collect(Collectors.joining("\n"));
 	}
 
-	public SchemaRegistry exportDropAll()
-	{
-		schemas.forEach(p -> System.out.println(p.asDropScript()));
-		return this;
+	private String _exportDropAll() {
+		return schemas.stream()
+			.map(p -> p.asDropScript())
+			.collect(Collectors.joining("\n"));
 	}
 
-	public SchemaRegistry exportInitializeAll()
+	private String _exportInitializeAll()
 	{
-		schemas.forEach(p -> {
-			System.out.println(p.asDropScript());	
-			System.out.println(p.asCreateScript());	
-		});
-
-		return this;
+	    return schemas.stream()
+	    	.flatMap(p -> Stream.of(p.asDropScript(), p.asCreateScript()))
+	    	.collect(Collectors.joining("\n"));
 	}
 
 	/**
 	 * Drops all schemas, then creates all.
 	 * 
 	 * @param session
-	 * @param keyspace
 	 */
-	public SchemaRegistry initializeAll(CqlSession session)
+	private SchemaRegistry _initializeAll(CqlSession session)
 	{
 		schemas.forEach(p -> {
 			p.drop(session);
@@ -115,12 +198,12 @@ public class SchemaRegistry
 		return this;
 	}
 
-	public void createAll(CqlSession session)
+	private void _createAll(CqlSession session)
 	{
 		schemas.forEach(p -> p.create(session));
 	}
 
-	public void dropAll(CqlSession session)
+	private void _dropAll(CqlSession session)
 	{
 		schemas.forEach(p -> p.drop(session));
 	}
