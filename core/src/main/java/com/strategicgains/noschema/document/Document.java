@@ -10,8 +10,8 @@ import com.strategicgains.noschema.Identifier;
 
 /**
  * The Document class implements the Identifiable interface. It represents a document that can be stored in a key/value
- * or columnar store. The document represents an object serialized as a byte array and has an associated type so it 
- * can be reconstituted as a POJO.
+ * or columnar store. The document represents an object serialized as a byte array and has an associated type so the
+ * object property, stored as a byte array, can be deserialized into a POJO.
  */
 public class Document
 implements Identifiable
