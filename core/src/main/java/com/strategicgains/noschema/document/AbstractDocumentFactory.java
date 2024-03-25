@@ -34,11 +34,11 @@ public abstract class AbstractDocumentFactory<T>
 		return asDocument(entity, bson);
 	}
 
-	public Document asDocument(T entity, byte[] bson)
+	public Document asDocument(T entity, byte[] bytes)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		Identifier id = extractIdentifier(entity);
-		return new Document(id, bson, entity.getClass());		
+		return new Document(id, bytes, entity.getClass());		
 	}
 
 	@SuppressWarnings("unchecked")

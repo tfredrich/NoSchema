@@ -3,18 +3,31 @@ package com.strategicgains.noschema.document;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
-public class IndexDocument
+/**
+ * An IndexEntry is a mapping between an Identifier and a Document.  It is used to
+ * index large documents when the origin document contains too much data to be
+ * denormalized into a view.  The IndexEntry is used to store the Identifier of the
+ * alternate key along with a reference to the original document.
+ * <p/>
+ * Performing a lookup on an IndexEntry will return the original document but incurs
+ * the overhead of an additional lookup. Therefore, it is best to use IndexEntry only
+ * when the original document is too large to denormalize into a view and readAll() or
+ * other cursor-based queries are not expected.
+ * 
+ * @author Todd Fredrich
+ */
+public class IndexEntry
 implements Identifiable
 {
 	private Identifier identifier;
 	private Identifier documentId;
 
-	public IndexDocument()
+	public IndexEntry()
 	{
 		super();
 	}
 
-	public IndexDocument(Identifier identifier, Document document)
+	public IndexEntry(Identifier identifier, Document document)
 	{
 		this();
 		setIdentifier(identifier);
