@@ -3,7 +3,7 @@ package com.strategicgains.noschema.cassandra.schema;
 import com.datastax.oss.driver.api.core.CqlSession;
 
 public abstract class AbstractSchemaProvider
-implements SchemaProvider
+implements CassandraSchemaProvider
 {
 	@Override
 	public boolean drop(CqlSession session)

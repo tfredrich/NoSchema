@@ -8,7 +8,7 @@ import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.strategicgains.noschema.bson.BsonObjectCodec;
-import com.strategicgains.noschema.cassandra.schema.SchemaRegistry;
+import com.strategicgains.noschema.cassandra.schema.CassandraSchemaRegistry;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DuplicateItemException;
@@ -72,22 +72,22 @@ public class SampleRun
 
 	private static void testBson(CqlSession session, String keyspace)
 	{
-		SchemaRegistry.keyspace(keyspace);
+		CassandraSchemaRegistry.keyspace(keyspace);
 		testCassandra(keyspace, session, unitOfWorkType, BSON_CODEC);
-		SchemaRegistry.clear();
+		CassandraSchemaRegistry.clear();
 	}
 
 	private static void testGson(CqlSession session, String keyspace)
 	{
-		SchemaRegistry.keyspace(keyspace);
+		CassandraSchemaRegistry.keyspace(keyspace);
 		testCassandra(keyspace, session, unitOfWorkType, GSON_CODEC);
-		SchemaRegistry.clear();
+		CassandraSchemaRegistry.clear();
 	}
 
 	private static void testCassandra(String keyspace, CqlSession session, UnitOfWorkType uowType, ObjectCodec<Flower> codec)
 	{
 		// Create the keyspace, if needed.
-		SchemaRegistry.initialize(session);
+		CassandraSchemaRegistry.initialize(session);
 
 		FlowerRepository flowers = new FlowerRepository(session, keyspace, uowType, codec);
 		flowers.withObserver(new SampleObserver());

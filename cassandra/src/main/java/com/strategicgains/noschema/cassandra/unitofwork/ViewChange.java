@@ -2,16 +2,16 @@ package com.strategicgains.noschema.cassandra.unitofwork;
 
 import java.util.Objects;
 
-import com.strategicgains.noschema.document.Document;
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.unitofwork.Change;
 import com.strategicgains.noschema.unitofwork.EntityState;
 
-public class DocumentChange
-extends Change<Document>
+public class ViewChange<T extends Identifiable>
+extends Change<T>
 {
 	private String view;
 
-	public DocumentChange(String view, Document entity, EntityState state)
+	public ViewChange(String view, T entity, EntityState state)
 	{
 		super(entity, state);
 		this.view = view;
@@ -31,6 +31,6 @@ extends Change<Document>
 	@Override
 	public boolean equals(Object that)
 	{
-		return super.equals(that) && Objects.equals(this.view, ((DocumentChange) that).view);
+		return super.equals(that) && Objects.equals(this.view, ((ViewChange<T>) that).view);
 	}
 }

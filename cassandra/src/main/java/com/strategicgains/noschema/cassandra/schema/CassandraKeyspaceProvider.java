@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class KeyspaceProvider
+public class CassandraKeyspaceProvider
 extends AbstractSchemaProvider
 {
 	private static String DEFAULT_KEYSPACE = "noschema";
@@ -20,12 +20,12 @@ extends AbstractSchemaProvider
 	private Map<String, Integer> dataCenters = null;
 	private String keyspace;
 
-	public KeyspaceProvider()
+	public CassandraKeyspaceProvider()
 	{
 		this(DEFAULT_KEYSPACE);
 	}
 
-	public KeyspaceProvider(String keyspace)
+	public CassandraKeyspaceProvider(String keyspace)
     {
 		super();
 		this.keyspace = keyspace;

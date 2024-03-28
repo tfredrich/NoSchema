@@ -13,13 +13,13 @@ import com.datastax.oss.driver.api.core.CqlSession;
  * @author tfredrich
  * @since May 7, 2015
  */
-public class SchemaRegistry
+public class CassandraSchemaRegistry
 {
-	private static final SchemaRegistry INSTANCE = new SchemaRegistry();
-	private List<SchemaProvider> schemas = new ArrayList<>();
+	private static final CassandraSchemaRegistry INSTANCE = new CassandraSchemaRegistry();
+	private List<CassandraSchemaProvider> schemas = new ArrayList<>();
 	private String keyspace;
 
-	private SchemaRegistry()
+	private CassandraSchemaRegistry()
 	{
 		// prevents instantiation.
 	}
@@ -29,7 +29,7 @@ public class SchemaRegistry
 	 * 
 	 * @return the singleton instance of the SchemaRegistry.
 	 */
-	private static SchemaRegistry instance()
+	private static CassandraSchemaRegistry instance()
 	{
 		return INSTANCE;
 	}
@@ -39,7 +39,7 @@ public class SchemaRegistry
 	 * 
 	 * @return this schema registry to enable method chaining.
 	 */
-	public static SchemaRegistry clear()
+	public static CassandraSchemaRegistry clear()
 	{
 		return instance()._clearAll();
 	}
@@ -50,7 +50,7 @@ public class SchemaRegistry
 	 * @param session a Cassandra CQL session.
 	 * @return this schema registry to enable method chaining.
 	 */
-	public static SchemaRegistry initialize(CqlSession session)
+	public static CassandraSchemaRegistry initialize(CqlSession session)
     {
         return instance()._initializeAll(session);
     }
@@ -63,10 +63,10 @@ public class SchemaRegistry
 	 * @param keyspace
 	 * @return
 	 */
-	public static SchemaRegistry keyspace(String keyspace)
+	public static CassandraSchemaRegistry keyspace(String keyspace)
 	{
 		instance()._setKeyspace(keyspace);
-		return instance()._addProvider(new KeyspaceProvider(keyspace));
+		return instance()._addProvider(new CassandraKeyspaceProvider(keyspace));
 	}
 
 	/**
@@ -134,13 +134,13 @@ public class SchemaRegistry
 		return keyspace;
 	}
 
-	private SchemaRegistry _setKeyspace(String keyspace)
+	private CassandraSchemaRegistry _setKeyspace(String keyspace)
 	{
 		this.keyspace = keyspace;
 		return this;
 	}
 
-	private SchemaRegistry _clearAll()
+	private CassandraSchemaRegistry _clearAll()
 	{
 		_setKeyspace(null);
 		schemas.clear();
@@ -153,7 +153,7 @@ public class SchemaRegistry
 	 * @param provider
 	 * @return this schema registry
 	 */
-	private SchemaRegistry _addProvider(SchemaProvider provider)
+	private CassandraSchemaRegistry _addProvider(CassandraSchemaProvider provider)
 	{
 		if (provider != null)
 		{
@@ -188,7 +188,7 @@ public class SchemaRegistry
 	 * 
 	 * @param session
 	 */
-	private SchemaRegistry _initializeAll(CqlSession session)
+	private CassandraSchemaRegistry _initializeAll(CqlSession session)
 	{
 		schemas.forEach(p -> {
 			p.drop(session);

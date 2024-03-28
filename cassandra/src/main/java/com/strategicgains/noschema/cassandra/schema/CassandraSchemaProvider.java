@@ -2,7 +2,7 @@ package com.strategicgains.noschema.cassandra.schema;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 
-public interface SchemaProvider
+public interface CassandraSchemaProvider
 {
 	public String asCreateScript();
 	public String asDropScript();

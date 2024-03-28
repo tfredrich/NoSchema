@@ -21,6 +21,7 @@ public abstract class AbstractTable
 	private KeyDefinition keys;
 
 	// How long should the table's data live? (0 implies forever)
+	//TODO: Implement TTL in Cassandra.
 	private long ttl;
 
 	// Any extra name/value tag-alongs the customer wants to include.

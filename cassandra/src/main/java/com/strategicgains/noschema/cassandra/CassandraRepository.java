@@ -20,7 +20,7 @@ import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.NoSchemaRepository;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
-import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
+import com.strategicgains.noschema.cassandra.schema.CassandraSchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
@@ -48,7 +48,7 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
  * store the entities.
  */
 public class CassandraRepository<T extends Identifiable>
-implements NoSchemaRepository<T>, SchemaWriter<T>
+implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 {
 	// The session used to connect to the Cassandra cluster.
 	private CqlSession session;

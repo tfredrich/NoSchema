@@ -10,9 +10,9 @@ import java.util.concurrent.CompletionStage;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.CassandraStatementFactory;
-import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.unitofwork.Change;
@@ -22,20 +22,20 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkChangeSet;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
-public class CassandraUnitOfWork
+public class CassandraUnitOfWork<T extends Identifiable>
 implements UnitOfWork
 {
     private final CqlSession session;
-    private final CassandraStatementFactory statementFactory;
-    private final UnitOfWorkChangeSet<Document> changeSet = new UnitOfWorkChangeSet<>();
+    private final CassandraStatementFactory<T> statementFactory;
+    private final UnitOfWorkChangeSet<T> changeSet = new UnitOfWorkChangeSet<>();
     private final UnitOfWorkCommitStrategy commitStrategy;
 
-    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory statementFactory)
+    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory<T> statementFactory)
     {
     	this(session, statementFactory, UnitOfWorkType.LOGGED);
     }
 
-    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory statementFactory, UnitOfWorkType unitOfWorkType)
+    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory<T> statementFactory, UnitOfWorkType unitOfWorkType)
     {
         this.session = Objects.requireNonNull(session);
         this.statementFactory = Objects.requireNonNull(statementFactory);
@@ -52,9 +52,9 @@ implements UnitOfWork
 	 *
 	 * @param entity the new entity to register.
 	 */
-	public CassandraUnitOfWork registerNew(String viewName, Document entity)
+	public CassandraUnitOfWork<T> registerNew(String viewName, T entity)
 	{
-		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.NEW));
+		changeSet.registerChange(new ViewChange<>(viewName, entity, EntityState.NEW));
 		return this;
 	}
 
@@ -63,9 +63,9 @@ implements UnitOfWork
 	 *
 	 * @param entity the entity in its dirty state (after update).
 	 */
-	public CassandraUnitOfWork registerDirty(String viewName, Document entity)
+	public CassandraUnitOfWork<T> registerDirty(String viewName, T entity)
 	{
-		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.DIRTY));
+		changeSet.registerChange(new ViewChange<>(viewName, entity, EntityState.DIRTY));
 		return this;
 	}
 
@@ -74,9 +74,9 @@ implements UnitOfWork
 	 *
 	 * @param entity the entity in its clean state (before removal).
 	 */
-	public CassandraUnitOfWork registerDeleted(String viewName, Document entity)
+	public CassandraUnitOfWork<T> registerDeleted(String viewName, T entity)
 	{
-		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.DELETED));
+		changeSet.registerChange(new ViewChange<>(viewName, entity, EntityState.DELETED));
 		return this;
 	}
 
@@ -88,9 +88,9 @@ implements UnitOfWork
 	 * change the copy that is registered as clean, making registration useless. Copy your
 	 * own objects either before registering them as clean or before mutating them.
 	 */
-	public CassandraUnitOfWork registerClean(String viewName, Document entity)
+	public CassandraUnitOfWork<T> registerClean(String viewName, T entity)
 	{
-		changeSet.registerChange(new DocumentChange(viewName, entity, EntityState.CLEAN));
+		changeSet.registerChange(new ViewChange<>(viewName, entity, EntityState.CLEAN));
 		return this;
 	}
 
@@ -102,8 +102,8 @@ implements UnitOfWork
 		List<BoundStatement> statements = new ArrayList<>();
 
 		changeSet.stream().forEach(change -> {
-			checkExistence(session, (DocumentChange) change).ifPresent(existence::add);
-			generateStatementFor((DocumentChange) change).ifPresent(statements::add);
+			checkExistence(session, (ViewChange<T>) change).ifPresent(existence::add);
+			generateStatementFor((ViewChange<T>) change).ifPresent(statements::add);
 		});
 
 		handleExistenceChecks(existence);
@@ -141,7 +141,7 @@ implements UnitOfWork
 		}
 	}
 
-	private Optional<CompletionStage<Boolean>> checkExistence(CqlSession session, final DocumentChange change)
+	private Optional<CompletionStage<Boolean>> checkExistence(CqlSession session, final ViewChange<T> change)
 	{
 		String viewName = change.getView();
 
@@ -155,7 +155,7 @@ implements UnitOfWork
 		return Optional.empty();
 	}
 
-	private CompletionStage<Boolean> checkExistenceRules(Change<Document> change, boolean exists)
+	private CompletionStage<Boolean> checkExistenceRules(Change<T> change, boolean exists)
 	{
 		CompletableFuture<Boolean> result = new CompletableFuture<>();
 
@@ -175,7 +175,7 @@ implements UnitOfWork
 		return result;
 	}
 
-	private Optional<BoundStatement> generateStatementFor(DocumentChange change)
+	private Optional<BoundStatement> generateStatementFor(ViewChange<T> change)
 	{
 		String viewName = change.getView();
 
@@ -194,7 +194,7 @@ implements UnitOfWork
 		return Optional.empty();
 	}
 
-	public Document readClean(Identifier id)
+	public T readClean(Identifier id)
 	{
 		return changeSet.findClean(id);
 	}
