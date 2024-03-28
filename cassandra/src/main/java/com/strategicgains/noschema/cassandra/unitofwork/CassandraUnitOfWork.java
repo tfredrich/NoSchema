@@ -17,7 +17,6 @@ import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.unitofwork.Change;
-import com.strategicgains.noschema.unitofwork.DocumentChange;
 import com.strategicgains.noschema.unitofwork.EntityState;
 import com.strategicgains.noschema.unitofwork.UnitOfWork;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkChangeSet;
@@ -29,7 +28,7 @@ implements UnitOfWork
 {
     private final CqlSession session;
     private final CassandraStatementFactory<? extends Identifiable> statementFactory;
-    private final UnitOfWorkChangeSet<Document> changeSet = new UnitOfWorkChangeSet<>();
+    private final UnitOfWorkChangeSet<? extends Identifiable> changeSet = new UnitOfWorkChangeSet<>();
     private final UnitOfWorkCommitStrategy commitStrategy;
 
     public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory<? extends Identifiable> statementFactory)
