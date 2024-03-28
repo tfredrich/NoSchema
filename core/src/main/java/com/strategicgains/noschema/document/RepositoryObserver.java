@@ -18,7 +18,7 @@ import com.strategicgains.noschema.Identifier;
  * @see Identifiable
  * @see Identifier
  */
-public interface DocumentObserver
+public interface RepositoryObserver<T extends Document>
 {
 	/**
 	 * Called before a Document is read.
@@ -32,49 +32,49 @@ public interface DocumentObserver
 	 *
 	 * @param document the Document that was read
 	 */
-	void afterRead(Document document);
+	void afterRead(T document);
 
 	/**
 	 * Called before a Document is created.
 	 *
 	 * @param document the Document to be created
 	 */
-	void beforeCreate(Document document);
+	void beforeCreate(T document);
 
 	/**
 	 * Called after a Document is created.
 	 *
 	 * @param document the Document that was created
 	 */
-	void afterCreate(Document document);
+	void afterCreate(T document);
 
 	/**
 	 * Called before a Document is deleted.
 	 *
 	 * @param document the Document to be deleted
 	 */
-	void beforeDelete(Document document);
+	void beforeDelete(T document);
 
 	/**
 	 * Called after a Document is deleted.
 	 *
 	 * @param document the Document that was deleted
 	 */
-	void afterDelete(Document document);
+	void afterDelete(T document);
 
 	/**
 	 * Called before a Document is updated.
 	 *
 	 * @param document the Document to be updated
 	 */
-	void beforeUpdate(Document document);
+	void beforeUpdate(T document);
 
 	/**
 	 * Called after a Document is updated.
 	 *
 	 * @param document the Document that was updated
 	 */
-	void afterUpdate(Document document);
+	void afterUpdate(T document);
 
 	/**
 	 * Called before an entity is encoded into a Document.
@@ -83,14 +83,14 @@ public interface DocumentObserver
 	 * can be used to perform actions that are specific to encoding an entity into a Document.
 	 *
 	 * @param entity the entity to be encoded
-	 * @param <T> the type of the entity, which must be Identifiable
+	 * @param <I> the type of the entity, which must be Identifiable
 	 */
-	<T extends Identifiable> void beforeEncoding(T entity);
+	<I extends Identifiable> void beforeEncoding(I entity);
 
 	/**
 	 * Called after an entity is encoded into a Document.
 	 *
 	 * @param document the Document that was created from the entity
 	 */
-	void afterEncoding(Document document);
+	void afterEncoding(T document);
 }

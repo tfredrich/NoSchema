@@ -4,7 +4,7 @@ import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
 /**
- * This class is useful for creating a {@link DocumentObserver} that only observes a few of the lifecycle points.
+ * This class is useful for creating a {@link RepositoryObserver} that only observes a few of the lifecycle points.
  * <p/>
  * This class provides empty methods for all of the observation points in the Document lifecycle. Subclasses override the
  * method(s) they want to observe.
@@ -14,13 +14,13 @@ import com.strategicgains.noschema.Identifier;
  * 
  * @author Todd Fredrich
  * @since Feb 5, 2024
- * @see DocumentObserver
+ * @see RepositoryObserver
  * @see Document
  * @see Identifiable
  * @see Identifier
  */
-public abstract class AbstractDocumentObserver
-        implements DocumentObserver
+public abstract class AbstractRepositoryObserver
+implements RepositoryObserver
 {
     /**
      * This method is called before reading a document with the given identifier. It allows you to perform any necessary

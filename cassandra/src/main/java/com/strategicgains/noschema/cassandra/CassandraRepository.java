@@ -24,7 +24,7 @@ import com.strategicgains.noschema.cassandra.schema.CassandraSchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
-import com.strategicgains.noschema.document.DocumentObserver;
+import com.strategicgains.noschema.document.RepositoryObserver;
 import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -61,7 +61,7 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 	// The type of UnitOfWork to create.
 	private UnitOfWorkType unitOfWorkType;
 	// The observers used to observe the encoding, creation, update, and deletion of entities.
-	private List<DocumentObserver> observers = new ArrayList<>();
+	private List<RepositoryObserver> observers = new ArrayList<>();
 
 
 	protected CassandraRepository(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
@@ -114,7 +114,7 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 		return table.name();
 	}
 
-	public CassandraRepository<T> withObserver(DocumentObserver observer)
+	public CassandraRepository<T> withObserver(RepositoryObserver observer)
 	{
 		observers.add(observer);
 		return this;
