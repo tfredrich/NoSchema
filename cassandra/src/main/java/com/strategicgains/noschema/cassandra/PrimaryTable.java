@@ -37,7 +37,6 @@ extends AbstractTable
 {
 	private static final String DEFAULT_KEYS = "id:uuid unique";
 	private List<View> views;
-	private List<Index> indexes;
 
 	public PrimaryTable()
 	{
@@ -137,56 +136,6 @@ extends AbstractTable
 	public int getViewCount()
 	{
 		return (hasViews() ? views.size() : 0);
-	}
-
-	public PrimaryTable withIndex(String indexName, String keys)
-	throws KeyDefinitionException
-	{
-		return withIndex(indexName, keys, 0l);
-	}
-
-	public PrimaryTable withIndex(String indexName, String keys, long ttl)
-	throws KeyDefinitionException
-	{
-		addIndex(new Index(this, indexName, keys, ttl));
-		return this;
-	}
-
-	public PrimaryTable withIndex(String indexName, KeyDefinition keys)
-	{
-		return withIndex(indexName, keys, 0l);
-	}
-
-	public PrimaryTable withIndex(String indexName, KeyDefinition keys, long ttl)
-	{
-		addIndex(new Index(this, indexName, keys, ttl));
-		return this;
-	}
-
-	public void addIndex(Index index)
-	{
-		if (indexes == null)
-		{
-			indexes = new ArrayList<>();
-		}
-
-		index.parent(this);
-		indexes.add(index);
-	}
-
-	public boolean hasIndexes()
-	{
-		return (indexes != null && !indexes.isEmpty());
-	}
-
-	public Stream<Index> indexes()
-	{
-		return (hasIndexes() ? Collections.unmodifiableList(indexes).stream() : Stream.empty());
-	}
-
-	public int getIndexCount()
-	{
-		return (hasIndexes() ? indexes.size() : 0);
 	}
 
 	/**

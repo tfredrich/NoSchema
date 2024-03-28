@@ -9,7 +9,6 @@ import com.datastax.oss.protocol.internal.util.Bytes;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
-import com.strategicgains.noschema.cassandra.index.IndexStatementFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.document.ObjectCodec;
 
@@ -24,10 +23,6 @@ public class CassandraStatementFactory<T extends Identifiable>
 		table.stream().forEach(view -> {
 			put(view.name(), new DocumentStatementFactory<>(session, view, codec));
 			put(view.name(), view.keys());				
-		});
-		table.indexes().forEach(index -> {
-			put(index.name(), new IndexStatementFactory<>(session, index, codec));
-			put(index.name(), index.keys());				
 		});
 	}
 

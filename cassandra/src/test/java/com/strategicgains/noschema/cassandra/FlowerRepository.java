@@ -54,12 +54,7 @@ extends CassandraRepository<Flower>
 						.withExtractor(f -> ((Float) f).intValue())
 					.withClusteringKey("height", DataTypes.FLOAT, ClusteringKeyComponent.Ordering.ASC)
 					.build()
-				)
-
-				/**
-				 * An index that contains no data, only the key definition and an ID pointing to the Flower of the primary table.
-				 */
-				.withIndex(FLOWERS_BY_NAME + "_idx", "(account.id as account_id:UUID), name:text unique"),
+				),
 			unitOfWorkType,
 			codec);
 	}

@@ -10,7 +10,6 @@ import java.util.concurrent.CompletionStage;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.CassandraStatementFactory;
 import com.strategicgains.noschema.document.Document;
@@ -27,16 +26,16 @@ public class CassandraUnitOfWork
 implements UnitOfWork
 {
     private final CqlSession session;
-    private final CassandraStatementFactory<? extends Identifiable> statementFactory;
-    private final UnitOfWorkChangeSet<? extends Identifiable> changeSet = new UnitOfWorkChangeSet<>();
+    private final CassandraStatementFactory statementFactory;
+    private final UnitOfWorkChangeSet<Document> changeSet = new UnitOfWorkChangeSet<>();
     private final UnitOfWorkCommitStrategy commitStrategy;
 
-    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory<? extends Identifiable> statementFactory)
+    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory statementFactory)
     {
     	this(session, statementFactory, UnitOfWorkType.LOGGED);
     }
 
-    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory<? extends Identifiable> statementFactory, UnitOfWorkType unitOfWorkType)
+    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory statementFactory, UnitOfWorkType unitOfWorkType)
     {
         this.session = Objects.requireNonNull(session);
         this.statementFactory = Objects.requireNonNull(statementFactory);
