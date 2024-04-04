@@ -33,21 +33,26 @@ extends CassandraRepository<Flower>
 	{
 		super(session,
 			/**
-			 * A primary table with a unique key that is the 'id' property of type UUID. The column and the entity property are the same.
+			 * A primary table with a unique key that is the 'id' property of type UUID.
+			 * The database table column and the entity property are the same name.
 			 */
 			new PrimaryTable(keyspace, "flowers", "id:UUID unique")
 
 				/**
-				 * A view by name, where the name is unique within an account.
-				 * The partition key is extracted from the entity via dot notation (account.id) and the column is account_id of type UUID.
-				 * The clustering key is the name, which is a text field.
+				 * A view of flowers by name, where the name is unique within an account.
+				 * The partition key is extracted from the entity via dot notation (account.id)
+				 * and the database column name is account_id of type UUID.
+				 * The clustering key is the name, which is a text field and the column name matches
+				 * the entity property name.
 				 */
 				.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique")
 
 				/**
-				 * A view by height, where the partition key is a bucket of heights (int) and the clustering key is the height (float).
-				 * This uses a lambda function to extract the partition key from the entity's height property.
-				 * The clustering key is the height property of the entity of type float.
+				 * A view of flowers by height, where the partition key is a bucket of heights (int)
+				 * and the clustering key is the actual height (float).
+				 * This example uses a lambda function to extract the partition key from the entity's
+				 * height property--extracting the integer portion of the float. The clustering
+				 * key is the height property of the entity of type float.
 				 */
 				.withView(FLOWERS_BY_HEIGHT, new KeyDefinitionBuilder()
 					.withPartitionKey("height_bucket", "height", DataTypes.INTEGER)
