@@ -16,7 +16,6 @@ import com.strategicgains.noschema.Identifier;
  * @param <T> The type of the serialized format of the POJO (e.g. byte[], String, etc.).
  */
 public abstract class SerializedDocument<T>
-extends IndexDocument
 {
 	/**
 	 * The serialized contents of the entity contained by this document.
@@ -84,7 +83,7 @@ extends IndexDocument
 	 * 
 	 * @return True if the document has a BSON object, false otherwise.
 	 */
-	public boolean hasObject()
+	public boolean hasValue()
 	{
 		return (object != null);
 	}

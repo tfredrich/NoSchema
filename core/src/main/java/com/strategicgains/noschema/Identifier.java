@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  * @since Aug 29, 2013
  */
 public class Identifier
-implements Comparable<Identifier>
+implements Comparable<Identifier>, Identifiable
 {
 	private static final String TO_STRING_SEPARATOR = ", ";
 
@@ -280,4 +280,10 @@ implements Comparable<Identifier>
     {
 	    return (object instanceof Comparable);
     }
+
+	@Override
+	public Identifier getIdentifier()
+	{
+		return new Identifier(this);
+	}
 }

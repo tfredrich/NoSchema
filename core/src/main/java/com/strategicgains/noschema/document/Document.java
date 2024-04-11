@@ -5,10 +5,9 @@ import java.util.Date;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
-public interface Document
+public interface Document<T>
 extends Identifiable
 {
-
 	/**
 	 * Checks if the document has an identifier.
 	 * 
@@ -52,9 +51,13 @@ extends Identifiable
 	void setUpdatedAt(Date updatedAt);
 
 	/**
-	 * Returns whether the document has an object or not.
+	 * Returns whether the document has a value object or not.
 	 * 
-	 * @return True if the document has an object, false otherwise.
+	 * @return True if the document has a value object, false otherwise.
 	 */
-	boolean hasObject();
+	boolean hasValue();
+
+	T getValue();
+
+	void setValue(T value);
 }

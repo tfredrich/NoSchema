@@ -7,7 +7,7 @@ import com.strategicgains.noschema.Identifier;
  * for storage as it's a small, binary format--much smaller than JSON but is not human-readable.
  */
 public class ByteArrayDocument
-extends SerializedDocument<byte[]>
+extends AbstractDocument<byte[]>
 {
 	/**
 	 * Default constructor.
@@ -48,17 +48,5 @@ extends SerializedDocument<byte[]>
 	public ByteArrayDocument(Identifier id, byte[] bytes, Class<?> type)
 	{
 		super(id, bytes, type);
-	}
-
-	/**
-	 * Returns a string representation of the document.
-	 * 
-	 * @return A string representation of the document.
-	 */
-	@Override
-	public String toString()
-	{
-		return "ByteArrayDocument{" + "id=" + getIdentifier() + ", object=" + getObject() + ", type=" + getType()
-			+ ", createdAt=" + getCreatedAt() + ", updatedAt=" + getUpdatedAt() + "}";
 	}
 }

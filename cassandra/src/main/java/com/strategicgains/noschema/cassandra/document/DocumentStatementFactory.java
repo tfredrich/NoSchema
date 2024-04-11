@@ -220,7 +220,7 @@ implements CqlStatementFactory<T>
 		Object[] values = new Object[id.size() + 5]; // Identifier + object + metadata + createdAt + updatedAt.
 		fill(values, 0, id.components().toArray());
 		fill(values, id.size(),
-			(document.hasObject() ? ByteBuffer.wrap(document.getObject()) : ByteBuffer.wrap(new byte[0])),
+			(document.hasValue() ? ByteBuffer.wrap(document.getObject()) : ByteBuffer.wrap(new byte[0])),
 				document.getType(),
 				document.getMetadata(),
 				document.getCreatedAt().toInstant(),
@@ -235,7 +235,7 @@ implements CqlStatementFactory<T>
 		Identifier id = document.getIdentifier();
 		Object[] values = new Object[id.size() + 4];
 			fill(values, 0,
-				(document.hasObject() ? ByteBuffer.wrap(document.getObject()) : ByteBuffer.wrap(new byte[0])),
+				(document.hasValue() ? ByteBuffer.wrap(document.getObject()) : ByteBuffer.wrap(new byte[0])),
 					document.getType(),
 					document.getMetadata(),
 				    document.getUpdatedAt().toInstant());
