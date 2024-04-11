@@ -4,14 +4,14 @@ import java.util.Objects;
 
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.unitofwork.Change;
-import com.strategicgains.noschema.unitofwork.EntityState;
+import com.strategicgains.noschema.unitofwork.ChangeType;
 
-public class ViewChange<T extends Identifiable>
+public class CassandraChange<T extends Identifiable>
 extends Change<T>
 {
 	private String view;
 
-	public ViewChange(String view, T entity, EntityState state)
+	public CassandraChange(String view, T entity, ChangeType state)
 	{
 		super(entity, state);
 		this.view = view;
@@ -31,6 +31,6 @@ extends Change<T>
 	@Override
 	public boolean equals(Object that)
 	{
-		return super.equals(that) && Objects.equals(this.view, ((ViewChange<T>) that).view);
+		return super.equals(that) && Objects.equals(this.view, ((CassandraChange<T>) that).view);
 	}
 }

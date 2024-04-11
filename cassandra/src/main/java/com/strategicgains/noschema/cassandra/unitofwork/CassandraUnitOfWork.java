@@ -16,9 +16,9 @@ import com.strategicgains.noschema.cassandra.CassandraStatementFactory;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.unitofwork.Change;
-import com.strategicgains.noschema.unitofwork.EntityState;
+import com.strategicgains.noschema.unitofwork.ChangeType;
 import com.strategicgains.noschema.unitofwork.UnitOfWork;
-import com.strategicgains.noschema.unitofwork.UnitOfWorkChangeSet;
+import com.strategicgains.noschema.unitofwork.ChangeSet;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
@@ -27,7 +27,7 @@ implements UnitOfWork
 {
     private final CqlSession session;
     private final CassandraStatementFactory<T> statementFactory;
-    private final UnitOfWorkChangeSet<T> changeSet = new UnitOfWorkChangeSet<>();
+    private final ChangeSet<T> changeSet = new ChangeSet<>();
     private final UnitOfWorkCommitStrategy commitStrategy;
 
     public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory<T> statementFactory)
@@ -54,7 +54,7 @@ implements UnitOfWork
 	 */
 	public CassandraUnitOfWork<T> registerNew(String viewName, T entity)
 	{
-		changeSet.registerChange(new ViewChange<>(viewName, entity, EntityState.NEW));
+		changeSet.registerChange(new CassandraChange<>(viewName, entity, ChangeType.NEW));
 		return this;
 	}
 
@@ -65,7 +65,7 @@ implements UnitOfWork
 	 */
 	public CassandraUnitOfWork<T> registerDirty(String viewName, T entity)
 	{
-		changeSet.registerChange(new ViewChange<>(viewName, entity, EntityState.DIRTY));
+		changeSet.registerChange(new CassandraChange<>(viewName, entity, ChangeType.DIRTY));
 		return this;
 	}
 
@@ -76,7 +76,7 @@ implements UnitOfWork
 	 */
 	public CassandraUnitOfWork<T> registerDeleted(String viewName, T entity)
 	{
-		changeSet.registerChange(new ViewChange<>(viewName, entity, EntityState.DELETED));
+		changeSet.registerChange(new CassandraChange<>(viewName, entity, ChangeType.DELETED));
 		return this;
 	}
 
@@ -90,7 +90,7 @@ implements UnitOfWork
 	 */
 	public CassandraUnitOfWork<T> registerClean(String viewName, T entity)
 	{
-		changeSet.registerChange(new ViewChange<>(viewName, entity, EntityState.CLEAN));
+		changeSet.registerChange(new CassandraChange<>(viewName, entity, ChangeType.CLEAN));
 		return this;
 	}
 
@@ -102,8 +102,8 @@ implements UnitOfWork
 		List<BoundStatement> statements = new ArrayList<>();
 
 		changeSet.stream().forEach(change -> {
-			checkExistence(session, (ViewChange<T>) change).ifPresent(existence::add);
-			generateStatementFor((ViewChange<T>) change).ifPresent(statements::add);
+			checkExistence(session, (CassandraChange<T>) change).ifPresent(existence::add);
+			generateStatementFor((CassandraChange<T>) change).ifPresent(statements::add);
 		});
 
 		handleExistenceChecks(existence);
@@ -141,7 +141,7 @@ implements UnitOfWork
 		}
 	}
 
-	private Optional<CompletionStage<Boolean>> checkExistence(CqlSession session, final ViewChange<T> change)
+	private Optional<CompletionStage<Boolean>> checkExistence(CqlSession session, final CassandraChange<T> change)
 	{
 		String viewName = change.getView();
 
@@ -175,7 +175,7 @@ implements UnitOfWork
 		return result;
 	}
 
-	private Optional<BoundStatement> generateStatementFor(ViewChange<T> change)
+	private Optional<BoundStatement> generateStatementFor(CassandraChange<T> change)
 	{
 		String viewName = change.getView();
 

@@ -5,12 +5,18 @@ import java.util.Objects;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
+/**
+ * Represents a change to an entity.  The change includes the entity itself
+ * and the state of the entity (NEW, CLEAN, DIRTY, DELETED).
+ * 
+ * @param <T>
+ */
 public class Change<T extends Identifiable>
 {
 	private final T entity;
-	private EntityState state;
+	private ChangeType state;
 
-	public Change(T entity, EntityState state)
+	public Change(T entity, ChangeType state)
 	{
 		this.entity = entity;
 		this.state = state;
@@ -26,29 +32,29 @@ public class Change<T extends Identifiable>
 		return entity.getIdentifier();
 	}
 
-	public EntityState getState()
+	public ChangeType getState()
 	{
 		return state;
 	}
 
 	public boolean isNew()
 	{
-		return EntityState.NEW == state;
+		return ChangeType.NEW == state;
 	}
 
 	public boolean isClean()
 	{
-		return EntityState.CLEAN == state;
+		return ChangeType.CLEAN == state;
 	}
 
 	public boolean isDirty()
 	{
-		return EntityState.DIRTY == state;
+		return ChangeType.DIRTY == state;
 	}
 
 	public boolean isDeleted()
 	{
-		return EntityState.DELETED == state;
+		return ChangeType.DELETED == state;
 	}
 
 	@Override
