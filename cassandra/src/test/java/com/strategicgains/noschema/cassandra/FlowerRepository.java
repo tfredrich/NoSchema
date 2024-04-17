@@ -1,5 +1,7 @@
 package com.strategicgains.noschema.cassandra;
 
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -28,31 +30,51 @@ extends CassandraRepository<Flower>
 {
 	private static final String FLOWERS_BY_HEIGHT = "by_height";
 	private static final String FLOWERS_BY_NAME = "by_name";
+	private static final String FLOWERS_BY_DATE = "by_created_at";
 
 	public FlowerRepository(CqlSession session, String keyspace, UnitOfWorkType unitOfWorkType, ObjectCodec<Flower> codec)
 	{
 		super(session,
 			/**
-			 * A primary table with a unique key that is the 'id' property of type UUID. The column and the entity property are the same.
+			 * A primary table with a unique key that is the 'id' property of type UUID.
+			 * The database table column and the entity property are the same name.
 			 */
 			new PrimaryTable(keyspace, "flowers", "id:UUID unique")
 
 				/**
-				 * A view by name, where the name is unique within an account.
-				 * The partition key is extracted from the entity via dot notation (account.id) and the column is account_id of type UUID.
-				 * The clustering key is the name, which is a text field.
+				 * A view of flowers by name, where the name is unique within an account.
+				 * The partition key is extracted from the entity via dot notation (account.id)
+				 * and the database column name is account_id of type UUID.
+				 * The clustering key is the name, which is a text field and the column name matches
+				 * the entity property name.
 				 */
 				.withView(FLOWERS_BY_NAME, "(account.id as account_id:UUID), name:text unique")
 
 				/**
-				 * A view by height, where the partition key is a bucket of heights (int) and the clustering key is the height (float).
-				 * This uses a lambda function to extract the partition key from the entity's height property.
-				 * The clustering key is the height property of the entity of type float.
+				 * A view of flowers by height, where the partition key is a bucket of heights (int)
+				 * and the clustering key is the actual height (float).
+				 * This example uses a lambda function to extract the partition key from the entity's
+				 * height property--extracting the integer portion of the float. The clustering
+				 * key is the height property of the entity of type float.
 				 */
 				.withView(FLOWERS_BY_HEIGHT, new KeyDefinitionBuilder()
 					.withPartitionKey("height_bucket", "height", DataTypes.INTEGER)
 						.withExtractor(f -> ((Float) f).intValue())
 					.withClusteringKey("height", DataTypes.FLOAT, ClusteringKeyComponent.Ordering.ASC)
+					.build()
+				)
+
+				/**
+				 * An index of flowers by createdAt for an account. As dates could be a problem
+				 * for the wide rows of Cassandra, this example uses a bucketed integer value
+				 * for the day of the year (1-366) as the partition key and the actual date as the
+				 * clustering key.
+				 */
+				.withIndex(FLOWERS_BY_DATE, new KeyDefinitionBuilder()
+					.withPartitionKey("day", "createdAt", DataTypes.INTEGER)
+						.withExtractor(d -> ((Date) d).toInstant().atZone(ZoneId.systemDefault()).getDayOfYear())
+					.withClusteringKey("createdAt", DataTypes.TIMESTAMP, ClusteringKeyComponent.Ordering.ASC)
+						.withExtractor(d -> ((Date) d).toInstant())
 					.build()
 				),
 			unitOfWorkType,

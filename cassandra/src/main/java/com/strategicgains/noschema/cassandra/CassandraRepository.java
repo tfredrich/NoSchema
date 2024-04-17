@@ -80,11 +80,19 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 		table.views().forEach(view ->
 			this.factoriesByTable.put(view.name(), new CassandraDocumentFactory<>(view.keys(), codec))
 		);
+		table.indexes().forEach(index ->
+			this.factoriesByTable.put(index.name(), new CassandraDocumentFactory<>(index.keys(), codec))
+		);
 	}
 
 	protected boolean hasViews()
 	{
 		return table.hasViews();
+	}
+
+	protected boolean hasIndexes()
+	{
+		return table.hasIndexes();
 	}
 
 	@Override
@@ -94,7 +102,12 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 
 		if (hasViews())
 		{
-			table.views().forEach(v -> new DocumentSchemaProvider(v).create(session));
+			table.views().forEach(view -> new DocumentSchemaProvider(view).create(session));
+		}
+
+		if (hasIndexes())
+		{
+			table.indexes().forEach(idx -> new DocumentSchemaProvider(idx).create(session));
 		}
 	}
 
@@ -136,6 +149,7 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 		try
 		{
 			final AtomicReference<byte[]> serialized = new AtomicReference<>();
+			final AtomicReference<byte[]> serializedId = new AtomicReference<>();
 			final AtomicReference<Document> primaryDocument = new AtomicReference<>();
 
 			table.stream().forEach(t -> {
@@ -147,12 +161,21 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 					d = asDocument(t.name(), entity);
 					primaryDocument.set(d);
 					serialized.set(d.getObject());
+					serializedId.set(d.getIdentifier().toString().getBytes());
 					observers.forEach(o -> o.afterEncoding(primaryDocument.get()));
 					observers.forEach(o -> o.beforeCreate(primaryDocument.get()));
 				}
 				else
 				{
-					d = asDocument(t.name(), entity, serialized.get());
+					if (t.isIndex())
+					{
+						d = asDocument(t.name(), entity, serializedId.get());
+					}
+					else
+					{
+						d = asDocument(t.name(), entity, serialized.get());
+					}
+
 					d.setMetadata(primaryDocument.get().getMetadata());
 				}
 
