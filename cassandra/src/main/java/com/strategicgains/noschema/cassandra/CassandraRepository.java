@@ -136,6 +136,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		try
 		{
 			final AtomicReference<byte[]> serialized = new AtomicReference<>();
+			final AtomicReference<byte[]> serializedId = new AtomicReference<>();
 			final AtomicReference<Document> primaryDocument = new AtomicReference<>();
 
 			table.stream().forEach(t -> {
@@ -147,12 +148,21 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 					d = asDocument(t.name(), entity);
 					primaryDocument.set(d);
 					serialized.set(d.getObject());
+					serializedId.set(d.getIdentifier().toString().getBytes());
 					observers.forEach(o -> o.afterEncoding(primaryDocument.get()));
 					observers.forEach(o -> o.beforeCreate(primaryDocument.get()));
 				}
 				else
 				{
-					d = asDocument(t.name(), entity, serialized.get());
+					if (t.isIndex())
+					{
+						d = asDocument(t.name(), entity, serializedId.get());
+					}
+					else
+					{
+						d = asDocument(t.name(), entity, serialized.get());
+					}
+
 					d.setMetadata(primaryDocument.get().getMetadata());
 				}
 

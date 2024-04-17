@@ -1,7 +1,6 @@
 package com.strategicgains.noschema.cassandra;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -30,13 +29,14 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  * 
  * @author Todd Fredrich
  * @see KeyDefinition
- * @see View
+ * @see SecondaryTable
  */
 public class PrimaryTable
 extends AbstractTable
 {
 	private static final String DEFAULT_KEYS = "id:uuid unique";
 	private List<View> views;
+	private List<Index> indexes;
 
 	public PrimaryTable()
 	{
@@ -111,7 +111,7 @@ extends AbstractTable
 			views = new ArrayList<>();
 		}
 
-		view.parent(this);
+		view.setParent(this);
 		views.add(view);
 	}
 
@@ -122,13 +122,13 @@ extends AbstractTable
 
 	public Stream<View> views()
 	{
-		return (hasViews() ? Collections.unmodifiableList(views).stream() : Stream.empty());
+		return (hasViews() ? views.stream() : Stream.empty());
 	}
 
 	public Stream<View> uniqueViews()
 	{
 		return (hasViews()
-			? Collections.unmodifiableList(views.stream().filter(View::isUnique).toList()).stream()
+			? views.stream().filter(View::isUnique)
 			: Stream.empty()
 		);
 	}
@@ -138,13 +138,70 @@ extends AbstractTable
 		return (hasViews() ? views.size() : 0);
 	}
 
+	public PrimaryTable withIndex(String indexName, String keys)
+	throws KeyDefinitionException
+	{
+		return withIndex(indexName, keys, 0l);
+	}
+
+	public PrimaryTable withIndex(String indexName, String keys, long ttl)
+	throws KeyDefinitionException
+	{
+		addIndex(new Index(this, indexName, keys, ttl));
+		return this;
+	}
+
+	public PrimaryTable withIndex(String indexName, KeyDefinition keys)
+	{
+		return withIndex(indexName, keys, 0l);
+	}
+
+	public PrimaryTable withIndex(String indexName, KeyDefinition keys, long ttl)
+	{
+		addIndex(new Index(this, indexName, keys, ttl));
+		return this;
+	}
+
+	public void addIndex(Index index)
+	{
+		if (indexes == null)
+		{
+			indexes = new ArrayList<>();
+		}
+
+		index.setParent(this);
+		indexes.add(index);
+	}
+
+	public boolean hasIndexes()
+	{
+		return (indexes != null && !indexes.isEmpty());
+	}
+
+	public Stream<Index> indexes()
+	{
+		return (hasIndexes() ? indexes.stream() : Stream.empty());
+	}
+
+	public Stream<Index> uniqueIndexes()
+	{
+		return (hasIndexes()
+			? indexes.stream().filter(Index::isUnique)
+			: Stream.empty()
+		);
+	}
+
+	public int getIndexCount()
+	{
+		return (hasIndexes() ? indexes.size() : 0);
+	}
+
 	/**
-	 * A stream of the primary table and all its views. Indexes are not included.
+	 * A stream of the primary table with all its views and indexes.
 	 * 
-	 * @return a Stream of the primary table and its views.
+	 * @return a Stream of the primary table, its views, and indexes.
 	 */
 	public Stream<AbstractTable> stream()
 	{
-		return Stream.concat(Stream.of(this), views());
-	}
-}
+		return Stream.of(Stream.of(this), views(), indexes()).flatMap(s -> s);
+	}}

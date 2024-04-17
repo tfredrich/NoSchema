@@ -1,5 +1,7 @@
 package com.strategicgains.noschema.cassandra;
 
+import java.time.temporal.ChronoField;
+import java.util.Date;
 import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -28,6 +30,7 @@ extends CassandraRepository<Flower>
 {
 	private static final String FLOWERS_BY_HEIGHT = "by_height";
 	private static final String FLOWERS_BY_NAME = "by_name";
+	private static final String FLOWERS_BY_DATE = "by_created_at";
 
 	public FlowerRepository(CqlSession session, String keyspace, UnitOfWorkType unitOfWorkType, ObjectCodec<Flower> codec)
 	{
@@ -58,6 +61,19 @@ extends CassandraRepository<Flower>
 					.withPartitionKey("height_bucket", "height", DataTypes.INTEGER)
 						.withExtractor(f -> ((Float) f).intValue())
 					.withClusteringKey("height", DataTypes.FLOAT, ClusteringKeyComponent.Ordering.ASC)
+					.build()
+				)
+
+				/**
+				 * An index of flowers by createdAt for an account. As dates could be a problem
+				 * for the wide rows of Cassandra, this example uses a bucketed integer value
+				 * for the day of the year (1-366) as the partition key and the actual date as the
+				 * clustering key.
+				 */
+				.withIndex(FLOWERS_BY_DATE, new KeyDefinitionBuilder()
+					.withPartitionKey("day", "createdAt", DataTypes.INTEGER)
+						.withExtractor(d -> ((Date) d).toInstant().get(ChronoField.DAY_OF_YEAR))
+					.withClusteringKey("createdAt", DataTypes.TIMESTAMP, ClusteringKeyComponent.Ordering.ASC)
 					.build()
 				),
 			unitOfWorkType,

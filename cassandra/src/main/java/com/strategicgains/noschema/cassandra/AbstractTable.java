@@ -127,4 +127,9 @@ public abstract class AbstractTable
 	{
 		return name();
 	}
+
+	public boolean isIndex()
+	{
+		return false;
+	}
 }
