@@ -1,6 +1,6 @@
 package com.strategicgains.noschema.cassandra;
 
-import java.time.temporal.ChronoField;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.UUID;
 
@@ -72,8 +72,9 @@ extends CassandraRepository<Flower>
 				 */
 				.withIndex(FLOWERS_BY_DATE, new KeyDefinitionBuilder()
 					.withPartitionKey("day", "createdAt", DataTypes.INTEGER)
-						.withExtractor(d -> ((Date) d).toInstant().get(ChronoField.DAY_OF_YEAR))
+						.withExtractor(d -> ((Date) d).toInstant().atZone(ZoneId.systemDefault()).getDayOfYear())
 					.withClusteringKey("createdAt", DataTypes.TIMESTAMP, ClusteringKeyComponent.Ordering.ASC)
+						.withExtractor(d -> ((Date) d).toInstant())
 					.build()
 				),
 			unitOfWorkType,

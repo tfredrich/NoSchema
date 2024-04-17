@@ -80,11 +80,19 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		table.views().forEach(view ->
 			this.factoriesByTable.put(view.name(), new CassandraDocumentFactory<>(view.keys(), codec))
 		);
+		table.indexes().forEach(index ->
+			this.factoriesByTable.put(index.name(), new CassandraDocumentFactory<>(index.keys(), codec))
+		);
 	}
 
 	protected boolean hasViews()
 	{
 		return table.hasViews();
+	}
+
+	protected boolean hasIndexes()
+	{
+		return table.hasIndexes();
 	}
 
 	@Override
@@ -94,7 +102,12 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 		if (hasViews())
 		{
-			table.views().forEach(v -> new DocumentSchemaProvider(v).create(session));
+			table.views().forEach(view -> new DocumentSchemaProvider(view).create(session));
+		}
+
+		if (hasIndexes())
+		{
+			table.indexes().forEach(idx -> new DocumentSchemaProvider(idx).create(session));
 		}
 	}
 
