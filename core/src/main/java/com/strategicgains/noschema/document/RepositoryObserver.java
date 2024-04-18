@@ -18,7 +18,7 @@ import com.strategicgains.noschema.Identifier;
  * @see Identifiable
  * @see Identifier
  */
-public interface RepositoryObserver<T extends Document>
+public interface RepositoryObserver<T extends Identifiable>
 {
 	/**
 	 * Called before a Document is read.
@@ -28,69 +28,51 @@ public interface RepositoryObserver<T extends Document>
 	void beforeRead(Identifier identifier);
 
 	/**
-	 * Called after a Document is read.
+	 * Called after an Identifiable entity is read.
 	 *
-	 * @param document the Document that was read
+	 * @param entity the Identifiable entity that was read
 	 */
-	void afterRead(T document);
+	void afterRead(T entity);
 
 	/**
-	 * Called before a Document is created.
+	 * Called before an entity is written to the database.
 	 *
-	 * @param document the Document to be created
+	 * @param entity the Identifiable entity to be created
 	 */
-	void beforeCreate(T document);
+	void beforeCreate(T entity);
 
 	/**
-	 * Called after a Document is created.
+	 * Called after an entity is created in the database.
 	 *
-	 * @param document the Document that was created
+	 * @param entity the Identifiable entity that was created
 	 */
-	void afterCreate(T document);
+	void afterCreate(T entity);
 
 	/**
-	 * Called before a Document is deleted.
+	 * Called before an entity is deleted from the database.
 	 *
-	 * @param document the Document to be deleted
+	 * @param entity the Identifiable entity to be deleted
 	 */
-	void beforeDelete(T document);
+	void beforeDelete(T entity);
 
 	/**
-	 * Called after a Document is deleted.
+	 * Called after an entity is deleted from the database.
 	 *
-	 * @param document the Document that was deleted
+	 * @param entity the Identifiable entity that was deleted.
 	 */
-	void afterDelete(T document);
+	void afterDelete(T entity);
 
 	/**
-	 * Called before a Document is updated.
+	 * Called before an entity is updated in the database.
 	 *
-	 * @param document the Document to be updated
+	 * @param entity the Identifiable entity that will be updated
 	 */
-	void beforeUpdate(T document);
+	void beforeUpdate(T entity);
 
 	/**
-	 * Called after a Document is updated.
+	 * Called after an entity is updated in [written to] the database.
 	 *
-	 * @param document the Document that was updated
+	 * @param entity the Identifiable entity that was updated
 	 */
-	void afterUpdate(T document);
-
-	/**
-	 * Called before an entity is encoded into a Document.
-	 * <p/>
-	 * This occurs essentially the same time as beforeCreate and beforeUpdate, but
-	 * can be used to perform actions that are specific to encoding an entity into a Document.
-	 *
-	 * @param entity the entity to be encoded
-	 * @param <I> the type of the entity, which must be Identifiable
-	 */
-	<I extends Identifiable> void beforeEncoding(I entity);
-
-	/**
-	 * Called after an entity is encoded into a Document.
-	 *
-	 * @param document the Document that was created from the entity
-	 */
-	void afterEncoding(T document);
+	void afterUpdate(T entity);
 }
