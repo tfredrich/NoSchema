@@ -1,10 +1,18 @@
 package com.strategicgains.noschema.document;
 
-import java.util.Date;
-
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
+/**
+ * Document is a wrapper for serialized POJOs that are to be stored in a database. It contains
+ * metadata about the document, such as creation and update dates, and the primary identifier
+ * of the document.
+ * 
+ * A Document is essentially a key-value pair, where the key is the primary identifier of the
+ * document and the value is the serialized POJO.
+ * 
+ * @param <T> The type of the serialized POJO wrapped by the document (e.g. byte array or string).
+ */
 public interface Document<T>
 extends Identifiable
 {
@@ -23,41 +31,23 @@ extends Identifiable
 	public void setIdentifier(Identifier id);
 
 	/**
-	 * Returns the creation date of the document.
-	 * 
-	 * @return The creation date of the document.
-	 */
-	Date getCreatedAt();
-
-	/**
-	 * Sets the creation date of the document.
-	 * 
-	 * @param createdAt The creation date to be set.
-	 */
-	public void setCreatedAt(Date createdAt);
-
-	/**
-	 * Returns the update date of the document.
-	 * 
-	 * @return The update date of the document.
-	 */
-	Date getUpdatedAt();
-
-	/**
-	 * Sets the update date of the document.
-	 * 
-	 * @param updatedAt The update date to be set.
-	 */
-	void setUpdatedAt(Date updatedAt);
-
-	/**
 	 * Returns whether the document has a value object or not.
 	 * 
 	 * @return True if the document has a value object, false otherwise.
 	 */
 	boolean hasValue();
 
+	/**
+	 * Returns the value object from the document.
+	 * 
+	 * @return The value object of the document.
+	 */
 	T getValue();
 
+	/**
+	 * Sets the value object on the document.
+	 * 
+	 * @param value The value object to be set.
+	 */
 	void setValue(T value);
 }

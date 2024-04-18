@@ -7,7 +7,7 @@ import com.strategicgains.noschema.Identifier;
  * for storage as it's a small, binary format--much smaller than JSON but is not human-readable.
  */
 public class ByteArrayDocument
-extends AbstractDocument<byte[]>
+extends AbstractFullDocument<byte[]>
 {
 	/**
 	 * Default constructor.

@@ -3,10 +3,10 @@ package com.strategicgains.noschema.document;
 import com.strategicgains.noschema.Identifier;
 
 /**
- * A Document concrete class that [de]serialize the POJO as a string such as JSON text.
+ * A Document concrete class that [de]serializes the POJO as a string such as JSON text.
  */
 public class StringDocument
-extends SerializedDocument<String>
+extends AbstractFullDocument<String>
 {
 	/**
 	 * Default constructor.
@@ -57,7 +57,7 @@ extends SerializedDocument<String>
 	@Override
 	public String toString()
 	{
-		return "JsonDocument{" + "id=" + getIdentifier() + ", object=" + getObject() + ", type=" + getType()
+		return "StringDocument{" + "id=" + getIdentifier() + ", value=" + getValue() + ", type=" + getType()
 			+ ", createdAt=" + getCreatedAt() + ", updatedAt=" + getUpdatedAt() + "}";
 	}
 }

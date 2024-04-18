@@ -1,12 +1,17 @@
 package com.strategicgains.noschema.document;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.strategicgains.noschema.Identifier;
 
+/**
+ * An abstract implementation of the Document interface that provides a base
+ * implementation.
+ * 
+ * @param <T> The type of the serialized POJO wrapped by the document.
+ */
 public abstract class AbstractDocument<T>
 implements Document<T>
 {
@@ -21,25 +26,9 @@ implements Document<T>
 	private T value;
 
 	/**
-	 * The fully-qualified class name of the object stored in this document. This is used to instantiate the
-	 * bytes as a POJO
-	 */
-	private String type;
-
-	/**
 	 * Name/value pairs that can tag along with the document in the database that can be applied to the entity.
 	 */
 	private Map<String, String> metadata;
-
-	/**
-	 * The timestamp this document was originally created.
-	 */
-	private Date createdAt;
-
-	/**
-	 * The timestamp the document was last updated.
-	 */
-	private Date updatedAt;
 
 	/**
 	 * Default constructor.
@@ -47,10 +36,6 @@ implements Document<T>
 	protected AbstractDocument()
 	{
 		super();
-
-		Date now = new Date();
-		setCreatedAt(now);
-		setUpdatedAt(now);
 	}
 
 	/**
@@ -67,85 +52,16 @@ implements Document<T>
 	}
 
 	/**
-	 * Constructor with type parameter.
-	 * 
-	 * @param type The class of the object to be stored as BSON in this document.
-	 */
-	protected AbstractDocument(Class<?> type)
-	{
-		this();
-		this.type = type.getName();
-	}
-
-	/**
-	 * Constructor with serialized object and type parameters.
-	 * 
-	 * @param value The serialized object at type T.
-	 * @param type The class of the object that is serialized.
-	 */
-	protected AbstractDocument(T value, Class<?> type)
-	{
-		this(type);
-		setValue(value);
-	}
-
-	/**
 	 * Constructor with identifier, BSON object, and type parameters.
 	 * 
 	 * @param id   The identifier of the document.
 	 * @param value The serialized object as type T.
-	 * @param type The class of the object to be stored.
 	 */
-	protected AbstractDocument(Identifier id, T value, Class<?> type)
+	protected AbstractDocument(Identifier id, T value)
 	{
 		this();
 		setIdentifier(id);
 		setValue(value);
-		setType(type.getName());
-	}
-
-	/**
-	 * Returns the type of the document. This is the fully-qualified class name of the serialized object
-	 * so it can be deserialized into a POJO.
-	 * 
-	 * @return The type of the document.
-	 */
-	public String getType()
-	{
-		return type;
-	}
-
-	public Class<?> getTypeAsClass()
-	{
-		try
-		{
-			return Class.forName(type);
-		}
-		catch (ClassNotFoundException e)
-		{
-			throw new RuntimeException(e);
-		}
-	}
-
-	/**
-	 * Sets the type of the document. This is the fully-qualified class name of the serialized object
-	 * so it can be deserialized into a POJO.
-	 * 
-	 * @param type The type to be set.
-	 */
-	public void setType(String type)
-	{
-		this.type = type;
-	}
-
-	/**
-	 * Sets the type of the document from a Class instance (instead of String).
-	 * 
-	 * @param type The class of the object to be set.
-	 */
-	public void setType(Class<?> type)
-	{
-		setType(type.getClass());
 	}
 
 	public boolean hasMetadata()
@@ -203,50 +119,6 @@ implements Document<T>
 		this.identifier = (id != null ? new Identifier(id) : null);
 	}
 
-	/**
-	 * Returns the creation date of the document.
-	 * 
-	 * @return The creation date of the document.
-	 */
-	@Override
-	public Date getCreatedAt()
-	{
-		return createdAt;
-	}
-
-	/**
-	 * Sets the creation date of the document.
-	 * 
-	 * @param createdAt The creation date to be set.
-	 */
-	@Override
-	public void setCreatedAt(Date createdAt)
-	{
-		this.createdAt = createdAt;
-	}
-
-	/**
-	 * Returns the update date of the document.
-	 * 
-	 * @return The update date of the document.
-	 */
-	@Override
-	public Date getUpdatedAt()
-	{
-		return updatedAt;
-	}
-
-	/**
-	 * Sets the update date of the document.
-	 * 
-	 * @param updatedAt The update date to be set.
-	 */
-	@Override
-	public void setUpdatedAt(Date updatedAt)
-	{
-		this.updatedAt = updatedAt;
-	}
-
 	@Override
 	public boolean hasValue()
 	{
@@ -273,8 +145,7 @@ implements Document<T>
 	@Override
 	public String toString()
 	{
-		return "Document{" + "id=" + getIdentifier() + ", value=" + getValue() + ", type=" + type
-			+ ", createdAt=" + getCreatedAt() + ", updatedAt=" + getUpdatedAt() + "}";
+		return "AbstractDocument{" + "id=" + getIdentifier() + ", value=" + getValue() + "}";
 	}
 
 }

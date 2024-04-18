@@ -1,7 +1,5 @@
 package com.strategicgains.noschema.document;
 
-import java.util.Date;
-
 import com.strategicgains.noschema.Identifier;
 
 public class IndexDocument
@@ -24,11 +22,6 @@ extends AbstractDocument<Identifier>
 	 */
 	protected IndexDocument(Identifier id)
 	{
-		this();
-		setIdentifier(id);
-
-		Date now = new Date();
-		setCreatedAt(now);
-		setUpdatedAt(now);
+		super(id);
 	}
 }
