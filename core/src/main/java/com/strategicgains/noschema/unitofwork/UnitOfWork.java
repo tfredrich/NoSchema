@@ -7,7 +7,7 @@ import com.strategicgains.noschema.Identifiable;
  * changes. It allows registering new entities, marking entities as "dirty" or
  * "deleted", and committing or rolling back the current transaction.
  */
-public interface UnitOfWork<T extends Identifiable>
+public interface UnitOfWork
 {
 	/**
 	 * Registers an entity change with the UnitOfWork that needs to be
@@ -15,7 +15,7 @@ public interface UnitOfWork<T extends Identifiable>
 	 *
 	 * @param change the change description to register.
 	 */
-	UnitOfWork<T> registerChange(Change<T> change);
+	<T extends Identifiable> UnitOfWork registerChange(Change<T> change);
 
 	/**
 	 * Commits the current transaction and saves all changes made during the session

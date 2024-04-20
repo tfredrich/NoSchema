@@ -22,8 +22,8 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
 public class CassandraUnitOfWork<T extends Identifiable>
-extends AbstractUnitOfWork<T>
-implements UnitOfWork<T>
+extends AbstractUnitOfWork
+implements UnitOfWork
 {
     private final CqlSession session;
     private final CassandraStatementFactory<T> statementFactory;

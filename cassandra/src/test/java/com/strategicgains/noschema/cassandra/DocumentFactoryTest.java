@@ -16,14 +16,14 @@ import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
 import com.strategicgains.noschema.document.Document;
-import com.strategicgains.noschema.document.ObjectCodec;
+import com.strategicgains.noschema.document.ByteArrayCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 import com.strategicgains.noschema.gson.GsonObjectCodec;
 
 public class DocumentFactoryTest
 {
-	private static final ObjectCodec<Flower> CODEC = new GsonObjectCodec<>();
+	private static final ByteArrayCodec<Flower> CODEC = new GsonObjectCodec<>();
 
 	private UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
 	private UUID accountId = UUID.fromString("a87d3bff-6997-4739-ab4e-ded0cc85700f");

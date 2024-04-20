@@ -5,10 +5,10 @@ import java.nio.charset.StandardCharsets;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.strategicgains.noschema.document.ObjectCodec;
+import com.strategicgains.noschema.document.ByteArrayCodec;
 
 public class GsonObjectCodec<T>
-	implements ObjectCodec<T>
+	implements ByteArrayCodec<T>
 {
 	private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 	private final Gson gson;

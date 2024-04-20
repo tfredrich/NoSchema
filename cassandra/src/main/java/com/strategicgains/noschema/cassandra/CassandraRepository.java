@@ -18,14 +18,15 @@ import com.datastax.oss.protocol.internal.util.Bytes;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.NoSchemaRepository;
+import com.strategicgains.noschema.cassandra.document.CassandraDocument;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
 import com.strategicgains.noschema.cassandra.schema.CassandraSchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
+import com.strategicgains.noschema.document.AbstractRepositoryObserver;
+import com.strategicgains.noschema.document.ByteArrayCodec;
 import com.strategicgains.noschema.document.Document;
-import com.strategicgains.noschema.document.RepositoryObserver;
-import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -61,15 +62,15 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 	// The type of UnitOfWork to create.
 	private UnitOfWorkType unitOfWorkType;
 	// The observers used to observe the encoding, creation, update, and deletion of entities.
-	private List<RepositoryObserver> observers = new ArrayList<>();
+	private List<AbstractRepositoryObserver<T>> observers = new ArrayList<>();
 
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, ByteArrayCodec<T> codec)
 	{
 		this(session, table, UnitOfWorkType.LOGGED, codec);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, ObjectCodec<T> codec)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, ByteArrayCodec<T> codec)
 	{
 		super();
 		this.session = Objects.requireNonNull(session);
@@ -127,7 +128,7 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 		return table.name();
 	}
 
-	public CassandraRepository<T> withObserver(RepositoryObserver observer)
+	public CassandraRepository<T> withObserver(AbstractRepositoryObserver<T> observer)
 	{
 		observers.add(observer);
 		return this;
@@ -150,17 +151,17 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 		{
 			final AtomicReference<byte[]> serialized = new AtomicReference<>();
 			final AtomicReference<byte[]> serializedId = new AtomicReference<>();
-			final AtomicReference<Document> primaryDocument = new AtomicReference<>();
+			final AtomicReference<Document<byte[]>> primaryDocument = new AtomicReference<>();
 
 			table.stream().forEach(t -> {
-				final Document d;
+				final Document<T> d;
 
 				if (serialized.get() == null)
 				{
 					observers.forEach(o -> o.beforeEncoding(entity));
 					d = asDocument(t.name(), entity);
 					primaryDocument.set(d);
-					serialized.set(d.getObject());
+					serialized.set(d.getValue());
 					serializedId.set(d.getIdentifier().toString().getBytes());
 					observers.forEach(o -> o.afterEncoding(primaryDocument.get()));
 					observers.forEach(o -> o.beforeCreate(primaryDocument.get()));

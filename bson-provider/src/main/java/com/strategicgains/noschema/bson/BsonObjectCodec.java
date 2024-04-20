@@ -24,11 +24,11 @@ import org.bson.codecs.ValueCodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.io.BasicOutputBuffer;
 
-import com.strategicgains.noschema.document.ObjectCodec;
+import com.strategicgains.noschema.document.ByteArrayCodec;
 import com.strategicgains.noschema.exception.DescriptorException;
 
 public final class BsonObjectCodec<T>
-implements ObjectCodec<T>
+implements ByteArrayCodec<T>
 {
 	public static final CodecRegistry DEFAULT_CODEC_REGISTRY =
 			fromProviders(Arrays.asList(

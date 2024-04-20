@@ -14,7 +14,7 @@ import com.strategicgains.noschema.cassandra.CqlStatementFactory;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.document.Document;
-import com.strategicgains.noschema.document.ObjectCodec;
+import com.strategicgains.noschema.document.ByteArrayCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.InvalidObjectIdException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
@@ -49,7 +49,7 @@ implements CqlStatementFactory<T>
 	private CassandraDocumentFactory<T> documentFactory;
 	private boolean useLightweightTxns;
 
-	public DocumentStatementFactory(CqlSession session, AbstractTable table, ObjectCodec<T> codec)
+	public DocumentStatementFactory(CqlSession session, AbstractTable table, ByteArrayCodec<T> codec)
 	{
 		this(session, table, new CassandraDocumentFactory<>(table.keys(), codec));
 	}

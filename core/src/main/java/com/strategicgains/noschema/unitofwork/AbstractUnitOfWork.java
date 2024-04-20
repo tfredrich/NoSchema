@@ -5,24 +5,24 @@ import java.util.stream.Stream;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
-public abstract class AbstractUnitOfWork<T extends Identifiable>
-implements UnitOfWork<T>
+public abstract class AbstractUnitOfWork
+implements UnitOfWork
 {
-    private final ChangeSet<T> changeSet = new ChangeSet<>();
+    private final ChangeSet changeSet = new ChangeSet();
 
 	@Override
-	public UnitOfWork<T> registerChange(Change<T> change)
+	public <T extends Identifiable> UnitOfWork registerChange(Change<T> change)
 	{
 		changeSet.registerChange(change);
 		return this;
 	}
 
-	public T readClean(Identifier id)
+	public <T extends Identifiable> T readClean(Identifier id)
 	{
-		return changeSet.findClean(id);
+		return changeSet.getClean(id);
 	}
 
-	protected Stream<Change<T>> changeStream()
+	protected <T extends Identifier> Stream<Change<T>> changeStream()
 	{
 		return changeSet.stream();
 	}

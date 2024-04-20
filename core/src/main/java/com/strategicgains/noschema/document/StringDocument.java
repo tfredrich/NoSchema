@@ -1,11 +1,14 @@
 package com.strategicgains.noschema.document;
 
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
 /**
  * A Document concrete class that [de]serializes the POJO as a string such as JSON text.
+ * 
+ * @param <T> The class of the object being wrapped by this document.
  */
-public class StringDocument
+public class StringDocument<T extends Identifiable>
 extends AbstractFullDocument<String>
 {
 	/**

@@ -3,22 +3,23 @@ package com.strategicgains.noschema.document;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CodecRegistry<T extends Document>
+public class CodecRegistry
 {
-	private Map<Class<?>, Codec<T, ?>> codecs = new HashMap<>();
+	private Map<Class<?>, Codec<?, ?>> codecs = new HashMap<>();
 
 	public CodecRegistry()
 	{
 		super();
 	}
 
-	public void register(Class<?> clazz, Codec<T, ?> codec)
+	public void register(Class<?> clazz, Codec<?, ?> codec)
 	{
 		codecs.put(clazz, codec);
 	}
 
-	public Codec<T, ?> get(Class<?> clazz)
+	@SuppressWarnings("unchecked")
+	public <T, S> Codec<T, S> get(Class<T> clazz)
 	{
-		return codecs.get(clazz);
+		return (Codec<T, S>) codecs.get(clazz);
 	}
 }

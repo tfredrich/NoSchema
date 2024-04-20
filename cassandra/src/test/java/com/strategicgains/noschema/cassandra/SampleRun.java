@@ -10,7 +10,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.strategicgains.noschema.bson.BsonObjectCodec;
 import com.strategicgains.noschema.cassandra.schema.CassandraSchemaRegistry;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
-import com.strategicgains.noschema.document.ObjectCodec;
+import com.strategicgains.noschema.document.ByteArrayCodec;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -19,8 +19,8 @@ import com.strategicgains.noschema.gson.GsonObjectCodec;
 
 public class SampleRun
 {
-	private static final ObjectCodec<Flower> GSON_CODEC = new GsonObjectCodec<>();
-	private static final ObjectCodec<Flower> BSON_CODEC = new BsonObjectCodec<>();
+	private static final ByteArrayCodec<Flower> GSON_CODEC = new GsonObjectCodec<>();
+	private static final ByteArrayCodec<Flower> BSON_CODEC = new BsonObjectCodec<>();
 	private static final UnitOfWorkType unitOfWorkType = UnitOfWorkType.ASYNC;
 
 	public static void main(String[] args)
@@ -84,7 +84,7 @@ public class SampleRun
 		CassandraSchemaRegistry.clear();
 	}
 
-	private static void testCassandra(String keyspace, CqlSession session, UnitOfWorkType uowType, ObjectCodec<Flower> codec)
+	private static void testCassandra(String keyspace, CqlSession session, UnitOfWorkType uowType, ByteArrayCodec<Flower> codec)
 	{
 		// Create the keyspace, if needed.
 		CassandraSchemaRegistry.initialize(session);

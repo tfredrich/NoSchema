@@ -10,7 +10,7 @@ import com.strategicgains.noschema.cassandra.key.ClusteringKeyComponent;
 import com.strategicgains.noschema.cassandra.key.DataTypes;
 import com.strategicgains.noschema.cassandra.key.builder.KeyDefinitionBuilder;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
-import com.strategicgains.noschema.document.ObjectCodec;
+import com.strategicgains.noschema.document.ByteArrayCodec;
 
 /**
  * A repository for the Flower entity. It manages three tables: flowers, flowers_by_name, and flowers_by_height,
@@ -32,7 +32,7 @@ extends CassandraRepository<Flower>
 	private static final String FLOWERS_BY_NAME = "by_name";
 	private static final String FLOWERS_BY_DATE = "by_created_at";
 
-	public FlowerRepository(CqlSession session, String keyspace, UnitOfWorkType unitOfWorkType, ObjectCodec<Flower> codec)
+	public FlowerRepository(CqlSession session, String keyspace, UnitOfWorkType unitOfWorkType, ByteArrayCodec<Flower> codec)
 	{
 		super(session,
 			/**
