@@ -12,44 +12,40 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  *
  * @param <T>
  */
-public abstract class AbstractDocumentFactory<T> implements DocumentFactory<T>
+public abstract class AbstractDocumentFactory<T extends Identifier, U>
+implements DocumentFactory<T, U>
 {
-	private ByteArrayCodec<T> codec;
+	private Codec<T, U> codec;
 
-	protected AbstractDocumentFactory(ByteArrayCodec<T> codec)
+	protected AbstractDocumentFactory(Codec<T, U> codec)
 	{
 		super();
 		setCodec(codec);
 	}
 
 	@Override
-	public void setCodec(ByteArrayCodec<T> objectCodec)
+	public void setCodec(Codec<T, U> objectCodec)
 	{
 		this.codec = objectCodec;
 	}
 
 	@Override
-	public Document asDocument(T entity)
+	public Document<U> asDocument(T entity)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		byte[] bson = codec.serialize(entity);
+		U bson = codec.serialize(entity);
 		return asDocument(entity, bson);
 	}
 
 	@Override
-	public Document asDocument(T entity, byte[] bytes)
+	public Document<U> asDocument(T entity, U bytes)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		Identifier id = extractIdentifier(entity);
-		return new Document(id, bytes, entity.getClass());		
+		return createDocument(id, bytes, entity.getClass());		
 	}
 
-	@Override
-	@SuppressWarnings("unchecked")
-	public T asPojo(Document document)
-	{
-		return codec.deserialize(document.getObject(), (Class<T>) document.getTypeAsClass());
-	}
+	protected abstract Document<U> createDocument(Identifier id, U bytes, Class<? extends Identifier> clazz);
 
 	protected abstract Identifier extractIdentifier(T entity)
 	throws InvalidIdentifierException, KeyDefinitionException;
