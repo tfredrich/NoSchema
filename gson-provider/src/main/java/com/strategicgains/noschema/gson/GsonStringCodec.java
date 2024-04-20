@@ -4,22 +4,21 @@ import java.lang.reflect.Modifier;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.strategicgains.noschema.document.Deserializer;
-import com.strategicgains.noschema.document.Serializer;
+import com.strategicgains.noschema.document.StringCodec;
 
-public class JsonStringSerialization<T>
-implements Serializer<T, String>, Deserializer<T, String>
+public class GsonStringCodec<T>
+implements StringCodec<T>
 {
 	private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 	private final Gson gson;
 
-	public JsonStringSerialization()
+	public GsonStringCodec()
 	{
 		gson = new GsonBuilder()
-			.disableHtmlEscaping()
-			.setDateFormat(TIMESTAMP_FORMAT)
-			.excludeFieldsWithModifiers(Modifier.TRANSIENT, Modifier.STATIC)
-			.create();
+				.disableHtmlEscaping()
+				.setDateFormat(TIMESTAMP_FORMAT)
+				.excludeFieldsWithModifiers(Modifier.TRANSIENT, Modifier.STATIC)
+				.create();
 	}
 
 	@Override

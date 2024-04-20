@@ -12,7 +12,7 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  *
  * @param <T>
  */
-public abstract class AbstractDocumentFactory<T>
+public abstract class AbstractDocumentFactory<T> implements DocumentFactory<T>
 {
 	private ByteArrayCodec<T> codec;
 
@@ -22,11 +22,13 @@ public abstract class AbstractDocumentFactory<T>
 		setCodec(codec);
 	}
 
+	@Override
 	public void setCodec(ByteArrayCodec<T> objectCodec)
 	{
 		this.codec = objectCodec;
 	}
 
+	@Override
 	public Document asDocument(T entity)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
@@ -34,6 +36,7 @@ public abstract class AbstractDocumentFactory<T>
 		return asDocument(entity, bson);
 	}
 
+	@Override
 	public Document asDocument(T entity, byte[] bytes)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
@@ -41,6 +44,7 @@ public abstract class AbstractDocumentFactory<T>
 		return new Document(id, bytes, entity.getClass());		
 	}
 
+	@Override
 	@SuppressWarnings("unchecked")
 	public T asPojo(Document document)
 	{

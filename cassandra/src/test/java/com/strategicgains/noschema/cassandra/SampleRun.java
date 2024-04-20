@@ -15,11 +15,11 @@ import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
-import com.strategicgains.noschema.gson.GsonObjectCodec;
+import com.strategicgains.noschema.gson.GsonByteArrayCodec;
 
 public class SampleRun
 {
-	private static final ByteArrayCodec<Flower> GSON_CODEC = new GsonObjectCodec<>();
+	private static final ByteArrayCodec<Flower> GSON_CODEC = new GsonByteArrayCodec<>();
 	private static final ByteArrayCodec<Flower> BSON_CODEC = new BsonObjectCodec<>();
 	private static final UnitOfWorkType unitOfWorkType = UnitOfWorkType.ASYNC;
 

@@ -12,11 +12,11 @@ import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.ByteArrayCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
-import com.strategicgains.noschema.gson.GsonObjectCodec;
+import com.strategicgains.noschema.gson.GsonByteArrayCodec;
 
 public class DocumentFactoryTimer
 {
-	private static final ByteArrayCodec<Flower> CODEC = new GsonObjectCodec<>();
+	private static final ByteArrayCodec<Flower> CODEC = new GsonByteArrayCodec<>();
 
 	private static final String FLOWER_NAME = "rose";
 	private static final long UPDATED_AT = 1648598130233L;
