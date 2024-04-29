@@ -9,28 +9,29 @@ import com.strategicgains.noschema.unitofwork.ChangeType;
 public class CassandraChange<T extends Identifiable>
 extends Change<T>
 {
-	private String view;
+	private String tableName;
 
-	public CassandraChange(String view, T entity, ChangeType state)
+	public CassandraChange(String tableName, T entity, ChangeType state)
 	{
 		super(entity, state);
-		this.view = view;
+		this.tableName = tableName;
 	}
 
-	public String getView()
+	public String getTableName()
 	{
-		return view;
+		return tableName;
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return super.hashCode() + Objects.hash(view);
+		return super.hashCode() + Objects.hash(tableName);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public boolean equals(Object that)
 	{
-		return super.equals(that) && Objects.equals(this.view, ((CassandraChange<T>) that).view);
+		return super.equals(that) && Objects.equals(this.tableName, ((CassandraChange<T>) that).tableName);
 	}
 }

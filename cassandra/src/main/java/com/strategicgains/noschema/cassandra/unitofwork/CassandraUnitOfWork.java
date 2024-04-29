@@ -148,7 +148,7 @@ implements UnitOfWork
 
 	private Optional<CompletionStage<Boolean>> checkExistence(CqlSession session, final CassandraChange<T> change)
 	{
-		String viewName = change.getView();
+		String viewName = change.getTableName();
 
 		if (statementFactory.isViewUnique(viewName))
 		{
@@ -182,7 +182,7 @@ implements UnitOfWork
 
 	private Optional<BoundStatement> generateStatementFor(CassandraChange<T> change)
 	{
-		String viewName = change.getView();
+		String viewName = change.getTableName();
 
 		switch(change.getState())
 		{

@@ -8,18 +8,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.AbstractTable;
 import com.strategicgains.noschema.cassandra.CqlStatementFactory;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
-import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.ByteArrayCodec;
+import com.strategicgains.noschema.document.ByteArrayDocument;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.InvalidObjectIdException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
-public final class DocumentStatementFactory<T>
+public final class DocumentStatementFactory<T extends Identifiable>
 implements CqlStatementFactory<T>
 {
 	private static final String SELECT_COLUMNS = String.join(",", Columns.OBJECT, Columns.TYPE, Columns.METADATA, Columns.CREATED_AT, Columns.UPDATED_AT);
@@ -212,7 +213,7 @@ implements CqlStatementFactory<T>
 
 	protected BoundStatement bindCreate(PreparedStatement ps, T entity)
 	{
-		Document document = asDocument(entity);
+		ByteArrayDocument<T> document = asDocument(entity);
 		Date now = new Date();
 		document.setCreatedAt(now);
 		document.setUpdatedAt(now);
@@ -220,7 +221,7 @@ implements CqlStatementFactory<T>
 		Object[] values = new Object[id.size() + 5]; // Identifier + object + metadata + createdAt + updatedAt.
 		fill(values, 0, id.components().toArray());
 		fill(values, id.size(),
-			(document.hasValue() ? ByteBuffer.wrap(document.getObject()) : ByteBuffer.wrap(new byte[0])),
+			(document.hasValue() ? ByteBuffer.wrap(document.getValue()) : ByteBuffer.wrap(new byte[0])),
 				document.getType(),
 				document.getMetadata(),
 				document.getCreatedAt().toInstant(),
@@ -230,12 +231,12 @@ implements CqlStatementFactory<T>
 
 	protected BoundStatement bindUpdate(PreparedStatement ps, T entity)
 	{
-		Document document = asDocument(entity);
+		ByteArrayDocument<T> document = asDocument(entity);
 		document.setUpdatedAt(new Date());
 		Identifier id = document.getIdentifier();
 		Object[] values = new Object[id.size() + 4];
 			fill(values, 0,
-				(document.hasValue() ? ByteBuffer.wrap(document.getObject()) : ByteBuffer.wrap(new byte[0])),
+				(document.hasValue() ? ByteBuffer.wrap(document.getValue()) : ByteBuffer.wrap(new byte[0])),
 					document.getType(),
 					document.getMetadata(),
 				    document.getUpdatedAt().toInstant());
@@ -251,13 +252,11 @@ implements CqlStatementFactory<T>
 		}
 	}
 
-	private Document asDocument(T entity)
+	private ByteArrayDocument<T> asDocument(T entity)
 	{
-		if (entity instanceof Document entityDocument) return entityDocument;
-
 		try
 		{
-			return documentFactory.asDocument(entity);
+			return (ByteArrayDocument<T>) documentFactory.asDocument(entity);
 		}
 		catch (InvalidIdentifierException | KeyDefinitionException e)
 		{

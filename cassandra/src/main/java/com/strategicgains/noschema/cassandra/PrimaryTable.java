@@ -34,7 +34,7 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
 public class PrimaryTable
 extends AbstractTable
 {
-	private static final String DEFAULT_KEYS = "id:uuid unique";
+	private static final String DEFAULT_KEY = "id:uuid unique";
 	private List<View> views;
 	private List<Index> indexes;
 
@@ -53,7 +53,7 @@ extends AbstractTable
 	public PrimaryTable(String keyspaceName, String name)
 	throws KeyDefinitionException
 	{
-		this(keyspaceName, name, DEFAULT_KEYS);
+		this(keyspaceName, name, DEFAULT_KEY);
 		keyspace(keyspaceName);
 
 	}

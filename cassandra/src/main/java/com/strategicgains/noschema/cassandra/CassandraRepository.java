@@ -18,7 +18,6 @@ import com.datastax.oss.protocol.internal.util.Bytes;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.NoSchemaRepository;
-import com.strategicgains.noschema.cassandra.document.CassandraDocument;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
 import com.strategicgains.noschema.cassandra.schema.CassandraSchemaWriter;
@@ -26,6 +25,7 @@ import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.AbstractRepositoryObserver;
 import com.strategicgains.noschema.document.ByteArrayCodec;
+import com.strategicgains.noschema.document.ByteArrayDocument;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -145,7 +145,7 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 	 */
 	public T create(T entity)
 	{
-		CassandraUnitOfWork uow = createUnitOfWork();
+		CassandraUnitOfWork<T> uow = createUnitOfWork();
 
 		try
 		{
@@ -154,7 +154,7 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 			final AtomicReference<Document<byte[]>> primaryDocument = new AtomicReference<>();
 
 			table.stream().forEach(t -> {
-				final Document<T> d;
+				final ByteArrayDocument<T> d;
 
 				if (serialized.get() == null)
 				{
@@ -611,7 +611,7 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 
 	private T asEntity(String viewName, Document d)
 	{
-		return factoriesByTable.get(viewName).asPojo(d);
+		return (T) factoriesByTable.get(viewName).asPojo(d);
 	}
 
 	protected Document asDocument(T entity)
@@ -619,16 +619,16 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 		return asDocument(table.name(), entity);
 	}
 
-	private Document asDocument(String viewName, T entity)
+	private ByteArrayDocument<T> asDocument(String viewName, T entity)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		return factoriesByTable.get(viewName).asDocument(entity);
+		return (ByteArrayDocument<T>) factoriesByTable.get(viewName).asDocument(entity);
 	}
 
-	private Document asDocument(String viewName, T entity, byte[] bytes)
+	private ByteArrayDocument<T> asDocument(String viewName, T entity, byte[] bytes)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		return factoriesByTable.get(viewName).asDocument(entity, bytes);
+		return (ByteArrayDocument<T>) factoriesByTable.get(viewName).asDocument(entity, bytes);
 	}
 
 	private void handleException(Exception e)

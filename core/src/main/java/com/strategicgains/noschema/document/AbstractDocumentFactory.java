@@ -1,5 +1,6 @@
 package com.strategicgains.noschema.document;
 
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
@@ -12,7 +13,7 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  *
  * @param <T>
  */
-public abstract class AbstractDocumentFactory<T extends Identifier, U>
+public abstract class AbstractDocumentFactory<T extends Identifiable, U>
 implements DocumentFactory<T, U>
 {
 	private Codec<T, U> codec;
@@ -42,10 +43,10 @@ implements DocumentFactory<T, U>
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		Identifier id = extractIdentifier(entity);
-		return createDocument(id, bytes, entity.getClass());		
+		return createDocument(id, bytes, (Class<T>) entity.getClass());		
 	}
 
-	protected abstract Document<U> createDocument(Identifier id, U bytes, Class<? extends Identifier> clazz);
+	protected abstract Document<U> createDocument(Identifier id, U bytes, Class<T> clazz);
 
 	protected abstract Identifier extractIdentifier(T entity)
 	throws InvalidIdentifierException, KeyDefinitionException;

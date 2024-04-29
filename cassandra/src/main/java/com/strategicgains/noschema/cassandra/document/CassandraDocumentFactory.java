@@ -4,17 +4,19 @@ import java.nio.ByteBuffer;
 import java.sql.Date;
 
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.document.AbstractDocumentFactory;
-import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.ByteArrayCodec;
+import com.strategicgains.noschema.document.ByteArrayDocument;
+import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
-public class CassandraDocumentFactory<T>
-extends AbstractDocumentFactory<T>
+public class CassandraDocumentFactory<T extends Identifiable>
+extends AbstractDocumentFactory<T, byte[]>
 {
 	private KeyDefinition keys;
 
@@ -30,20 +32,20 @@ extends AbstractDocumentFactory<T>
 		setKeyDefinition(keys);
 	}
 
-	public Document asDocument(Row row)
+	public ByteArrayDocument<T> asDocument(Row row)
 	{
 		if (row == null)
 		{
 			return null;
 		}
 
-		Document d = new Document();
+		ByteArrayDocument<T> d = new ByteArrayDocument<>();
 		ByteBuffer b = row.getByteBuffer(Columns.OBJECT);
 
 		if (b != null && b.hasArray())
 		{
 			//Force the reading of all the bytes.
-			d.setObject((b.array()));
+			d.setValue((b.array()));
 		}
 
 		d.setType(row.getString(Columns.TYPE));
@@ -63,5 +65,17 @@ extends AbstractDocumentFactory<T>
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		return keys.identifier(entity);
+	}
+
+	@Override
+	public T asPojo(Document<byte[]> document)
+	{
+		return null;
+	}
+
+	@Override
+	protected Document<byte[]> createDocument(Identifier id, byte[] bytes, Class<T> clazz)
+	{
+		return new ByteArrayDocument<>(id, bytes, clazz);
 	}
 }

@@ -25,6 +25,7 @@ public abstract class AbstractTable
 	private long ttl;
 
 	// Any extra name/value tag-alongs the customer wants to include.
+	//TODO: Handle null on persistence
 	private Map<String, String> metadata;
 
 	protected AbstractTable()
