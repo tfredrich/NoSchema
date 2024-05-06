@@ -32,6 +32,7 @@ import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 import com.strategicgains.noschema.exception.StorageException;
+import com.strategicgains.noschema.unitofwork.UnitOfWork;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 
 /**
@@ -143,25 +144,26 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 	 * @return The created entity.
 	 * @throws UnitOfWorkCommitException If there is an error during the commit operation.
 	 */
-	public T create(T entity)
+	public T create(T entity, UnitOfWork unitOfWork)
 	{
-		CassandraUnitOfWork<T> uow = createUnitOfWork();
+		CassandraUnitOfWork<T> uow = (CassandraUnitOfWork<T>) unitOfWork;
+		if (uow == null) uow = createUnitOfWork();
 
 		try
 		{
-			final AtomicReference<byte[]> serialized = new AtomicReference<>();
+			final AtomicReference<byte[]> serializedEntity = new AtomicReference<>();
 			final AtomicReference<byte[]> serializedId = new AtomicReference<>();
 			final AtomicReference<Document<byte[]>> primaryDocument = new AtomicReference<>();
 
 			table.stream().forEach(t -> {
 				final ByteArrayDocument<T> d;
 
-				if (serialized.get() == null)
+				if (serializedEntity.get() == null)
 				{
 					observers.forEach(o -> o.beforeEncoding(entity));
 					d = asDocument(t.name(), entity);
 					primaryDocument.set(d);
-					serialized.set(d.getValue());
+					serializedEntity.set(d.getValue());
 					serializedId.set(d.getIdentifier().toString().getBytes());
 					observers.forEach(o -> o.afterEncoding(primaryDocument.get()));
 					observers.forEach(o -> o.beforeCreate(primaryDocument.get()));
@@ -174,7 +176,7 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 					}
 					else
 					{
-						d = asDocument(t.name(), entity, serialized.get());
+						d = asDocument(t.name(), entity, serializedEntity.get());
 					}
 
 					d.setMetadata(primaryDocument.get().getMetadata());
@@ -441,7 +443,7 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 		try
 		{
 			CassandraUnitOfWork uow = createUnitOfWork();
-			AtomicReference<Document> originalDocument = new AtomicReference<>();
+			AtomicReference<ByteArrayDocument<T>> originalDocument = new AtomicReference<>();
 			final T originalEntity;
 
 			if (original != null)
@@ -457,8 +459,8 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 			}
 
 			observers.forEach(o -> o.beforeUpdate(originalDocument.get()));
-			final byte[] serialized = originalDocument.get().getObject();
-			final AtomicReference<Document> updatedDocument = new AtomicReference<>();
+			final byte[] serialized = originalDocument.get().getValue();
+			final AtomicReference<ByteArrayDocument<T>> updatedDocument = new AtomicReference<>();
 
 			table.stream().forEach(t -> {
 				if (updatedDocument.get() == null)
@@ -466,8 +468,8 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 					observers.forEach(o -> o.beforeEncoding(entity));
 				}
 
-				final Document updatedViewDocument = asDocument(t.name(), entity);
-				final Document originalViewDocument = asDocument(t.name(), originalEntity, serialized);
+				final ByteArrayDocument<T> updatedViewDocument = asDocument(t.name(), entity);
+				final ByteArrayDocument<T> originalViewDocument = asDocument(t.name(), originalEntity, serialized);
 
 				if (updatedDocument.get() == null)
 				{
@@ -514,15 +516,15 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 	 */
 	public T upsert(T entity)
 	{
-		CassandraUnitOfWork uow = createUnitOfWork();
+		CassandraUnitOfWork<T> uow = createUnitOfWork();
 
 		try
 		{
 			final AtomicReference<byte[]> bson = new AtomicReference<>();
-			final AtomicReference<Document> updated = new AtomicReference<>();
+			final AtomicReference<ByteArrayDocument<T>> updated = new AtomicReference<>();
 
 			table.stream().forEach(view -> {
-				final Document d;
+				final ByteArrayDocument<T> d;
 
 				if (bson.get() == null)
 				{
@@ -530,7 +532,7 @@ implements NoSchemaRepository<T>, CassandraSchemaWriter<T>
 					d = asDocument(view.name(), entity);
 					observers.forEach(o -> o.afterEncoding(d));
 					observers.forEach(o -> o.beforeUpdate(d));
-					bson.set(d.getObject());
+					bson.set(d.getValue());
 					updated.set(d);
 				}
 				else
