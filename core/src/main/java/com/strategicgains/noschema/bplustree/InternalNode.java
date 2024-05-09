@@ -43,6 +43,13 @@ extends Node<T>
 		return children.get(index);
 	}
 
+	void insert(T key, Node<T> left, Node<T> right)
+	{
+		int index = insertKey(key);
+		children.set(index, left);
+		children.add(index + 1, right);
+	}
+
 	@Override
 	InternalNode<T> split()
 	{
