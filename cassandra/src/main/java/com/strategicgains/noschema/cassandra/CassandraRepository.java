@@ -153,58 +153,59 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	@Override
 	public T create(T entity)
 	{
-		CassandraUnitOfWork uow = createUnitOfWork();
-		T created = create(entity, uow);
-		uow.commit();
-		return created;
-	}
-
-	public T create(T entity, CassandraUnitOfWork uow)
-	{
 		try
 		{
-			entityObservers.forEach(o -> o.beforeCreate(entity));
-			final AtomicReference<byte[]> serialized = new AtomicReference<>();
-			final AtomicReference<byte[]> serializedId = new AtomicReference<>();
-			final AtomicReference<Document> primaryDocument = new AtomicReference<>();
-
-			table.stream().forEach(t -> {
-				final Document d;
-
-				if (serialized.get() == null)
-				{
-					documentObservers.forEach(o -> o.beforeEncoding(entity));
-					d = asDocument(t.name(), entity);
-					primaryDocument.set(d);
-					serialized.set(d.getObject());
-					serializedId.set(d.getIdentifier().toString().getBytes());
-					documentObservers.forEach(o -> o.afterEncoding(primaryDocument.get()));
-					documentObservers.forEach(o -> o.beforeCreate(primaryDocument.get()));
-				}
-				else
-				{
-					if (t.isIndex())
-					{
-						d = asDocument(t.name(), entity, serializedId.get());
-					}
-					else
-					{
-						d = asDocument(t.name(), entity, serialized.get());
-					}
-
-					d.setMetadata(primaryDocument.get().getMetadata());
-				}
-
-				uow.registerNew(t.name(), d);
-			});
-
-			documentObservers.forEach(o -> o.afterCreate(primaryDocument.get()));
+			CassandraUnitOfWork uow = createUnitOfWork();
+			T created = create(entity, uow);
+			uow.commit();
+			return created;
 		}
 		catch (UnitOfWorkCommitException e)
 		{
 			handleException(e);
 		}
 
+		return null;
+	}
+
+	public T create(T entity, CassandraUnitOfWork uow)
+	{
+		entityObservers.forEach(o -> o.beforeCreate(entity));
+		final AtomicReference<byte[]> serialized = new AtomicReference<>();
+		final AtomicReference<byte[]> serializedId = new AtomicReference<>();
+		final AtomicReference<Document> primaryDocument = new AtomicReference<>();
+
+		table.stream().forEach(t -> {
+			final Document d;
+
+			if (serialized.get() == null)
+			{
+				documentObservers.forEach(o -> o.beforeEncoding(entity));
+				d = asDocument(t.name(), entity);
+				primaryDocument.set(d);
+				serialized.set(d.getObject());
+				serializedId.set(d.getIdentifier().toString().getBytes());
+				documentObservers.forEach(o -> o.afterEncoding(primaryDocument.get()));
+				documentObservers.forEach(o -> o.beforeCreate(primaryDocument.get()));
+			}
+			else
+			{
+				if (t.isIndex())
+				{
+					d = asDocument(t.name(), entity, serializedId.get());
+				}
+				else
+				{
+					d = asDocument(t.name(), entity, serialized.get());
+				}
+
+				d.setMetadata(primaryDocument.get().getMetadata());
+			}
+
+			uow.registerNew(t.name(), d);
+		});
+
+		documentObservers.forEach(o -> o.afterCreate(primaryDocument.get()));
 		entityObservers.forEach(o -> o.afterCreate(entity));
 		return entity;
 	}
@@ -219,48 +220,49 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	 * @throws UnitOfWorkCommitException If there is an error during the commit operation.
 	 */
 	@Override
-	public void delete(Identifier id) {
-		CassandraUnitOfWork uow = createUnitOfWork();
-		delete(id, uow);
-		uow.commit();
-	}
-
-	public void delete(Identifier id, CassandraUnitOfWork uow)
+	public void delete(Identifier id)
 	{
 		try
 		{
-			final T entity = read(id);
-			entityObservers.forEach(o -> o.beforeDelete(entity));
-			final AtomicReference<byte[]> serialized = new AtomicReference<>();
-			final AtomicReference<Document> primaryDocument = new AtomicReference<>();
-
-			table.stream().forEach(t -> {
-				final Document d;
-
-				if (serialized.get() == null)
-				{
-					documentObservers.forEach(o -> o.beforeEncoding(entity));
-					d = asDocument(t.name(), entity);
-					primaryDocument.set(d);
-					serialized.set(d.getObject());
-					documentObservers.forEach(o -> o.afterEncoding(primaryDocument.get()));
-					documentObservers.forEach(o -> o.beforeDelete(primaryDocument.get()));
-				}
-				else
-				{
-					d = asDocument(t.name(), entity, serialized.get());
-				}
-
-				uow.registerDeleted(t.name(), d);
-			});
-
-			documentObservers.forEach(o -> o.afterDelete(primaryDocument.get()));
-			entityObservers.forEach(o -> o.afterDelete(entity));
+			CassandraUnitOfWork uow = createUnitOfWork();
+			delete(id, uow);
+			uow.commit();
 		}
 		catch (UnitOfWorkCommitException e)
 		{
 			handleException(e);
 		}
+	}
+
+	public void delete(Identifier id, CassandraUnitOfWork uow)
+	{
+		final T entity = read(id);
+		entityObservers.forEach(o -> o.beforeDelete(entity));
+		final AtomicReference<byte[]> serialized = new AtomicReference<>();
+		final AtomicReference<Document> primaryDocument = new AtomicReference<>();
+
+		table.stream().forEach(t -> {
+			final Document d;
+
+			if (serialized.get() == null)
+			{
+				documentObservers.forEach(o -> o.beforeEncoding(entity));
+				d = asDocument(t.name(), entity);
+				primaryDocument.set(d);
+				serialized.set(d.getObject());
+				documentObservers.forEach(o -> o.afterEncoding(primaryDocument.get()));
+				documentObservers.forEach(o -> o.beforeDelete(primaryDocument.get()));
+			}
+			else
+			{
+				d = asDocument(t.name(), entity, serialized.get());
+			}
+
+			uow.registerDeleted(t.name(), d);
+		});
+
+		documentObservers.forEach(o -> o.afterDelete(primaryDocument.get()));
+		entityObservers.forEach(o -> o.afterDelete(entity));
 	}
 
 	/**
@@ -471,74 +473,75 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	@Override
 	public T update(T entity, T original)
 	{
-		CassandraUnitOfWork uow = createUnitOfWork();
-		T updated = update(entity, original, uow);
-		uow.commit();
-		return updated;
-	}
-
-	public T update(T entity, T original, CassandraUnitOfWork uow)
-	{
 		try
 		{
-			AtomicReference<Document> originalDocument = new AtomicReference<>();
-			final T originalEntity;
-
-			if (original != null)
-			{
-				originalDocument.set(asDocument(original));
-				originalEntity = original;
-			}
-			else
-			{
-				originalDocument.set(readAsDocument(entity.getIdentifier()).join());
-				uow.registerClean(table.name(), originalDocument.get());
-				originalEntity = asEntity(table.name(), originalDocument.get());
-			}
-
-			documentObservers.forEach(o -> o.beforeUpdate(originalDocument.get()));
-			final byte[] serialized = originalDocument.get().getObject();
-			final AtomicReference<Document> updatedDocument = new AtomicReference<>();
-
-			table.stream().forEach(t -> {
-				if (updatedDocument.get() == null)
-				{
-					documentObservers.forEach(o -> o.beforeEncoding(entity));
-				}
-
-				final Document updatedViewDocument = asDocument(t.name(), entity);
-				final Document originalViewDocument = asDocument(t.name(), originalEntity, serialized);
-
-				if (updatedDocument.get() == null)
-				{
-					updatedDocument.set(updatedViewDocument);
-					documentObservers.forEach(o-> o.afterEncoding(updatedViewDocument));
-				}
-				else
-				{
-					updatedViewDocument.setMetadata(updatedDocument.get().getMetadata());
-				}
-
-				// If identifier changed, must perform delete and create.
-				if (!updatedViewDocument.getIdentifier().equals(originalViewDocument.getIdentifier()))
-				{
-					uow.registerDeleted(t.name(), originalViewDocument);
-					uow.registerNew(t.name(), updatedViewDocument);
-				}
-				// Otherwise it is simply an update.
-				else
-				{
-					uow.registerDirty(t.name(), updatedViewDocument);
-				}
-			});
-
-			documentObservers.forEach(o -> o.afterUpdate(updatedDocument.get()));
+			CassandraUnitOfWork uow = createUnitOfWork();
+			T updated = update(entity, original, uow);
+			uow.commit();
+			return updated;
 		}
 		catch (UnitOfWorkCommitException e)
 		{
 			handleException(e);
 		}
 
+		return null;
+	}
+
+	public T update(T entity, T original, CassandraUnitOfWork uow)
+	{
+		AtomicReference<Document> originalDocument = new AtomicReference<>();
+		final T originalEntity;
+
+		if (original != null)
+		{
+			originalDocument.set(asDocument(original));
+			originalEntity = original;
+		}
+		else
+		{
+			originalDocument.set(readAsDocument(entity.getIdentifier()).join());
+			uow.registerClean(table.name(), originalDocument.get());
+			originalEntity = asEntity(table.name(), originalDocument.get());
+		}
+
+		documentObservers.forEach(o -> o.beforeUpdate(originalDocument.get()));
+		final byte[] serialized = originalDocument.get().getObject();
+		final AtomicReference<Document> updatedDocument = new AtomicReference<>();
+
+		table.stream().forEach(t -> {
+			if (updatedDocument.get() == null)
+			{
+				documentObservers.forEach(o -> o.beforeEncoding(entity));
+			}
+
+			final Document updatedViewDocument = asDocument(t.name(), entity);
+			final Document originalViewDocument = asDocument(t.name(), originalEntity, serialized);
+
+			if (updatedDocument.get() == null)
+			{
+				updatedDocument.set(updatedViewDocument);
+				documentObservers.forEach(o-> o.afterEncoding(updatedViewDocument));
+			}
+			else
+			{
+				updatedViewDocument.setMetadata(updatedDocument.get().getMetadata());
+			}
+
+			// If identifier changed, must perform delete and create.
+			if (!updatedViewDocument.getIdentifier().equals(originalViewDocument.getIdentifier()))
+			{
+				uow.registerDeleted(t.name(), originalViewDocument);
+				uow.registerNew(t.name(), updatedViewDocument);
+			}
+			// Otherwise it is simply an update.
+			else
+			{
+				uow.registerDirty(t.name(), updatedViewDocument);
+			}
+		});
+
+		documentObservers.forEach(o -> o.afterUpdate(updatedDocument.get()));
 		return entity;
 	}
 
@@ -554,46 +557,47 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	@Override
 	public T upsert(T entity)
 	{
-		CassandraUnitOfWork uow = createUnitOfWork();
-		T upserted = upsert(entity, uow);
-		uow.commit();
-		return upserted;
-	}
-
-	public T upsert(T entity, CassandraUnitOfWork uow)
-	{
 		try
 		{
-			final AtomicReference<byte[]> bson = new AtomicReference<>();
-			final AtomicReference<Document> updated = new AtomicReference<>();
-
-			table.stream().forEach(view -> {
-				final Document d;
-
-				if (bson.get() == null)
-				{
-					documentObservers.forEach(o -> o.beforeEncoding(entity));
-					d = asDocument(view.name(), entity);
-					documentObservers.forEach(o -> o.afterEncoding(d));
-					documentObservers.forEach(o -> o.beforeUpdate(d));
-					bson.set(d.getObject());
-					updated.set(d);
-				}
-				else
-				{
-					d = asDocument(view.name(), entity, bson.get());
-				}
-
-				uow.registerDirty(view.name(), d);
-			});
-
-			documentObservers.forEach(o -> o.afterUpdate(updated.get()));
+			CassandraUnitOfWork uow = createUnitOfWork();
+			T upserted = upsert(entity, uow);
+			uow.commit();
+			return upserted;
 		}
 		catch (UnitOfWorkCommitException e)
 		{
 			handleException(e);
 		}
 
+		return null;
+	}
+
+	public T upsert(T entity, CassandraUnitOfWork uow)
+	{
+		final AtomicReference<byte[]> bson = new AtomicReference<>();
+		final AtomicReference<Document> updated = new AtomicReference<>();
+
+		table.stream().forEach(view -> {
+			final Document d;
+
+			if (bson.get() == null)
+			{
+				documentObservers.forEach(o -> o.beforeEncoding(entity));
+				d = asDocument(view.name(), entity);
+				documentObservers.forEach(o -> o.afterEncoding(d));
+				documentObservers.forEach(o -> o.beforeUpdate(d));
+				bson.set(d.getObject());
+				updated.set(d);
+			}
+			else
+			{
+				d = asDocument(view.name(), entity, bson.get());
+			}
+
+			uow.registerDirty(view.name(), d);
+		});
+
+		documentObservers.forEach(o -> o.afterUpdate(updated.get()));
 		return entity;
 	}
 
@@ -677,7 +681,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	}
 
 	private void handleException(Exception e)
-	throws DuplicateItemException, InvalidIdentifierException, ItemNotFoundException, StorageException
+	throws StorageException
 	{
 		if (e.getCause() instanceof DuplicateItemException duplicate)
 		{
