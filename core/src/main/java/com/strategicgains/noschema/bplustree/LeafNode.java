@@ -1,7 +1,5 @@
 package com.strategicgains.noschema.bplustree;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -11,28 +9,26 @@ import java.util.List;
  * that facilitates ordered access.
  * 
  * @author Todd Fredrich
- * @param <T> the type of the keys in the node. Must implement Comparable.
- * @param <V> the type of the values in the node.
+ * @param <K> the type of the keys in the node. Must implement Comparable.
+ * @param <V> the type of the values stored in the node.
  */
-class LeafNode<T extends Comparable<T>, V>
-extends Node<T>
+class LeafNode<K extends Comparable<K>, V>
+extends Node<K, V>
 {
-	private LeafNode<T, V> previousSibling;
-	private LeafNode<T, V> nextSibling;
-	private List<V> values = new ArrayList<>();
+	private LeafNode<K, V> previousSibling;
+	private LeafNode<K, V> nextSibling;
 
 	public LeafNode()
 	{
 		super();
 	}
 
-	public LeafNode(List<T> keys, List<V> values)
+	public LeafNode(List<Entry<K,V>> entries)
 	{
-		super(keys);
-		this.values = values;
+		super(entries);
 	}
 
-	public V search(T key)
+	public V search(K key)
 	{
 		int index = getKeyIndex(key);
 
@@ -40,7 +36,7 @@ extends Node<T>
 			return null;
 		}
 
-		return values.get(index);
+		return getEntry(index).getValue();
 	}
 
 	@Override
@@ -49,63 +45,24 @@ extends Node<T>
 		return true;
 	}
 
-	public LeafNode<T, V> getPreviousSibling()
+	public LeafNode<K, V> getPreviousSibling()
 	{
 		return previousSibling;
 	}
 
-	public LeafNode<T, V> getNextSibling()
+	public LeafNode<K, V> getNextSibling()
 	{
 		return nextSibling;
 	}
 
-	void insert(T key, V value)
+	void insert(K key, V value)
 	{
-		int index = insertKey(key);
-		this.values.add(index, value);
-	}
-
-	/**
-	 * Splits the leaf node in half, creating a new sibling leaf node with the right-half values and
-	 * returns it. The left-half values remain in this node.
-	 * 
-	 * @param mid the index at which to split the node.
-	 * @return a new LeafNode that contains the right-half of the values.
-	 */
-	@Override
-	LeafNode<T, V> split()
-	{
-		@SuppressWarnings("unchecked")
-		LeafNode<T, V> sibling = (LeafNode<T, V>) super.split();
-		sibling.values.addAll(values.subList(sibling.size() + 1, values.size()));
-		truncateValues(sibling.size() + 1);
-		return sibling;
-	}
-
-	void merge(LeafNode<T, V> sibling)
-	{
-		super.merge(sibling);
-		values.addAll(sibling.getValues());
-	}
-
-	private List<? extends V> getValues()
-	{
-		return Collections.unmodifiableList(values);
-	}
-
-	private List<V> getValues(int qty)
-	{
-		return new ArrayList<>(values.subList(0, qty));
-	}
-
-	private void truncateValues(int qty)
-	{
-		values = getValues(qty);
+		insertEntry(new LeafNodeEntry<>(key, value));
 	}
 
 	@Override
-	protected Node<T> createSibling(List<T> list)
+	protected LeafNode<K, V> createSibling(List<Entry<K,V>> list)
 	{
-		return new LeafNode<>(list, getValues(list.size()));
+		return new LeafNode<>(list);
 	}
 }

@@ -9,64 +9,65 @@ import java.util.List;
  * The child nodes are either InternalNodes or LeafNodes.
  * 
  * @author Todd Fredrich
- * @param <T> the type of the keys in the node. Must implement Comparable.
+ * @param <K> the type of the keys in the node. Must implement Comparable.
+ * @param <V> the type of the values in the node.
  * @see Node
  * @see LeafNode
  */
-class InternalNode<T extends Comparable<T>>
-extends Node<T>
+class InternalNode<K extends Comparable<K>, V>
+extends Node<K, V>
 {
-	private List<Node<T>> children = new ArrayList<>();
+	private List<Node<K, V>> children = new ArrayList<>();
 
-	public InternalNode(List<T> list)
+	public InternalNode(List<Entry<K,V>> list)
 	{
 		super(list);
 	}
 
-	public Node<T> getChildFor(T key)
+	public Node<K, V> getChildFor(K key)
 	{
 		return children.get(getKeyIndex(key));
 	}
 
-	public void addChild(Node<T> child)
+	public void addChild(Node<K, V> child)
 	{
 		children.add(child);
 	}
 
-	public List<Node<T>> getChildren()
+	public List<Node<K, V>> getChildren()
 	{
 		return Collections.unmodifiableList(children);
 	}
 
-	public Node<T> getChild(int index)
+	public Node<K, V> getChild(int index)
 	{
 		return children.get(index);
 	}
 
-	void insert(T key, Node<T> left, Node<T> right)
+	void insert(K key, Node<K, V> left, Node<K, V> right)
 	{
-		int index = insertKey(key);
-		children.set(index, left);
-		children.add(index + 1, right);
+//		int index = insertKey(key);
+//		children.set(index, left);
+//		children.add(index + 1, right);
 	}
 
 	@Override
-	InternalNode<T> split()
+	InternalNode<K, V> split()
 	{
-		InternalNode<T> sibling = (InternalNode<T>) super.split();
+		InternalNode<K, V> sibling = (InternalNode<K, V>) super.split();
 		sibling.children.addAll(children.subList(sibling.size() + 1, children.size()));
 		children = children.subList(0, sibling.size() + 1);
 		return sibling;
 	}
 
-	void merge(InternalNode<T> sibling)
+	void merge(InternalNode<K, V> sibling)
 	{
 		super.merge(sibling);
 		children.addAll(sibling.getChildren());
 	}
 
 	@Override
-	protected Node<T> createSibling(List<T> list)
+	protected InternalNode<K, V> createSibling(List<Entry<K,V>> list)
 	{
 		return new InternalNode<>(list);
 	}

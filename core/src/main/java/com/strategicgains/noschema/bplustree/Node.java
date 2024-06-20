@@ -10,54 +10,45 @@ import java.util.List;
  * Keys must implement the Comparable interface.
  *
  * @author Todd Fredrich
- * @param <T> the type of the keys in the node. Must implement Comparable.
+ * @param <K> the type of the keys in the node. Must implement Comparable.
+ * @param <V> the type of the values stored in the leaf nodes.
  * @see InternalNode
  * @see LeafNode
  */
-public abstract class Node<T extends Comparable<T>>
+public abstract class Node<K extends Comparable<K>, V>
 {
-	private List<T> keys = new ArrayList<>();
-	private List<LeafNodeEntry<T, ?>> entries = new ArrayList<>();
+	private List<Entry<K, V>> entries;
 
 	protected Node()
 	{
 		super();
+		entries = new ArrayList<>();
 	}
 
-	protected Node(List<T> keys)
+	protected Node(List<Entry<K, V>> entries)
 	{
-		this.keys = new ArrayList<>(keys);
+		this.entries = new ArrayList<>(entries);
 	}
 
 	/**
-	 * Get the number of keys in this node.
+	 * Get the number of entries in this node.
 	 * 
-	 * @return the number of keys in this node.
+	 * @return the number of entries in this node.
 	 */
 	public int size()
 	{
-		return keys.size();
+		return entries.size();
 	}
 
 	/**
-	 * Get the key at the specified index.
+	 * Get the entry at the specified index.
 	 * 
-	 * @param idx the index of the key to get.
-	 * @return the key at the specified index.
+	 * @param idx the index of the entry to get.
+	 * @return the entry at the specified index.
 	 */
-	public T getKey(int idx)
+	public Entry<K, V> getEntry(int idx)
 	{
-		return keys.get(idx);
-	}
-
-	/**
-	 * Get the keys in this node.
-	 * 
-	 * @return an unmodifiable list of the keys in this node.
-	 */
-	public List<T> getKeys()
-	{
-		return Collections.unmodifiableList(keys);
+		return entries.get(idx);
 	}
 
 	/**
@@ -73,13 +64,13 @@ public abstract class Node<T extends Comparable<T>>
 	/**
 	 * Insert a key into this node at the correct position.
 	 * 
-	 * @param key the key to insert.
+	 * @param entry the entry (with key and value) to insert.
 	 * @return the index of the inserted key.
 	 */
-	int insertKey(T key)
+	int insertEntry(Entry<K, V> entry)
 	{
-		int idx = getInsertionPoint(key);
-		keys.add(idx, key);
+		int idx = getInsertionPoint(entry.getKey());
+		entries.add(idx, entry);
 		return idx;
 	}
 
@@ -90,9 +81,9 @@ public abstract class Node<T extends Comparable<T>>
 	 * @param key
 	 * @return the index of the key if found; otherwise, the index where the key should be inserted.
 	 */
-	int getKeyIndex(T key)
+	int getKeyIndex(K key)
 	{
-		return Collections.binarySearch(keys, key);
+		return Collections.binarySearch(entries, key);
 	}
 
 	/**
@@ -101,10 +92,10 @@ public abstract class Node<T extends Comparable<T>>
 	 * 
 	 * @return a new sibling node containing the right half of the keys.
 	 */
-	Node<T> split()
+	Node<K, V> split()
 	{
 		int mid = (size() + 1) / 2;
-		Node<T> sibling = createSibling(getRightKeys(mid));
+		Node<K, V> sibling = createSibling(getRightEntries(mid));
 		truncateKeys(mid);
 		return sibling;
 	}
@@ -115,9 +106,9 @@ public abstract class Node<T extends Comparable<T>>
 	 * 
 	 * @param sibling the sibling node to merge into this node.
 	 */
-	void merge(Node<T> sibling)
+	void merge(Node<K, V> sibling)
 	{
-		keys.addAll(sibling.getKeys());
+		entries.addAll(sibling.entries);
 	}
 
 	/**
@@ -126,28 +117,28 @@ public abstract class Node<T extends Comparable<T>>
 	 * @param list the list of keys to add to the sibling node.
 	 * @return a new sibling node.
 	 */
-	abstract Node<T> createSibling(List<T> list);
+	abstract Node<K, V> createSibling(List<Entry<K,V>> list);
 
 	/**
-	 * Get the first keys (index 0 through mid) of this node.
+	 * Get the first entries (index 0 through mid) of this node.
 	 * 
 	 * @param mid the index of the middle key.
-	 * @return the first n keys of this node.
+	 * @return the first n entries of this node.
 	 */
-	private List<T> getLeftKeys(int mid)
+	private List<Entry<K,V>> getLeftEntries(int mid)
 	{
-		return new ArrayList<>(keys.subList(0, mid));
+		return new ArrayList<>(entries.subList(0, mid));
 	}
 
 	/**
-	 * Get the last keys (index mid through size) of this node.
+	 * Get the last entries (index mid through size) of this node.
 	 * 
 	 * @param mid the index of the middle key.
-	 * @return the last n keys of this node.
+	 * @return the last n entries of this node.
 	 */
-	private List<T> getRightKeys(int mid)
+	private List<Entry<K,V>> getRightEntries(int mid)
 	{
-		return new ArrayList<>(keys.subList(mid, size()));
+		return new ArrayList<>(entries.subList(mid, size()));
 	}
 
 	/**
@@ -157,7 +148,7 @@ public abstract class Node<T extends Comparable<T>>
 	 */
 	private void truncateKeys(int mid)
 	{
-		this.keys = getLeftKeys(mid);
+		this.entries = getLeftEntries(mid);
 	}
 
 	/**
@@ -166,7 +157,7 @@ public abstract class Node<T extends Comparable<T>>
 	 * @param key the key to insert.
 	 * @return the index where the key should be inserted.
 	 */
-	private int getInsertionPoint(T key)
+	private int getInsertionPoint(K key)
 	{
 		int idx = getKeyIndex(key);
 

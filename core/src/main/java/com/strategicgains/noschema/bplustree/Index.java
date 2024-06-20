@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Index<T extends Comparable<T>, V>
+public class Index<K extends Comparable<K>, V>
 {
 	private int order;
 	private int mid;
-	private Node<T> root;
+	private Node<K, V> root;
 
 	public Index(int order)
 	{
@@ -17,36 +17,36 @@ public class Index<T extends Comparable<T>, V>
 		this.root = new LeafNode<>();
 	}
 
-	public void insert(T key, V value)
+	public void insert(K key, V value)
 	{
-		Node<T> currentNode = root;
+		Node<K, V> currentNode = root;
 
 		while (true)
 		{
 			if (currentNode.isLeaf())
 			{
-				LeafNode<T, V> leaf = (LeafNode<T, V>) currentNode;
+				LeafNode<K, V> leaf = (LeafNode<K, V>) currentNode;
 				leaf.insert(key, value);
 
 				if (leaf.size() > order - 1)
 				{
-					LeafNode<T, V> parent = leaf.split(order);
+					LeafNode<K, V> parent = leaf.split();
 				}
 				break;
 			}
 			else
 			{
-				InternalNode<T> internal = (InternalNode<T>) currentNode;
-				Node<T> child = internal.getChildFor(key);
+				InternalNode<K, V> internal = (InternalNode<K, V>) currentNode;
+				Node<K, V> child = internal.getChildFor(key);
 
 				if (child.isLeaf())
 				{
-					LeafNode<T, V> leaf = (LeafNode<T, V>) child;
+					LeafNode<K, V> leaf = (LeafNode<K, V>) child;
 					leaf.insert(key, value);
 
 					if (leaf.size() > order - 1)
 					{
-						LeafNode<T, V> parent = leaf.split(order);
+						LeafNode<K, V> parent = leaf.split();
 					}
 				}
 				else
@@ -57,53 +57,53 @@ public class Index<T extends Comparable<T>, V>
 		}
 	}
 
-	public V search(T key) {
-		Node<T> currentNode = root;
+	public V search(K key) {
+		Node<K, V> currentNode = root;
 		while (true)
 		{
 			if (currentNode.isLeaf())
 			{
-				LeafNode<T> leaf = (LeafNode<T>) currentNode;
+				LeafNode<K, V> leaf = (LeafNode<K, V>) currentNode;
 				int idx = leaf.getKeyIndex(key);
 				return idx >= 0;
 			}
 			else
 			{
-				InternalNode<T> internal = (InternalNode<T>) currentNode;
+				InternalNode<K, V> internal = (InternalNode<K, V>) currentNode;
 				currentNode = internal.getChildFor(key);
 			}
 		}
 	}
 
-	public void delete(T key)
+	public void delete(K key)
 	{
 		delete(root, key);
 	}
 
-	private Node<T> delete(Node<T> node, T key)
+	private Node<K, V> delete(Node<K, V> node, K key)
 	{
 		if (node.isLeaf())
 		{
-			LeafNode<T> leaf = (LeafNode<T>) node;
-			int idx = Collections.binarySearch(leaf.keys, key);
+			LeafNode<K, V> leaf = (LeafNode<K, V>) node;
+			int idx = Collections.binarySearch(leaf, key);
 			if (idx >= 0) {
-				leaf.keys.remove(idx);
-				if (leaf.keys.size() < (order - 1) / 2) {
+				leaf.remove(idx);
+				if (leaf.size() < (order - 1) / 2) {
 					balance(leaf);
 				}
 			}
 			return node;
 		} else {
-			InternalNode<T> internal = (InternalNode<T>) node;
-			int idx = Collections.binarySearch(internal.keys, key);
+			InternalNode<K, V> internal = (InternalNode<K, V>) node;
+			int idx = Collections.binarySearch(internal, key);
 			if (idx < 0) {
 				idx = -(idx + 1);
 			}
-			Node<T> child = internal.children.get(idx);
-			Node<T> newChild = delete(child, key);
+			Node<K, V> child = internal.children.get(idx);
+			Node<K, V> newChild = delete(child, key);
 			if (newChild != child) {
 				internal.children.set(idx, newChild);
-				if (newChild.keys.size() < (order - 1) / 2) {
+				if (newChild.size() < (order - 1) / 2) {
 					balance(newChild);
 				}
 			}
@@ -111,14 +111,14 @@ public class Index<T extends Comparable<T>, V>
 		}
 	}
 
-	private void balance(Node<T> node)
+	private void balance(Node<K, V> node)
 	{
 		if (node.isLeaf())
 		{
-			LeafNode<T> leaf = (LeafNode<T>) node;
+			LeafNode<K, V> leaf = (LeafNode<K, V>) node;
 			if (leaf.size() < (order - 1) / 2)
 			{
-				LeafNode<T> sibling = getSibling(leaf);
+				LeafNode<K, V> sibling = getSibling(leaf);
 
 				if (sibling != null)
 				{
@@ -128,15 +128,15 @@ public class Index<T extends Comparable<T>, V>
 				{
 					// Node is root, make it smaller
 					if (leaf == root) {
-						List<T> newKeys = new ArrayList<>();
-						for (T key : leaf.keys) {
+						List<K> newKeys = new ArrayList<>();
+						for (K key : leaf.keys) {
 							newKeys.add(key);
 						}
 						root = new LeafNode<>();
-						((LeafNode<T>) root).keys = newKeys;
+						((LeafNode<K, V>) root).keys = newKeys;
 					} else {
 						// Remove node
-						InternalNode<T> parent = getParent(leaf);
+						InternalNode<K, V> parent = getParent(leaf);
 						parent.children.remove(leaf);
 						parent.keys.remove(0);
 						balance(parent);
@@ -144,23 +144,23 @@ public class Index<T extends Comparable<T>, V>
 				}
 			}
 		} else {
-			InternalNode<T> internal = (InternalNode<T>) node;
-			if (internal.keys.size() < (order - 1) / 2) {
-				InternalNode<T> sibling = getSibling(internal);
+			InternalNode<K, V> internal = (InternalNode<K, V>) node;
+			if (internal.size() < (order - 1) / 2) {
+				InternalNode<K, V> sibling = getSibling(internal);
 				if (sibling != null) {
 					merge(internal, sibling);
 				} else {
 					// Node is root, make it smaller
 					if (internal == root) {
-						List<T> newKeys = new ArrayList<>();
-						for (T key : internal.keys) {
+						List<K> newKeys = new ArrayList<>();
+						for (K key : internal.keys) {
 							newKeys.add(key);
 						}
 						root = new InternalNode<>();
-						((InternalNode<T>) root).keys = newKeys;
+						((InternalNode<K, V>) root).keys = newKeys;
 					} else {
 						// Remove node
-						InternalNode<T> parent = getParent(internal);
+						InternalNode<K, V> parent = getParent(internal);
 						parent.children.remove(internal);
 						parent.keys.remove(0);
 						balance(parent);
@@ -170,32 +170,32 @@ public class Index<T extends Comparable<T>, V>
 		}
 	}
 
-	private LeafNode<T> getSibling(LeafNode<T> node) {
-		InternalNode<T> parent = getParent(node);
+	private LeafNode<K, V> getSibling(LeafNode<K, V> node) {
+		InternalNode<K, V> parent = getParent(node);
 		int idx = parent.children.indexOf(node);
 		if (idx > 0) {
-			return (LeafNode<T>) parent.children.get(idx - 1);
+			return (LeafNode<K, V>) parent.children.get(idx - 1);
 		} else {
 			return null;
 		}
 	}
 
-	private InternalNode<T> getSibling(InternalNode<T> node) {
-		InternalNode<T> parent = getParent(node);
+	private InternalNode<K, V> getSibling(InternalNode<K, V> node) {
+		InternalNode<K, V> parent = getParent(node);
 		int idx = parent.children.indexOf(node);
 		if (idx > 0) {
-			return (InternalNode<T>) parent.children.get(idx - 1);
+			return (InternalNode<K, V>) parent.children.get(idx - 1);
 		} else {
 			return null;
 		}
 	}
 
-	private InternalNode<T> getParent(Node<T> node) {
+	private InternalNode<K, V> getParent(Node<K, V> node) {
 		if (node == root) {
 			return null;
 		}
-		InternalNode<T> parent = (InternalNode<T>) root;
-		Node<T> child = node;
+		InternalNode<K, V> parent = (InternalNode<K, V>) root;
+		Node<K, V> child = node;
 		while (true) {
 			int idx = parent.children.indexOf(child);
 			if (idx < 0) {
@@ -205,7 +205,7 @@ public class Index<T extends Comparable<T>, V>
 				return parent;
 			}
 			child = parent;
-			parent = (InternalNode<T>) parent.children.get(idx);
+			parent = (InternalNode<K, V>) parent.children.get(idx);
 		}
 	}
 }
