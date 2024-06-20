@@ -1,14 +1,14 @@
 package com.strategicgains.noschema.bplustree;
 
-public class InternalNodeEntry<T extends Comparable<T>, V>
-extends AbstractNodeEntry<T, InternalValue<V>>
+public class InternalNodeEntry<K extends Comparable<K>, V>
+extends AbstractNodeEntry<K, InternalValue<V>>
 {
 	private InternalValue<V> value;
 
-	public InternalNodeEntry(T key, V leftChild, V rightChild)
+	public InternalNodeEntry(K key, V leftChild, V rightChild)
 	{
 		super(key);
-		this.value = new InternalValue<V>(leftChild, rightChild);
+		this.value = new InternalValue<>(leftChild, rightChild);
 	}
 
 	public InternalValue<V> getValue()
