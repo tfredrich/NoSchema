@@ -1,7 +1,6 @@
 package com.strategicgains.noschema.bplustree;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -15,33 +14,19 @@ import java.util.List;
  * @see LeafNode
  */
 class InternalNode<K extends Comparable<K>, V>
-extends Node<K, V>
+extends AbstractNode<K, V>
 {
-	private List<Node<K, V>> children = new ArrayList<>();
+	private List<Node<K, V>> children;
 
-	public InternalNode(List<Entry<K,V>> list)
+	public InternalNode(List<K> keys, List<Node<K, V>> children)
 	{
-		super(list);
+		super(keys);
+		this.children = new ArrayList<>(children);
 	}
 
 	public Node<K, V> getChildFor(K key)
 	{
 		return children.get(getKeyIndex(key));
-	}
-
-	public void addChild(Node<K, V> child)
-	{
-		children.add(child);
-	}
-
-	public List<Node<K, V>> getChildren()
-	{
-		return Collections.unmodifiableList(children);
-	}
-
-	public Node<K, V> getChild(int index)
-	{
-		return children.get(index);
 	}
 
 	void insert(K key, Node<K, V> left, Node<K, V> right)
@@ -52,23 +37,19 @@ extends Node<K, V>
 	}
 
 	@Override
-	InternalNode<K, V> split()
+	public InternalNode<K, V> split(int order)
 	{
-		InternalNode<K, V> sibling = (InternalNode<K, V>) super.split();
-		sibling.children.addAll(children.subList(sibling.size() + 1, children.size()));
-		children = children.subList(0, sibling.size() + 1);
+		int mid = (order + 1) / 2;
+		InternalNode<K, V> sibling = new InternalNode<>(getRightKeys(mid), children.subList(mid, children.size()));
+		children = children.subList(0, mid);
 		return sibling;
 	}
 
-	void merge(InternalNode<K, V> sibling)
-	{
-		super.merge(sibling);
-		children.addAll(sibling.getChildren());
-	}
-
 	@Override
-	protected InternalNode<K, V> createSibling(List<Entry<K,V>> list)
+	public void merge(Node<K, V> node)
 	{
-		return new InternalNode<>(list);
+		InternalNode<K, V> sibling = (InternalNode<K, V>) node;
+		super.merge(sibling);
+		children.addAll(sibling.children);
 	}
 }

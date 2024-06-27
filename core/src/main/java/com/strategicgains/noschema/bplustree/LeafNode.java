@@ -1,5 +1,6 @@
 package com.strategicgains.noschema.bplustree;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -13,8 +14,9 @@ import java.util.List;
  * @param <V> the type of the values stored in the node.
  */
 class LeafNode<K extends Comparable<K>, V>
-extends Node<K, V>
+extends AbstractNode<K, V>
 {
+	private List<V> values;
 	private LeafNode<K, V> previousSibling;
 	private LeafNode<K, V> nextSibling;
 
@@ -23,20 +25,22 @@ extends Node<K, V>
 		super();
 	}
 
-	public LeafNode(List<Entry<K,V>> entries)
+	public LeafNode(List<K> keys, List<V> values)
 	{
-		super(entries);
+		super(keys);
+		this.values = new ArrayList<>(values);
 	}
 
 	public V search(K key)
 	{
 		int index = getKeyIndex(key);
 
-		if (index < 0) {
+		if (index < 0)
+		{
 			return null;
 		}
 
-		return getEntry(index).getValue();
+		return values.get(index);
 	}
 
 	@Override
@@ -50,19 +54,56 @@ extends Node<K, V>
 		return previousSibling;
 	}
 
+	private void setPreviousSibling(LeafNode<K, V> previousSibling)
+	{
+		this.previousSibling = previousSibling;
+	}
+
 	public LeafNode<K, V> getNextSibling()
 	{
 		return nextSibling;
 	}
 
+	private void setNextSibling(LeafNode<K, V> nextSibling)
+	{
+		this.nextSibling = nextSibling;
+	}
+
 	void insert(K key, V value)
 	{
-		insertEntry(new LeafNodeEntry<>(key, value));
+		int idx = insertKey(key);
+		values.add(idx, value);
 	}
 
 	@Override
-	protected LeafNode<K, V> createSibling(List<Entry<K,V>> list)
+	public LeafNode<K, V> split(int order)
 	{
-		return new LeafNode<>(list);
+		if (size() < order) return null;
+
+		int mid = (order + 1) / 2;
+		LeafNode<K, V> sibling = new LeafNode<>(getRightKeys(mid), getRightValues(mid));
+		truncateKeys(mid);
+		truncateValues(mid);
+		sibling.setPreviousSibling(this);
+        this.setNextSibling(sibling);
+		return sibling;
+	}
+
+	private List<V> getRightValues(int mid)
+	{
+		return values.subList(mid, values.size());
+	}
+
+	private void truncateValues(int mid)
+	{
+		values = values.subList(0, mid);
+	}
+
+	@Override
+	public void merge(Node<K, V> node)
+	{
+		LeafNode<K, V> sibling = (LeafNode<K, V>) node;
+		super.merge(sibling);
+		values.addAll(sibling.values);
 	}
 }

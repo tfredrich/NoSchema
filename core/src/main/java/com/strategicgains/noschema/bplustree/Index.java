@@ -27,45 +27,41 @@ public class Index<K extends Comparable<K>, V>
 			{
 				LeafNode<K, V> leaf = (LeafNode<K, V>) currentNode;
 				leaf.insert(key, value);
+				LeafNode<K, V> sibling = leaf.split(order);
 
-				if (leaf.size() > order - 1)
+				if (sibling != null)
 				{
-					LeafNode<K, V> parent = leaf.split();
+					InternalNode<K, V> internal = new InternalNode<>();
+					internal.keys.add(sibling.keys.get(0));
+					internal.children.add(leaf);
+					internal.children.add(sibling);
+					root = internal;
 				}
+
 				break;
 			}
 			else
 			{
 				InternalNode<K, V> internal = (InternalNode<K, V>) currentNode;
-				Node<K, V> child = internal.getChildFor(key);
-
-				if (child.isLeaf())
-				{
-					LeafNode<K, V> leaf = (LeafNode<K, V>) child;
-					leaf.insert(key, value);
-
-					if (leaf.size() > order - 1)
-					{
-						LeafNode<K, V> parent = leaf.split();
-					}
-				}
-				else
-				{
-					currentNode = child;
-				}
+				currentNode = internal.getChildFor(key);
 			}
 		}
 	}
 
-	public V search(K key) {
+	public V find(K key)
+	{
+		LeafNode<K, V> leaf = getFirstLeaf(key);
+		return leaf.search(key);
+	}
+
+	protected LeafNode<K, V> getFirstLeaf(K key)
+	{
 		Node<K, V> currentNode = root;
 		while (true)
 		{
 			if (currentNode.isLeaf())
 			{
-				LeafNode<K, V> leaf = (LeafNode<K, V>) currentNode;
-				int idx = leaf.getKeyIndex(key);
-				return idx >= 0;
+				return (LeafNode<K, V>) currentNode;
 			}
 			else
 			{
@@ -126,7 +122,7 @@ public class Index<K extends Comparable<K>, V>
 				}
 				else
 				{
-					// Node is root, make it smaller
+					// AbstractNode is root, make it smaller
 					if (leaf == root) {
 						List<K> newKeys = new ArrayList<>();
 						for (K key : leaf.keys) {
@@ -150,7 +146,7 @@ public class Index<K extends Comparable<K>, V>
 				if (sibling != null) {
 					merge(internal, sibling);
 				} else {
-					// Node is root, make it smaller
+					// AbstractNode is root, make it smaller
 					if (internal == root) {
 						List<K> newKeys = new ArrayList<>();
 						for (K key : internal.keys) {
