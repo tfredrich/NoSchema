@@ -4,9 +4,9 @@ NoSchema is a Java library offering a document-oriented repository pattern for C
 
 In NoSchema, only the keys that form an object's identifier are stored as individual columns. These keys are extracted from the entity at storage time. The object itself is serialized into a storage format through a pluggable serialization process and stored as a binary blob. Currently, NoSchema supports BSON (like MongoDB) and GSON (JSON) serialization formats.
 
-Given that usage of materialized views and indexes in Cassandra are discouraged (at least in high-throughput scenarios), NoSchema introduces the concepts of a PrimaryTable and Views. These are fully managed and encapsulated within a Repository pattern that implements UnitOfWork. This ensures that multiple, denormalized tables are written; one for each key format, eliminating complex coding, reducing time-to-market, increasing developer efficiency and software performance.
+Given that usage of materialized views and indexes in Cassandra are discouraged (at least in high-throughput scenarios), NoSchema introduces the concepts of a `PrimaryTable`, `View`, and `Index`. These are fully managed and encapsulated within a Repository pattern that implements UnitOfWork. This ensures that multiple, denormalized tables are written; one for each key format, eliminating complex coding, reducing time-to-market, increasing developer efficiency and software accuracy.
 
-NoSchema simplifies the management of resource-oriented Plain Old Java Objects (PoJos) with multiple, denormalized views. This is achieved through a straightforward Repository pattern, making it an ideal choice for developers building RESTful APIs to simplify their data storage in Cassandra.
+NoSchema simplifies the management of resource-oriented Plain Old Java Objects (PoJos) with multiple, denormalized views, and indexes. This is achieved through a straightforward Repository pattern, making it an ideal choice for developers building RESTful APIs to simplify their data storage in Cassandra while increasing functionality.
 
 ## Features
 * **Primary Table**: A `PrimaryTable`  is typically identified by a single-unique identifier (like a UUID) is easily defined using the PrimaryTable DSL.
