@@ -47,6 +47,8 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
  * 
  * Also, the repository can create and drop the underlying tables necessary to
  * store the entities.
+ * 
+ * T is the type of entity to be stored in the database.
  */
 public class CassandraRepository<T extends Identifiable>
 implements NoSchemaRepository<T>, SchemaWriter<T>
