@@ -125,11 +125,16 @@ public class EntityDescriptor
 
 		while(superClass != null)
 		{
-			fields.addAll(Arrays.asList(superClass.getDeclaredFields()));
+			Stream.of(superClass.getDeclaredFields()).filter(f -> {
+                int mod = f.getModifiers();
+                return (!Modifier.isAbstract(mod) && !Modifier.isStatic(mod) && !Modifier.isTransient(mod) && !Modifier.isFinal(mod));
+            }).forEach(f -> {
+                f.setAccessible(true);
+                fields.add(f);
+            });
 			superClass = superClass.getSuperclass();
 		}
 
-		fields.forEach(f -> f.setAccessible(true));
 		return fields;
 	}
 }
