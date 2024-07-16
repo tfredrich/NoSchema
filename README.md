@@ -4,20 +4,22 @@ NoSchema is a Java library offering a document-oriented repository pattern for C
 
 In NoSchema, only the keys that form an object's identifier are stored as individual columns. These keys are extracted from the entity at storage time. The object itself is serialized into a storage format through a pluggable serialization process and stored as a binary blob. Currently, NoSchema supports BSON (like MongoDB) and GSON (JSON) serialization formats.
 
-Given that usage of materialized views and indexes in Cassandra are discouraged (at least in high-throughput scenarios), NoSchema introduces the concepts of a PrimaryTable and Views. These are fully managed and encapsulated within a Repository pattern that implements UnitOfWork. This ensures that multiple, denormalized tables are written; one for each key format, eliminating complex coding, reducing time-to-market, increasing developer efficiency and software performance.
+Given that usage of materialized views and indexes in Cassandra are discouraged (at least in high-throughput scenarios), NoSchema introduces the concepts of a `PrimaryTable`, `View`, and `Index`. These are fully managed and encapsulated within a Repository pattern that implements UnitOfWork. This ensures that multiple, denormalized tables are written; one for each key format, eliminating complex coding, reducing time-to-market, increasing developer efficiency and software accuracy.
 
-NoSchema simplifies the management of resource-oriented Plain Old Java Objects (PoJos) with multiple, denormalized views. This is achieved through a straightforward Repository pattern, making it an ideal choice for developers building RESTful APIs to simplify their data storage in Cassandra.
+NoSchema simplifies the management of resource-oriented Plain Old Java Objects (PoJos) with multiple, denormalized views, and indexes. This is achieved through a straightforward Repository pattern, making it an ideal choice for developers building RESTful APIs to simplify their data storage in Cassandra while increasing functionality.
 
 ## Features
 * **Primary Table**: A `PrimaryTable`  is typically identified by a single-unique identifier (like a UUID) is easily defined using the PrimaryTable DSL.
 
-* **Views**: A `View` of a primary table with a completely different key structure is easily created and maintained automatically along with the `PrimaryTable` CRUD operations.
+* **Views**: A `View` of a primary table with a completely different key structure is easily created and maintained automatically along with the `PrimaryTable` CRUD operations via a Unit of Work.
 
-* **UnitOfWork**: NoSchema includes a built-in UnitOfWork class that provides pseudo-transactions across `PrimaryTable`s and `View`s. There are implementations that honor various consistency levels.
+* **Indexes**: An `Index` of the primary tale with a completely different key structure and only a reference to the primary table identifier (`Index`es don't replicate the primary table data) is maintained alongside the `PrimaryTable` via a Unit of Work.
+
+* **UnitOfWork**: NoSchema includes a built-in UnitOfWork class that provides pseudo-transactions across `PrimaryTable`s, `View`s, and `Index`es. There are implementations that honor various consistency levels.
 
 * **Repository Pattern**: The project provides a default repository implementation, `CassandraNoSchemaRepository` to enable quick and easy CRUD operations for storing and retrieving PoJos on Cassandra.
 
-* **Repository Observer**: When you need to "get in the game" of the repository, the `DocumentObserver` class can be implemented to inject your own code into the processing chain. The default, do-nothing implementation is `AbstractDocumentObserver` which can be extended when only a method or two need overriding.
+* **Repository Observer**: When you need to "get in the game" of the repository, the `DocumentObserver` class can be implemented to inject your own code into the processing chain. The default, do-nothing implementation is `AbstractDocumentObserver` which can be extended when only a method or two need overriding. There is also, `EntityObserver` for when the entity contained in the document needs tweaking before or after serialization.
 
 * **Metadata Built-In**: Every document stored in the database contains an underlying `metadata` map column that can be used for things like encryption key names, etc. that apply to the stored, embedded entity.
 

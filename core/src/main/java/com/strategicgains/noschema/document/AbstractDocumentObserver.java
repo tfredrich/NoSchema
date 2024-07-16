@@ -20,7 +20,7 @@ import com.strategicgains.noschema.Identifier;
  * @see Identifier
  */
 public abstract class AbstractDocumentObserver
-        implements DocumentObserver
+implements DocumentObserver
 {
     /**
      * This method is called before reading a document with the given identifier. It allows you to perform any necessary
