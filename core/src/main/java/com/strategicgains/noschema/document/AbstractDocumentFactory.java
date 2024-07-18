@@ -1,5 +1,6 @@
 package com.strategicgains.noschema.document;
 
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
@@ -10,9 +11,9 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  *  
  * @author toddfredrich
  *
- * @param <T>
+ * @param <T> the type of POJO this factory creates Document instances for.
  */
-public abstract class AbstractDocumentFactory<T>
+public abstract class AbstractDocumentFactory<T extends Identifiable>
 {
 	private ObjectCodec<T> codec;
 
@@ -27,22 +28,23 @@ public abstract class AbstractDocumentFactory<T>
 		this.codec = objectCodec;
 	}
 
-	public Document asDocument(T entity)
+	public Document<T> asDocument(T entity)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		byte[] bson = codec.serialize(entity);
 		return asDocument(entity, bson);
 	}
 
-	public Document asDocument(T entity, byte[] bytes)
+	@SuppressWarnings("unchecked")
+	public Document<T> asDocument(T entity, byte[] bytes)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		Identifier id = extractIdentifier(entity);
-		return new Document(id, bytes, entity.getClass());		
+		return new Document<>(id, bytes, (Class<T>) entity.getClass());		
 	}
 
 	@SuppressWarnings("unchecked")
-	public T asPojo(Document document)
+	public T asPojo(Document<T> document)
 	{
 		return codec.deserialize(document.getObject(), (Class<T>) document.getTypeAsClass());
 	}

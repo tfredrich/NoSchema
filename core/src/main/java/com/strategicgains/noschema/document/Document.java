@@ -9,11 +9,13 @@ import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
 /**
+ * A Document is a container for a serialized object that can be stored in a key/value or columnar store.
+ * 
  * The Document class implements the Identifiable interface. It represents a document that can be stored in a key/value
  * or columnar store. The document represents an object serialized as a byte array and has an associated type so the
  * object property, stored as a byte array, can be deserialized into a POJO.
  */
-public class Document
+public class Document<T extends Identifiable>
 implements Identifiable
 {
 	/**
@@ -37,7 +39,7 @@ implements Identifiable
 	private byte[] bytes;
 
 	/**
-	 * The fully-qualified class name of the object stored in this document. This is used to instantiate the
+	 * The fully-qualified class name of the object wrapped by this document. This is used to instantiate the
 	 * bytes as a POJO
 	 */
 	private String type;
@@ -60,7 +62,7 @@ implements Identifiable
 	 * 
 	 * @param type The class of the object to be stored as BSON in this document.
 	 */
-	public Document(Class<?> type)
+	public Document(Class<T> type)
 	{
 		super();
 		this.type = type.getName();
@@ -72,7 +74,7 @@ implements Identifiable
 	 * @param bytes The serialized object as a byte array.
 	 * @param type The class of the object that is serialized.
 	 */
-	public Document(byte[] bytes, Class<?> type)
+	public Document(byte[] bytes, Class<T> type)
 	{
 		this(type);
 		setObject(bytes);
@@ -85,7 +87,7 @@ implements Identifiable
 	 * @param bytes The serialized object as a byte array.
 	 * @param type The class of the object to be stored.
 	 */
-	public Document(Identifier id, byte[] bytes, Class<?> type)
+	public Document(Identifier id, byte[] bytes, Class<T> type)
 	{
 		this(bytes, type);
 		setIdentifier(id);
@@ -196,9 +198,9 @@ implements Identifiable
 	 * 
 	 * @param type The class of the object to be set.
 	 */
-	public void setType(Class<?> type)
+	public void setType(Class<T> type)
 	{
-		setType(type.getClass());
+		setType(type.getClass().getName());
 	}
 
 	/**
@@ -256,7 +258,7 @@ implements Identifiable
 		metadata = new HashMap<>(map);
 	}
 
-	public Document withMetadata(String name, String value)
+	public Document<T> withMetadata(String name, String value)
 	{
 		if (metadata == null) metadata = new HashMap<>();
 		metadata.put(name, value);

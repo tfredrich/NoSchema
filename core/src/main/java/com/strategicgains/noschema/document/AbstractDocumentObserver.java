@@ -19,8 +19,8 @@ import com.strategicgains.noschema.Identifier;
  * @see Identifiable
  * @see Identifier
  */
-public abstract class AbstractDocumentObserver
-implements DocumentObserver
+public abstract class AbstractDocumentObserver<T extends Identifiable>
+implements DocumentObserver<T>
 {
     /**
      * This method is called before reading a document with the given identifier. It allows you to perform any necessary
@@ -38,7 +38,7 @@ implements DocumentObserver
      * @param document The Document object that has been read.
      */
     @Override
-    public void afterRead(Document document) {}
+    public void afterRead(Document<T> document) {}
 
     /**
      * This method is called before creating a new document. It allows you to perform any necessary actions before creating a
@@ -47,7 +47,7 @@ implements DocumentObserver
      * @param document The Document object that will be created.
      */
     @Override
-    public void beforeCreate(Document document) {}
+    public void beforeCreate(Document<T> document) {}
 
     /**
      * This method is called after successfully creating a new document. It allows you to perform any necessary actions after
@@ -56,7 +56,7 @@ implements DocumentObserver
      * @param document The Document object that has been created.
      */
     @Override
-    public void afterCreate(Document document) {}
+    public void afterCreate(Document<T> document) {}
 
     /**
      * This method is called before deleting an existing document. It allows you to perform any necessary actions before
@@ -65,7 +65,7 @@ implements DocumentObserver
      * @param document The Document object that will be deleted.
      */
     @Override
-    public void beforeDelete(Document document) {}
+    public void beforeDelete(Document<T> document) {}
 
     /**
      * This method is called after successfully deleting a document. It allows you to perform any necessary actions after
@@ -74,7 +74,7 @@ implements DocumentObserver
      * @param document The Document object that has been deleted.
      */
     @Override
-    public void afterDelete(Document document) {}
+    public void afterDelete(Document<T> document) {}
 
     /**
      * This method is called before updating an existing document. It allows you to perform any necessary actions before
@@ -83,7 +83,7 @@ implements DocumentObserver
      * @param document The Document object that will be updated.
      */
     @Override
-    public void beforeUpdate(Document document) {}
+    public void beforeUpdate(Document<T> document) {}
 
     /**
      * This method is called after successfully updating a document. It allows you to perform any necessary actions after
@@ -92,7 +92,7 @@ implements DocumentObserver
      * @param document The Document object that has been updated.
      */
     @Override
-    public void afterUpdate(Document document) {}
+    public void afterUpdate(Document<T> document) {}
 
     /**
      * This method is called before encoding an entity into BSON. It allows you to perform any necessary actions before
@@ -102,7 +102,7 @@ implements DocumentObserver
      * @param entity    The identifiable object that will be encoded into BSON.
      */
     @Override
-    public <T extends Identifiable> void beforeEncoding(T entity) {}
+    public void beforeEncoding(T entity) {}
 
     /**
      * This method is called after successfully converting (encoding) an object into BSON. It allows you to perform any
@@ -111,5 +111,5 @@ implements DocumentObserver
      * @param document The Document object that has been encoded into BSON.
      */
     @Override
-    public void afterEncoding(Document document) {}
+    public void afterEncoding(Document<T> document) {}
 }

@@ -6,7 +6,7 @@ import java.util.List;
 
 public class Index<K extends Comparable<K>, V>
 {
-	private int order;
+/*	private int order;
 	private int mid;
 	private Node<K, V> root;
 
@@ -203,5 +203,5 @@ public class Index<K extends Comparable<K>, V>
 			child = parent;
 			parent = (InternalNode<K, V>) parent.children.get(idx);
 		}
-	}
+	} */
 }

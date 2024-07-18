@@ -48,7 +48,8 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
  * Also, the repository can create and drop the underlying tables necessary to
  * store the entities.
  * 
- * T is the type of entity to be stored in the database.
+ * T is the type of entity to be stored in the database, which must implement
+ * the Identifiable interface.
  */
 public class CassandraRepository<T extends Identifiable>
 implements NoSchemaRepository<T>, SchemaWriter<T>
@@ -58,13 +59,13 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	// The primary table and its views.
 	private PrimaryTable table;
 	// The statement factory used to create the CQL statements within the UnitOfWork.
-	private CassandraStatementFactory<T> statementFactory;
+	private CassandraStatementFactory<Document<T>> statementFactory;
 	// The factories used to encode and decode entities.
 	private Map<String, CassandraDocumentFactory<T>> factoriesByTable = new HashMap<>();
 	// The type of UnitOfWork to create.
 	private UnitOfWorkType unitOfWorkType;
 	// The observers used to observe the encoding, creation, update, and deletion of entities.
-	private List<DocumentObserver> documentObservers = new ArrayList<>();
+	private List<DocumentObserver<T>> documentObservers = new ArrayList<>();
 	private List<EntityObserver<T>> entityObservers = new ArrayList<>();
 
 
@@ -131,7 +132,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return table.name();
 	}
 
-	public CassandraRepository<T> withDocumentObserver(DocumentObserver observer)
+	public CassandraRepository<T> withDocumentObserver(DocumentObserver<T> observer)
 	{
 		documentObservers.add(observer);
 		return this;
@@ -157,7 +158,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	{
 		try
 		{
-			CassandraUnitOfWork uow = createUnitOfWork();
+			CassandraUnitOfWork<T> uow = createUnitOfWork();
 			T created = create(entity, uow);
 			uow.commit();
 			return created;
@@ -170,15 +171,15 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return null;
 	}
 
-	public T create(T entity, CassandraUnitOfWork uow)
+	public T create(T entity, CassandraUnitOfWork<T> uow)
 	{
 		entityObservers.forEach(o -> o.beforeCreate(entity));
 		final AtomicReference<byte[]> serialized = new AtomicReference<>();
 		final AtomicReference<byte[]> serializedId = new AtomicReference<>();
-		final AtomicReference<Document> primaryDocument = new AtomicReference<>();
+		final AtomicReference<Document<T>> primaryDocument = new AtomicReference<>();
 
 		table.stream().forEach(t -> {
-			final Document d;
+			final Document<T> d;
 
 			if (serialized.get() == null)
 			{
@@ -226,7 +227,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	{
 		try
 		{
-			CassandraUnitOfWork uow = createUnitOfWork();
+			CassandraUnitOfWork<T> uow = createUnitOfWork();
 			delete(id, uow);
 			uow.commit();
 		}
@@ -236,15 +237,15 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		}
 	}
 
-	public void delete(Identifier id, CassandraUnitOfWork uow)
+	public void delete(Identifier id, CassandraUnitOfWork<T> uow)
 	{
 		final T entity = read(id);
 		entityObservers.forEach(o -> o.beforeDelete(entity));
 		final AtomicReference<byte[]> serialized = new AtomicReference<>();
-		final AtomicReference<Document> primaryDocument = new AtomicReference<>();
+		final AtomicReference<Document<T>> primaryDocument = new AtomicReference<>();
 
 		table.stream().forEach(t -> {
-			final Document d;
+			final Document<T> d;
 
 			if (serialized.get() == null)
 			{
@@ -477,7 +478,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	{
 		try
 		{
-			CassandraUnitOfWork uow = createUnitOfWork();
+			CassandraUnitOfWork<T> uow = createUnitOfWork();
 			T updated = update(entity, original, uow);
 			uow.commit();
 			return updated;
@@ -490,9 +491,9 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return null;
 	}
 
-	public T update(T entity, T original, CassandraUnitOfWork uow)
+	public T update(T entity, T original, CassandraUnitOfWork<T> uow)
 	{
-		AtomicReference<Document> originalDocument = new AtomicReference<>();
+		AtomicReference<Document<T>> originalDocument = new AtomicReference<>();
 		final T originalEntity;
 
 		if (original != null)
@@ -509,7 +510,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 		documentObservers.forEach(o -> o.beforeUpdate(originalDocument.get()));
 		final byte[] serialized = originalDocument.get().getObject();
-		final AtomicReference<Document> updatedDocument = new AtomicReference<>();
+		final AtomicReference<Document<T>> updatedDocument = new AtomicReference<>();
 
 		table.stream().forEach(t -> {
 			if (updatedDocument.get() == null)
@@ -517,8 +518,8 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 				documentObservers.forEach(o -> o.beforeEncoding(entity));
 			}
 
-			final Document updatedViewDocument = asDocument(t.name(), entity);
-			final Document originalViewDocument = asDocument(t.name(), originalEntity, serialized);
+			final Document<T> updatedViewDocument = asDocument(t.name(), entity);
+			final Document<T> originalViewDocument = asDocument(t.name(), originalEntity, serialized);
 
 			if (updatedDocument.get() == null)
 			{
@@ -561,7 +562,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	{
 		try
 		{
-			CassandraUnitOfWork uow = createUnitOfWork();
+			CassandraUnitOfWork<T> uow = createUnitOfWork();
 			T upserted = upsert(entity, uow);
 			uow.commit();
 			return upserted;
@@ -574,13 +575,13 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return null;
 	}
 
-	public T upsert(T entity, CassandraUnitOfWork uow)
+	public T upsert(T entity, CassandraUnitOfWork<T> uow)
 	{
 		final AtomicReference<byte[]> bson = new AtomicReference<>();
-		final AtomicReference<Document> updated = new AtomicReference<>();
+		final AtomicReference<Document<T>> updated = new AtomicReference<>();
 
 		table.stream().forEach(view -> {
-			final Document d;
+			final Document<T> d;
 
 			if (bson.get() == null)
 			{
@@ -603,17 +604,17 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return entity;
 	}
 
-	protected CassandraUnitOfWork createUnitOfWork()
+	protected CassandraUnitOfWork<T> createUnitOfWork()
 	{
-		return new CassandraUnitOfWork(session, statementFactory, unitOfWorkType);
+		return new CassandraUnitOfWork<>(session, statementFactory, unitOfWorkType);
 	}
 
-	private CompletableFuture<Document> readAsDocument(Identifier id)
+	private CompletableFuture<Document<T>> readAsDocument(Identifier id)
 	throws ItemNotFoundException
 	{
 		return readRow(table.name(), id)
 			.thenApply(row -> {
-				Document document = asDocument(table.name(), row);
+				Document<T> document = asDocument(table.name(), row);
 				T entity = asEntity(table.name(), document);
 				// TODO: This is a hack. Need to load this from the database.
 				document.setIdentifier(entity.getIdentifier());
@@ -648,35 +649,35 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 	private T asEntity(String viewName, Row row)
 	{
-		Document d = asDocument(viewName, row);
+		Document<T> d = asDocument(viewName, row);
 
 		if (d == null) return null;
 
 		return asEntity(viewName, d);
 	}
 
-	private Document asDocument(String viewName, Row row)
+	private Document<T> asDocument(String viewName, Row row)
 	{
 		return factoriesByTable.get(viewName).asDocument(row);
 	}
 
-	private T asEntity(String viewName, Document d)
+	private T asEntity(String viewName, Document<T> d)
 	{
 		return factoriesByTable.get(viewName).asPojo(d);
 	}
 
-	protected Document asDocument(T entity)
+	protected Document<T> asDocument(T entity)
 	{
 		return asDocument(table.name(), entity);
 	}
 
-	private Document asDocument(String viewName, T entity)
+	private Document<T> asDocument(String viewName, T entity)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		return factoriesByTable.get(viewName).asDocument(entity);
 	}
 
-	private Document asDocument(String viewName, T entity, byte[] bytes)
+	private Document<T> asDocument(String viewName, T entity, byte[] bytes)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		return factoriesByTable.get(viewName).asDocument(entity, bytes);

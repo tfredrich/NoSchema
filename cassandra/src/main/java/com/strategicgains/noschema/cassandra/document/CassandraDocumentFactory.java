@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.sql.Date;
 
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
@@ -13,7 +14,7 @@ import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
-public class CassandraDocumentFactory<T>
+public class CassandraDocumentFactory<T extends Identifiable>
 extends AbstractDocumentFactory<T>
 {
 	private KeyDefinition keys;
@@ -30,14 +31,14 @@ extends AbstractDocumentFactory<T>
 		setKeyDefinition(keys);
 	}
 
-	public Document asDocument(Row row)
+	public Document<T> asDocument(Row row)
 	{
 		if (row == null)
 		{
 			return null;
 		}
 
-		Document d = new Document();
+		Document<T> d = new Document<>();
 		ByteBuffer b = row.getByteBuffer(Columns.OBJECT);
 
 		if (b != null && b.hasArray())
