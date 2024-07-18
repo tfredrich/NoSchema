@@ -21,6 +21,7 @@
 		<module>cassandra</module>
 		<module>bson-provider</module>
 		<module>gson-provider</module>
+		<module>jackson-provider</module>
 	</modules>
 
 	<dependencies>
