@@ -29,7 +29,10 @@ implements UnitOfWork
     private final CqlSession session;
     private final CassandraStatementFactory<Document<T>> statementFactory;
     private final UnitOfWorkChangeSet<Document<T>> changeSet = new UnitOfWorkChangeSet<>();
+    private final UnitOfWorkType unitOfWorkType;
     private final UnitOfWorkCommitStrategy commitStrategy;
+    private final List<CassandraUnitOfWork<?>> children = new ArrayList<>();
+    private boolean isRoot = true;
 
     public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory<Document<T>> statementFactory)
     {
@@ -40,6 +43,7 @@ implements UnitOfWork
     {
         this.session = Objects.requireNonNull(session);
         this.statementFactory = Objects.requireNonNull(statementFactory);
+        this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
         this.commitStrategy = Objects.requireNonNull(unitOfWorkType)
         	.asCommitStrategy(session);
     }
@@ -198,5 +202,29 @@ implements UnitOfWork
 	public Document<T> readClean(Identifier id)
 	{
 		return changeSet.findClean(id);
+	}
+
+	public <U extends Identifiable> CassandraUnitOfWork<T> addChild(CassandraUnitOfWork<U> child)
+	{
+		child.setRoot(false);
+		children.add(child);
+		return this;
+	}
+	
+	public <U extends Identifiable> CassandraUnitOfWork<U> newChild(CassandraStatementFactory<Document<U>> statementFactory)
+	{
+		CassandraUnitOfWork<U> child = new CassandraUnitOfWork<>(session, statementFactory, unitOfWorkType);
+		addChild(child);
+		return child;
+	}
+
+	private void setRoot(boolean isRoot)
+	{
+		this.isRoot = isRoot;
+	}
+
+	public boolean isRoot()
+	{
+		return isRoot;
 	}
 }
