@@ -74,13 +74,14 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		this(session, table, UnitOfWorkType.LOGGED, codec);
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, ObjectCodec<T> codec)
 	{
 		super();
 		this.session = Objects.requireNonNull(session);
 		this.table = Objects.requireNonNull(table);
 		this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
-		this.statementFactory = new CassandraStatementFactory<>(session, table, codec);
+		this.statementFactory = new CassandraStatementFactory(session, table, codec);
 		factoriesByTable.put(table.name(), new CassandraDocumentFactory<>(table.keys(), codec));
 		table.views().forEach(view ->
 			this.factoriesByTable.put(view.name(), new CassandraDocumentFactory<>(view.keys(), codec))
