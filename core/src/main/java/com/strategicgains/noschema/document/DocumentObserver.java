@@ -21,7 +21,8 @@ import com.strategicgains.noschema.Identifier;
 public interface DocumentObserver<T extends Identifiable>
 {
 	/**
-	 * Called before a Document is read.
+	 * Called before a Document is read. Any changes to the identifier
+	 * will be reflected in the read operation.
 	 *
 	 * @param identifier the identifier of the Document to be read
 	 */
@@ -35,9 +36,10 @@ public interface DocumentObserver<T extends Identifiable>
 	void afterRead(Document<T> document);
 
 	/**
-	 * Called before a Document is created.
+	 * Called before a Document is created. Any changes to the document
+	 * will be reflected in the persisted document.
 	 *
-	 * @param document the Document to be created
+	 * @param document the Document to be created.
 	 */
 	void beforeCreate(Document<T> document);
 
@@ -63,9 +65,10 @@ public interface DocumentObserver<T extends Identifiable>
 	void afterDelete(Document<T> document);
 
 	/**
-	 * Called before a Document is updated.
+	 * Called before a Document is updated. Any changes to the document
+	 * will be reflected in the persisted document.
 	 *
-	 * @param document the Document to be updated
+	 * @param document the Document to be updated.
 	 */
 	void beforeUpdate(Document<T> document);
 
