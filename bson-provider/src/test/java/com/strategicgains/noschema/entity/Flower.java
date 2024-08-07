@@ -17,6 +17,15 @@ extends AbstractEntity
 	private Boolean isBlooming;
 	private Float height;
 
+	private int primitiveInt = 0;
+	private boolean isPrimitiveBoolean = false;
+	private double primitiveDouble = 0.0;
+	private long primitiveLong = 0L;
+	private short primitiveShort = 0;
+	private byte primitiveByte = 0;
+	private char primitiveChar = ' ';
+	private float primitiveFloat = 0.0f;
+
 	public Flower() {
 		super();
 	}
@@ -59,6 +68,46 @@ extends AbstractEntity
 
 	public void setColors(List<String> colors) {
 		this.colors = colors;
+	}
+
+	public int getPrimitiveInt()
+	{
+		return primitiveInt;
+	}
+
+	public boolean isPrimitiveBoolean()
+    {
+        return isPrimitiveBoolean;
+    }
+
+	public double getPrimitiveDouble()
+	{
+		return primitiveDouble;
+	}
+
+	public long getPrimitiveLong()
+	{
+		return primitiveLong;
+	}
+
+	public short getPrimitiveShort()
+	{
+		return primitiveShort;
+	}
+
+	public byte getPrimitiveByte()
+	{
+		return primitiveByte;
+	}
+
+	public char getPrimitiveChar()
+	{
+		return primitiveChar;
+	}
+
+	public float getPrimitiveFloat()
+	{
+		return primitiveFloat;
 	}
 
 	@Override
