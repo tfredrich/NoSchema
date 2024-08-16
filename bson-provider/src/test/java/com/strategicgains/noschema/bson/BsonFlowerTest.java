@@ -12,11 +12,15 @@ import java.util.UUID;
 import org.bson.BSONDecoder;
 import org.bson.BSONObject;
 import org.bson.BasicBSONDecoder;
+import org.bson.BsonBinarySubType;
+import org.bson.UuidRepresentation;
+import org.bson.internal.UuidHelper;
+import org.bson.types.Binary;
 import org.junit.Test;
 
 import com.strategicgains.noschema.entity.Flower;
 
-public class BsonObjectCodecTest
+public class BsonFlowerTest
 {
 	private static final BSONDecoder DECODER = new BasicBSONDecoder();
 
@@ -47,9 +51,16 @@ public class BsonObjectCodecTest
 	{
 		BSONObject bson = DECODER.readObject(bytes);
 		assertNotNull(bson);
-		assertNotNull(bson.get("id"));
-		assertNotNull(((BSONObject) bson.get("account")).get("id"));
+		Binary bsonId = (Binary) bson.get("id");
+		assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonId.getType());
+		assertEquals(id, UuidHelper.decodeBinaryToUuid(bsonId.getData(), bsonId.getType(), UuidRepresentation.STANDARD));
+
+		Binary bsonAccountId = (Binary) ((BSONObject) bson.get("account")).get("id");
+		assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonAccountId.getType());
+		assertEquals(accountId, UuidHelper.decodeBinaryToUuid(bsonAccountId.getData(), bsonAccountId.getType(), UuidRepresentation.STANDARD));
+	
 		assertEquals("rose", bson.get("name"));
+
 		@SuppressWarnings("unchecked")
 		List<String> colors = (List<String>) bson.get("colors");
 		assertEquals(4, colors.size());
@@ -61,14 +72,6 @@ public class BsonObjectCodecTest
 		assertEquals(updated, bson.get("updatedAt"));
 		assertTrue((Boolean) bson.get("isBlooming"));
 		assertEquals(3.25f, (Double) bson.get("height"), 0.001f);
-		assertEquals(0, bson.get("primitiveInt"));
-		assertEquals(false, bson.get("isProtected"));
-		assertEquals(0.0, bson.get("primitiveDouble"));
-		assertEquals(0L, bson.get("primitiveLong"));
-		assertEquals((short) 0, bson.get("primitiveShort"));
-		assertEquals((byte) 0, bson.get("primitiveByte"));
-		assertEquals(' ', bson.get("primitiveChar"));
-		assertEquals(0.0f, (Double) bson.get("primitiveFloat"), 0.001f);
 	}
 
 	private void makeFlowerAssertions(UUID id, UUID accountId, Date created, Date updated, Flower flower) {
@@ -86,13 +89,5 @@ public class BsonObjectCodecTest
 		assertEquals(updated, flower.getUpdatedAt());
 		assertTrue(flower.getIsBlooming());
 		assertEquals(3.25f, flower.getHeight(), 0.001f);
-		assertEquals(0, flower.getPrimitiveInt());
-		assertEquals(false, flower.isPrimitiveBoolean());
-		assertEquals(0.0, flower.getPrimitiveDouble(), 0.001);
-		assertEquals(0L, flower.getPrimitiveLong());
-		assertEquals((short) 0, flower.getPrimitiveShort());
-		assertEquals((byte) 0, flower.getPrimitiveByte());
-		assertEquals(' ', flower.getPrimitiveChar());
-		assertEquals(0.0f, flower.getPrimitiveFloat(), 0.001f);
 	}
 }

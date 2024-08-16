@@ -26,8 +26,8 @@ public class FieldDescriptor
 	private Codec<? super Object> codec;
 
 	/**
-	 * If there is no codec to process the field, then the referenced class will be treated as individual properties
-	 * described by this EntityDescriptor.
+	 * If there is no codec to process the field, then the referenced class will be treated as nestec, individual
+	 * properties described by this EntityDescriptor.
 	 */
 	private EntityDescriptor reference;
 
@@ -73,6 +73,11 @@ public class FieldDescriptor
 	}
 
 	public boolean isProperty()
+	{
+		return hasCodec();
+	}
+
+	public boolean hasCodec()
 	{
 		return (codec != null);
 	}
