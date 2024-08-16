@@ -14,7 +14,7 @@
 	</parent>
 
 	<properties>
-		<bson.version>4.11.1</bson.version>
+		<bson.version>5.1.2</bson.version>
 	</properties>
 
 	<dependencies>
