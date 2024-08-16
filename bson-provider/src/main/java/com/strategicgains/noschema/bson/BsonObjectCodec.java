@@ -25,6 +25,15 @@ import org.bson.io.BasicOutputBuffer;
 import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DescriptorException;
 
+/**
+ * A BSON-based implementation of ObjectCodec that serializes and
+ * deserializes objects to and from BSON.
+ * 
+ * This implementation uses the MongoDB Java driver's BSON library
+ * to serialize and deserialize objects.
+ * 
+ * @param <T> the type of object to serialize and deserialize.
+ */
 public final class BsonObjectCodec<T>
 implements ObjectCodec<T>
 {
