@@ -59,7 +59,7 @@ public class Trie<V>
 		return found.isPresent() && found.get().isEndOfWord();
 	}
 
-	public List<V> getMetadata(String word)
+	public List<V> getValues(String word)
 	{
 		return findNode(word).map(TrieNode::getValues).orElse(null);
 	}
