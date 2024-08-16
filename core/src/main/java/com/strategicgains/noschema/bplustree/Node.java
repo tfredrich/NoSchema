@@ -3,6 +3,14 @@ package com.strategicgains.noschema.bplustree;
 public interface Node<K extends Comparable<K>, V>
 {
 	/**
+	 * Get the middle key of this node given the order of the B+Tree.
+	 * 
+	 * @param order the order of the B+Tree.
+	 * @return the middle key of this node.
+	 */
+	K getMiddleKey(int order);
+
+	/**
 	 * Determine if this node is a leaf node.
 	 * 
 	 * @return true if this node is a leaf node; false otherwise.

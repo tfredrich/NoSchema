@@ -29,6 +29,7 @@ implements Node<K, V>
 	protected AbstractNode(List<K> keys)
 	{
 		this.keys = new ArrayList<>(keys);
+		Collections.sort(this.keys);
 	}
 
 	/**
@@ -55,8 +56,13 @@ implements Node<K, V>
 	/**
 	 * Insert a key into this node at the correct position.
 	 * 
+	 * The return value is that of Collections.binarySearch(), with the index negated and decremented by 1.
+	 * This is the index where the values corresponding to the key should be inserted.
+	 * 
+	 * If the key already exists in the node, the key is not inserted but the index of the existing key is returned.
+	 * 
 	 * @param entry the entry (with key and value) to insert.
-	 * @return the index of the inserted key.
+	 * @return the index of the inserted key or the existing key.
 	 */
 	int insertKey(K key)
 	{
@@ -64,8 +70,7 @@ implements Node<K, V>
 
 		if (idx < 0)
 		{
-			idx = -(idx + 1);
-			keys.add(idx, key);
+			keys.add(-(idx + 1), key);
 		}
 
 		return idx;
@@ -77,9 +82,23 @@ implements Node<K, V>
 	 * 
 	 * @param sibling the sibling node to merge into this node.
 	 */
-	void merge(AbstractNode<K, V> sibling)
+	@Override
+	public void merge(Node<K, V> sibling)
 	{
-		keys.addAll(sibling.keys);
+		AbstractNode<K, V> node = (AbstractNode<K, V>) sibling;
+		keys.addAll(node.keys);
+	}
+
+	/**
+	 * Get the middle key of this node given the order of the B+Tree.
+	 * 
+	 * @param order the order of the B+Tree.
+	 * @return the middle key of this node.
+	 */
+	@Override
+	public K getMiddleKey(int order)
+	{
+		return keys.get(getMiddleKeyIndex(order));
 	}
 
 	/**
@@ -124,5 +143,10 @@ implements Node<K, V>
 	int getKeyIndex(K key)
 	{
 		return Collections.binarySearch(keys, key);
+	}
+
+	int getMiddleKeyIndex(int order)
+	{
+		return (order + 1) / 2;
 	}
 }

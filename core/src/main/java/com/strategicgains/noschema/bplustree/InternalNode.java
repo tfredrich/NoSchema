@@ -31,9 +31,9 @@ extends AbstractNode<K, V>
 
 	void insert(K key, Node<K, V> left, Node<K, V> right)
 	{
-//		int index = insertKey(key);
-//		children.set(index, left);
-//		children.add(index + 1, right);
+		int index = insertKey(key);
+		children.set(index, left);
+		children.add(index + 1, right);
 	}
 
 	@Override
