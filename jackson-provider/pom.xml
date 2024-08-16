@@ -2,9 +2,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<name>NoSchema BSON Codec</name>
-	<description>BSON de/serialization provider for the NoSchema library.</description>
-	<artifactId>noschema-bson-provider</artifactId>
+	<name>NoSchema Jackson Codec</name>
+	<description>Jackson de/serialization provider for the NoSchema library.</description>
+	<artifactId>noschema-jackson-provider</artifactId>
 	<packaging>jar</packaging>
 
 	<parent>
@@ -14,7 +14,7 @@
 	</parent>
 
 	<properties>
-		<bson.version>5.1.2</bson.version>
+		<jackson.version>2.17.1</jackson.version>
 	</properties>
 
 	<dependencies>
@@ -24,9 +24,14 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
-		    <groupId>org.mongodb</groupId>
-		    <artifactId>bson</artifactId>
-		    <version>${bson.version}</version>
+		    <groupId>com.fasterxml.jackson.core</groupId>
+		    <artifactId>jackson-databind</artifactId>
+		    <version>${jackson.version}</version>
 		</dependency>
+	    <dependency>
+	        <groupId>de.undercouch</groupId>
+	        <artifactId>bson4jackson</artifactId>
+	        <version>2.15.1</version>
+	    </dependency>
 	</dependencies>
 </project>

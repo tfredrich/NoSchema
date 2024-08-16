@@ -15,7 +15,7 @@ public class BsonCodecTimer
 	private static final String ACCOUNT_ID = "a87d3bff-6997-4739-ab4e-ded0cc85700f";
 	private static final String FLOWER_ID = "8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0";
 	private static final List<String> COLORS = Arrays.asList("red", "white", "pink", "yellow");
-	private static final int SERIALIZATION_COUNT = 500000;
+	private static final int SERIALIZATION_COUNT = 1000000;
 
 	private BsonObjectCodec<Flower> codec = new BsonObjectCodec<>();
 	private long startedAt;
@@ -69,7 +69,7 @@ public class BsonCodecTimer
 		{
 			long totalTime = endedAt - startedAt;
 			double avgTime = (double) totalTime / (double) iterations;
-			return String.format("Total Time (ms): %d, Mean (ms): %.5f (%.2f micros)", totalTime, avgTime, avgTime * 1000.0);
+			return String.format("Total Time (ms): %d, Mean (ms): %.5f (%.2f microseconds)", totalTime, avgTime, avgTime * 1000.0);
 		}
 
 		return "ERROR: Invalid configuration";

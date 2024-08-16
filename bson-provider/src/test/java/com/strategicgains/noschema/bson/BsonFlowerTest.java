@@ -12,11 +12,15 @@ import java.util.UUID;
 import org.bson.BSONDecoder;
 import org.bson.BSONObject;
 import org.bson.BasicBSONDecoder;
+import org.bson.BsonBinarySubType;
+import org.bson.UuidRepresentation;
+import org.bson.internal.UuidHelper;
+import org.bson.types.Binary;
 import org.junit.Test;
 
 import com.strategicgains.noschema.entity.Flower;
 
-public class BsonObjectCodecTest
+public class BsonFlowerTest
 {
 	private static final BSONDecoder DECODER = new BasicBSONDecoder();
 
@@ -47,9 +51,16 @@ public class BsonObjectCodecTest
 	{
 		BSONObject bson = DECODER.readObject(bytes);
 		assertNotNull(bson);
-		assertNotNull(bson.get("id"));
-		assertNotNull(((BSONObject) bson.get("account")).get("id"));
+		Binary bsonId = (Binary) bson.get("id");
+		assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonId.getType());
+		assertEquals(id, UuidHelper.decodeBinaryToUuid(bsonId.getData(), bsonId.getType(), UuidRepresentation.STANDARD));
+
+		Binary bsonAccountId = (Binary) ((BSONObject) bson.get("account")).get("id");
+		assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonAccountId.getType());
+		assertEquals(accountId, UuidHelper.decodeBinaryToUuid(bsonAccountId.getData(), bsonAccountId.getType(), UuidRepresentation.STANDARD));
+	
 		assertEquals("rose", bson.get("name"));
+
 		@SuppressWarnings("unchecked")
 		List<String> colors = (List<String>) bson.get("colors");
 		assertEquals(4, colors.size());

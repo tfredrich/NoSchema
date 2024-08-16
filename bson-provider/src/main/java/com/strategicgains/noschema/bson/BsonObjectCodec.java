@@ -1,10 +1,12 @@
 package com.strategicgains.noschema.bson;
 
+import static java.util.Arrays.asList;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+import static org.bson.codecs.configuration.CodecRegistries.withUuidRepresentation;
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,28 +18,34 @@ import org.bson.BsonWriter;
 import org.bson.UuidRepresentation;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.EncoderContext;
-import org.bson.codecs.EnumCodecProvider;
-import org.bson.codecs.IterableCodecProvider;
-import org.bson.codecs.MapCodecProvider;
-import org.bson.codecs.UuidCodecProvider;
-import org.bson.codecs.ValueCodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.conversions.Bson;
 import org.bson.io.BasicOutputBuffer;
 
 import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DescriptorException;
 
+/**
+ * A BSON-based implementation of ObjectCodec that serializes and
+ * deserializes objects to and from BSON.
+ * 
+ * This implementation uses the MongoDB Java driver's BSON library
+ * to serialize and deserialize objects.
+ * 
+ * @param <T> the type of object to serialize and deserialize.
+ */
 public final class BsonObjectCodec<T>
 implements ObjectCodec<T>
 {
-	public static final CodecRegistry DEFAULT_CODEC_REGISTRY =
-			fromProviders(Arrays.asList(
-				new UuidCodecProvider(UuidRepresentation.STANDARD),
-				new ValueCodecProvider(),
-				new IterableCodecProvider(),
-				new MapCodecProvider(),
-				new EnumCodecProvider()
-			));
+	public static final CodecRegistry NOSCHEMA_CODEC_REGISTRY = 
+		withUuidRepresentation(
+			fromRegistries(
+				Bson.DEFAULT_CODEC_REGISTRY,		// Provides codecs for BSON types.
+				fromProviders(asList(
+					new PrimitiveCodecProvider()	// Provides codecs for primitive types.
+			))),
+			UuidRepresentation.STANDARD
+		);
 
 	Map<Class<?>, EntityDescriptor> descriptorsByClass = new HashMap<>();
 
@@ -141,7 +149,8 @@ implements ObjectCodec<T>
 		EntityDescriptor descriptor = descriptorsByClass.get(entity.getClass());
 
 		if (descriptor != null) return descriptor;
-		descriptor = EntityDescriptor.from(entity, DEFAULT_CODEC_REGISTRY);
+
+		descriptor = EntityDescriptor.from(entity, NOSCHEMA_CODEC_REGISTRY);
 		descriptorsByClass.put(descriptor.getDescribedClass(), descriptor);
 		return descriptor;
 	}
