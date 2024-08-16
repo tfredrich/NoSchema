@@ -96,6 +96,12 @@ public class TrieNode<V>
 	 */
 	public void setChild(char ch, TrieNode<V> child)
 	{
+		if (child == null)
+		{
+			children.remove(ch);
+			return;
+		}
+
 		children.put(ch, child);
 	}
 
