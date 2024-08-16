@@ -82,7 +82,7 @@ public class TrieTest
 	}
 
 	@Test
-	public void shouldSearchWithFilter()
+	public void shouldSearchWithWordFilter()
 	{
 		Trie<Integer> trie = new Trie<>();
 		trie.insert("hello");
@@ -90,9 +90,23 @@ public class TrieTest
 		trie.insert("bye");
 		trie.insert("byebye");
 		trie.insert("yyyyyyyyyyyy");
-		List<String> filteredWords = trie.searchWithFilter(Arrays.asList(word -> word.length() > 5, word -> word.matches(".*[aeiou].*")));
+		List<String> filteredWords = trie.searchWithFilter(Arrays.asList((word, node) -> word.length() > 5, (word, node) -> word.matches(".*[aeiou].*")));
 		assertEquals(2, filteredWords.size());
 		assertEquals("byebye", filteredWords.get(0));
 		assertEquals("hellos", filteredWords.get(1));
+	}
+
+	@Test
+	public void shouldSearchWithValueFilter()
+	{
+		Trie<Integer> trie = new Trie<>();
+		trie.insert("hello", 1);
+		trie.insert("hellos", 2);
+		trie.insert("bye", 3);
+		trie.insert("byebye", 4);
+		trie.insert("yyyyyyyyyyyy", 5);
+		List<String> filteredWords = trie.searchWithFilter(Arrays.asList((word, node) -> word.length() > 5, (word, node) -> word.matches(".*[aeiou].*"), (word, node) -> node.getValues().contains(4)));
+		assertEquals(1, filteredWords.size());
+		assertEquals("byebye", filteredWords.get(0));
 	}
 }

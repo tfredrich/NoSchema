@@ -3,7 +3,7 @@ package com.strategicgains.noschema.trie;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 /**
  * This Trie (pronounced "try") implementation is a tree data structure used for efficient retrieval
@@ -153,17 +153,16 @@ public class Trie<V>
 		});
 	}
 
-	public List<String> searchWithFilter(List<Function<String, Boolean>> filters)
+	public List<String> searchWithFilter(List<BiFunction<String, TrieNode<V>, Boolean>> filters)
 	{
 		List<String> words = new ArrayList<>();
-		dfsWithFilter(this.root, new StringBuilder(), words, filters);
+		depthFirstSearch(this.root, new StringBuilder(), words, filters);
 		return words;
 	}
 
-	private void dfsWithFilter(TrieNode<V> node, StringBuilder prefix, List<String> words, List<Function<String, Boolean>> filters)
+	private void depthFirstSearch(TrieNode<V> node, StringBuilder prefix, List<String> words, List<BiFunction<String, TrieNode<V>, Boolean>> filters)
 	{
-		// TODO: this is applying filters to the keys, not the values. Need to apply filters to metadata.
-		if (node.isEndOfWord() && filters.stream().allMatch(filter -> filter.apply(prefix.toString())))
+		if (node.isEndOfWord() && filters.stream().allMatch(filter -> filter.apply(prefix.toString(), node)))
 		{
 			words.add(prefix.toString());
 		}
@@ -171,7 +170,7 @@ public class Trie<V>
 		node.forEachChild((ch, child) ->
 		{
 			prefix.append(ch);
-			dfsWithFilter(child, prefix, words, filters);
+			depthFirstSearch(child, prefix, words, filters);
 			prefix.deleteCharAt(prefix.length() - 1);
 		});
 	}
