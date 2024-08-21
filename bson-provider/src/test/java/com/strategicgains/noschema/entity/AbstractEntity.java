@@ -3,19 +3,14 @@ package com.strategicgains.noschema.entity;
 import java.util.Date;
 import java.util.UUID;
 
-public abstract class AbstractEntity
+public abstract class AbstractEntity<T>
 {
-	private UUID id;
+	private T id;
 	private AccountReference account = new AccountReference();
 	private Date createdAt;
 	private Date updatedAt;
 
-	public AbstractEntity()
-	{
-		this(UUID.randomUUID());
-	}
-
-	public AbstractEntity(UUID id)
+	public AbstractEntity(T id)
 	{
 		super();
 		this.id = id;
@@ -23,11 +18,11 @@ public abstract class AbstractEntity
 		this.setCreatedAt(now);
 		this.setUpdatedAt(now);
 	}
-	public UUID getId() {
+	public T getId() {
 		return id;
 	}
 
-	public void setId(UUID id) {
+	public void setId(T id) {
 		this.id = id;
 	}
 

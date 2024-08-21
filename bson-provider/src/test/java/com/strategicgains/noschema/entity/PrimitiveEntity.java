@@ -9,7 +9,7 @@ import java.util.UUID;
  * @author Todd Fredrich
  */
 public class PrimitiveEntity
-extends AbstractEntity
+extends AbstractEntity<UUID>
 {
 	private int primitiveInt = 0;
 	private boolean isPrimitiveBoolean = false;
@@ -22,7 +22,7 @@ extends AbstractEntity
 	private float primitiveFloat = 0.0f;
 
 	public PrimitiveEntity() {
-		super();
+		super(UUID.randomUUID());
 	}
 
 	public PrimitiveEntity(UUID id)

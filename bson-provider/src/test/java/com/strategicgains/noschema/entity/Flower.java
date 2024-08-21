@@ -10,7 +10,7 @@ import java.util.UUID;
  * @author tfredrich
  */
 public class Flower
-extends AbstractEntity
+extends AbstractEntity<UUID>
 {
 	private String name;
 	private List<String> colors;
@@ -18,7 +18,7 @@ extends AbstractEntity
 	private Float height;
 
 	public Flower() {
-		super();
+		super(UUID.randomUUID());
 	}
 
 	public Flower(UUID id, String name, Boolean isBlooming, Float height, List<String> colors) {

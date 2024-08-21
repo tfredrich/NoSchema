@@ -25,10 +25,8 @@ public class BsonFlowerTest
 {
 	private static final BSONDecoder DECODER = new BasicBSONDecoder();
 
-	private BsonObjectCodec<Flower> codec = new BsonObjectCodec<>();
-
 	@Test
-	public void shouldEncodeAndDecode()
+	public void shouldEncodeAndDecodeWithSameCodec()
 	{
 		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
 		UUID accountId = UUID.fromString("a87d3bff-6997-4739-ab4e-ded0cc85700f");
@@ -40,10 +38,33 @@ public class BsonFlowerTest
 		flower.setCreatedAt(createdAt);
 		flower.setUpdatedAt(updatedAt);
 
+		BsonObjectCodec<Flower> codec = new BsonObjectCodec<>();
 		byte[] bytes = codec.serialize(flower);
 		makeBsonAssertions(id, accountId, createdAt, updatedAt, bytes);
 
 		Flower decoded = codec.deserialize(bytes, Flower.class);
+		makeFlowerAssertions(id, accountId, createdAt, updatedAt, decoded);
+	}
+
+	@Test
+	public void shouldEncodeAndDecodeWithDifferentCodec()
+	{
+		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
+		UUID accountId = UUID.fromString("a87d3bff-6997-4739-ab4e-ded0cc85700f");
+		Date createdAt = new Date(1648598130248L);
+		Date updatedAt = new Date(1648598130233L);
+		List<String> colors = Arrays.asList("red", "white", "pink", "yellow");
+		Flower flower = new Flower(id, "rose", true, 3.25f, colors);
+		flower.setAccountId(accountId);
+		flower.setCreatedAt(createdAt);
+		flower.setUpdatedAt(updatedAt);
+
+		BsonObjectCodec<Flower> codec1 = new BsonObjectCodec<>();
+		byte[] bytes = codec1.serialize(flower);
+		makeBsonAssertions(id, accountId, createdAt, updatedAt, bytes);
+
+		BsonObjectCodec<Flower> codec2 = new BsonObjectCodec<>();
+		Flower decoded = codec2.deserialize(bytes, Flower.class);
 		makeFlowerAssertions(id, accountId, createdAt, updatedAt, decoded);
 	}
 
@@ -57,6 +78,7 @@ public class BsonFlowerTest
 		flower.setCreatedAt(createdAt);
 		flower.setUpdatedAt(updatedAt);
 
+		BsonObjectCodec<Flower> codec = new BsonObjectCodec<>();
 		byte[] bytes = codec.serialize(flower);
 		makeNullBsonAssertions(id, createdAt, updatedAt, bytes);
 

@@ -2,8 +2,10 @@ package com.strategicgains.noschema.bson;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +77,7 @@ public class EntityDescriptor
 		return buildEntityDescriptor(entity, registry);
 	}
 
+	@SuppressWarnings("unchecked")
 	private static EntityDescriptor buildEntityDescriptor(Object entity, CodecRegistry registry)
 	{
 		EntityDescriptor descriptor = new EntityDescriptor(entity.getClass());
@@ -84,8 +87,20 @@ public class EntityDescriptor
 			{
 				if (shouldInclude(f))
 				{
-					@SuppressWarnings("unchecked")
-					Codec<? super Object> codec = (Codec<? super Object>) registry.get(f.getType());
+					Codec<? super Object> codec = null;
+
+					Type type = f.getGenericType();
+
+					if (type instanceof TypeVariable)
+					{
+						Object value = f.get(entity);
+						codec = (Codec<? super Object>) registry.get(value.getClass());
+					}
+					else
+					{
+						codec = (Codec<? super Object>) registry.get(f.getType());
+					}
+
 					descriptor.add(f, codec);
 				}
 			}
@@ -94,6 +109,12 @@ public class EntityDescriptor
 				FieldDescriptor fieldDescriptor = new FieldDescriptor(f);
 				fieldDescriptor.setReference(buildReferencedDescriptor(entity, f, registry));
 				descriptor.add(fieldDescriptor);
+			} catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		});
 		return descriptor;
