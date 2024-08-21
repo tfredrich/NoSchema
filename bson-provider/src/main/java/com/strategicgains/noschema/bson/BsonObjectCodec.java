@@ -159,10 +159,16 @@ implements ObjectCodec<T>
 	{
 		descriptor.fields().forEach(d -> {
 			Object property = d.get(entity);
+			if (property == null)
+			{
+				System.out.println("Skipping null property: " + d.getName());
+				return;
+			}
 
 			if (d.isProperty())
 			{
 				bson.writeName(d.getName());
+				System.out.println("Writing property: " + d.getName() + " = " + property);
 				context.encodeWithChildContext(d.getCodec(), bson, property);
 			}
 			else

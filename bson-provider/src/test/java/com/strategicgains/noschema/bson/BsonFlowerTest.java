@@ -2,6 +2,7 @@ package com.strategicgains.noschema.bson;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -23,7 +24,6 @@ import com.strategicgains.noschema.entity.Flower;
 public class BsonFlowerTest
 {
 	private static final BSONDecoder DECODER = new BasicBSONDecoder();
-
 
 	private BsonObjectCodec<Flower> codec = new BsonObjectCodec<>();
 
@@ -47,13 +47,50 @@ public class BsonFlowerTest
 		makeFlowerAssertions(id, accountId, createdAt, updatedAt, decoded);
 	}
 
+	@Test
+	public void shouldSkipNullValues()
+	{
+		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
+		Date createdAt = new Date(1648598130248L);
+		Date updatedAt = new Date(1648598130233L);
+		Flower flower = new Flower(id, null, true, 3.25f, null);
+		flower.setCreatedAt(createdAt);
+		flower.setUpdatedAt(updatedAt);
+
+		byte[] bytes = codec.serialize(flower);
+		makeNullBsonAssertions(id, createdAt, updatedAt, bytes);
+
+		Flower decoded = codec.deserialize(bytes, Flower.class);
+		makeNullFlowerAssertions(id, createdAt, updatedAt, decoded);
+	}
+
+	private void makeNullBsonAssertions(UUID id, Date createdAt, Date updatedAt, byte[] bytes)
+	{
+        BSONObject bson = makeBsonIdAssertions(id, bytes);
+
+        assertEquals(createdAt, bson.get("createdAt"));
+        assertEquals(updatedAt, bson.get("updatedAt"));
+        assertNull(bson.get("name"));
+        assertNull(bson.get("colors"));
+        assertNull(((BSONObject) bson.get("account")).get("id"));
+	}
+
+	private void makeNullFlowerAssertions(UUID id, Date createdAt, Date updatedAt, Flower flower)
+	{
+		assertNotNull(flower);
+		assertEquals(id, flower.getId());
+		assertNull(flower.getName());
+		assertNull(flower.getColors());
+		assertNull(flower.getAccountId());
+		assertEquals(createdAt, flower.getCreatedAt());
+		assertEquals(updatedAt, flower.getUpdatedAt());
+		assertTrue(flower.getIsBlooming());
+		assertEquals(3.25f, flower.getHeight(), 0.001f);
+	}
+
 	private void makeBsonAssertions(UUID id, UUID accountId, Date created, Date updated, byte[] bytes)
 	{
-		BSONObject bson = DECODER.readObject(bytes);
-		assertNotNull(bson);
-		Binary bsonId = (Binary) bson.get("id");
-		assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonId.getType());
-		assertEquals(id, UuidHelper.decodeBinaryToUuid(bsonId.getData(), bsonId.getType(), UuidRepresentation.STANDARD));
+		BSONObject bson = makeBsonIdAssertions(id, bytes);
 
 		Binary bsonAccountId = (Binary) ((BSONObject) bson.get("account")).get("id");
 		assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonAccountId.getType());
@@ -74,7 +111,8 @@ public class BsonFlowerTest
 		assertEquals(3.25f, (Double) bson.get("height"), 0.001f);
 	}
 
-	private void makeFlowerAssertions(UUID id, UUID accountId, Date created, Date updated, Flower flower) {
+	private void makeFlowerAssertions(UUID id, UUID accountId, Date created, Date updated, Flower flower)
+	{
 		assertNotNull(flower);
 		assertEquals(id, flower.getId());
 		assertEquals(accountId, flower.getAccountId());
@@ -89,5 +127,15 @@ public class BsonFlowerTest
 		assertEquals(updated, flower.getUpdatedAt());
 		assertTrue(flower.getIsBlooming());
 		assertEquals(3.25f, flower.getHeight(), 0.001f);
+	}
+
+	private BSONObject makeBsonIdAssertions(UUID id, byte[] bytes)
+	{
+		BSONObject bson = DECODER.readObject(bytes);
+        assertNotNull(bson);
+        Binary bsonId = (Binary) bson.get("id");
+        assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonId.getType());
+        assertEquals(id, UuidHelper.decodeBinaryToUuid(bsonId.getData(), bsonId.getType(), UuidRepresentation.STANDARD));
+		return bson;
 	}
 }
