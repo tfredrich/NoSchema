@@ -67,14 +67,25 @@ public class FieldDescriptor
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public Codec<? super Object> getCodec()
 	{
+		if (isPrimitive())
+		{
+			return (Codec<? super Object>) BsonObjectCodec.NOSCHEMA_CODEC_REGISTRY.get(field.getType());
+		}
+
 		return codec;
 	}
 
 	public boolean isProperty()
 	{
-		return hasCodec();
+		return (hasCodec() || isPrimitive());
+	}
+
+	public boolean isPrimitive()
+	{
+        return field.getType().isPrimitive();
 	}
 
 	public boolean hasCodec()

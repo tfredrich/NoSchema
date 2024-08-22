@@ -71,43 +71,40 @@ public class BsonFlowerTest
 	@Test
 	public void shouldSkipNullValues()
 	{
-		UUID id = UUID.fromString("8dbac965-a1c8-4ad6-a043-5f5a9a5ee8c0");
-		Date createdAt = new Date(1648598130248L);
-		Date updatedAt = new Date(1648598130233L);
-		Flower flower = new Flower(id, null, true, 3.25f, null);
-		flower.setCreatedAt(createdAt);
-		flower.setUpdatedAt(updatedAt);
+		Flower flower = new Flower(null, null, true, null, null);
+		flower.setCreatedAt(null);
+		flower.setUpdatedAt(null);
 
 		BsonObjectCodec<Flower> codec = new BsonObjectCodec<>();
 		byte[] bytes = codec.serialize(flower);
-		makeNullBsonAssertions(id, createdAt, updatedAt, bytes);
+		makeNullBsonAssertions(bytes);
 
 		Flower decoded = codec.deserialize(bytes, Flower.class);
-		makeNullFlowerAssertions(id, createdAt, updatedAt, decoded);
+		makeNullFlowerAssertions(decoded);
 	}
 
-	private void makeNullBsonAssertions(UUID id, Date createdAt, Date updatedAt, byte[] bytes)
+	private void makeNullBsonAssertions(byte[] bytes)
 	{
-        BSONObject bson = makeBsonIdAssertions(id, bytes);
+        BSONObject bson = makeBsonIdAssertions(null, bytes);
 
-        assertEquals(createdAt, bson.get("createdAt"));
-        assertEquals(updatedAt, bson.get("updatedAt"));
+        assertNull(bson.get("createdAt"));
+        assertNull(bson.get("updatedAt"));
         assertNull(bson.get("name"));
         assertNull(bson.get("colors"));
         assertNull(((BSONObject) bson.get("account")).get("id"));
 	}
 
-	private void makeNullFlowerAssertions(UUID id, Date createdAt, Date updatedAt, Flower flower)
+	private void makeNullFlowerAssertions(Flower flower)
 	{
 		assertNotNull(flower);
-		assertEquals(id, flower.getId());
+		assertNull(flower.getId());
 		assertNull(flower.getName());
 		assertNull(flower.getColors());
 		assertNull(flower.getAccountId());
-		assertEquals(createdAt, flower.getCreatedAt());
-		assertEquals(updatedAt, flower.getUpdatedAt());
+		assertNull(flower.getCreatedAt());
+		assertNull(flower.getUpdatedAt());
 		assertTrue(flower.getIsBlooming());
-		assertEquals(3.25f, flower.getHeight(), 0.001f);
+		assertNull(flower.getHeight());
 	}
 
 	private void makeBsonAssertions(UUID id, UUID accountId, Date created, Date updated, byte[] bytes)

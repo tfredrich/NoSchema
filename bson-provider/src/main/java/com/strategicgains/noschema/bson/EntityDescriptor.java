@@ -2,7 +2,6 @@ package com.strategicgains.noschema.bson;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
@@ -88,7 +87,6 @@ public class EntityDescriptor
 				if (shouldInclude(f))
 				{
 					Codec<? super Object> codec = null;
-
 					Type type = f.getGenericType();
 
 					if (type instanceof TypeVariable)
@@ -96,7 +94,7 @@ public class EntityDescriptor
 						Object value = f.get(entity);
 						codec = (Codec<? super Object>) registry.get(value.getClass());
 					}
-					else
+					else if (!isPrimitive(f))
 					{
 						codec = (Codec<? super Object>) registry.get(f.getType());
 					}
@@ -118,6 +116,11 @@ public class EntityDescriptor
 			}
 		});
 		return descriptor;
+	}
+
+	private static boolean isPrimitive(Field f)
+	{
+		return f.getType().isPrimitive();
 	}
 
 	private static boolean shouldInclude(Field field)

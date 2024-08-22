@@ -10,7 +10,7 @@ import java.util.UUID;
  * @author tfredrich
  */
 public class Flower
-extends AbstractEntity<UUID>
+extends AbstractTimestampedEntity<UUID>
 {
 	private String name;
 	private List<String> colors;

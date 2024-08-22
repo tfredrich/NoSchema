@@ -57,8 +57,7 @@ implements ObjectCodec<T>
 		try (BsonBinaryWriter bson = new BsonBinaryWriter(output))
 		{
 			bson.writeStartDocument();
-			EncoderContext context = EncoderContext.builder().build();
-			writeProperties(bson, object, context);
+			writeProperties(bson, object, EncoderContext.builder().build());
 			bson.writeEndDocument();
 			bson.flush();
 		}
@@ -72,8 +71,7 @@ implements ObjectCodec<T>
 		try (BsonBinaryReader bsonReader = new BsonBinaryReader(ByteBuffer.wrap(bytes)))
 		{
 			bsonReader.readStartDocument();
-			DecoderContext context = DecoderContext.builder().build();
-			T instance = readProperties(bsonReader, clazz, context);
+			T instance = readProperties(bsonReader, clazz, DecoderContext.builder().build());
 			bsonReader.readEndDocument();
 			return instance;
 		}
@@ -159,15 +157,19 @@ implements ObjectCodec<T>
 	{
 		descriptor.fields().forEach(d -> {
 			Object property = d.get(entity);
-			if (property == null)
-			{
-				return;
-			}
 
 			if (d.isProperty())
 			{
 				bson.writeName(d.getName());
-				context.encodeWithChildContext(d.getCodec(), bson, property);
+
+				if (property == null)
+				{
+					bson.writeNull();
+				}
+				else
+				{
+					context.encodeWithChildContext(d.getCodec(), bson, property);
+				}
 			}
 			else
 			{
