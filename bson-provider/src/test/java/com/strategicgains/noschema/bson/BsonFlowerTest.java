@@ -94,7 +94,9 @@ public class BsonFlowerTest
         assertEquals(updatedAt, bson.get("updatedAt"));
         assertNull(bson.get("name"));
         assertNull(bson.get("colors"));
-        assertNull(((BSONObject) bson.get("account")).get("id"));
+        assertNull(bson.get("accountId"));
+        assertTrue((Boolean) bson.get("isBlooming"));
+        assertEquals(3.25f, (Double) bson.get("height"), 0.001f);
 	}
 
 	private void makeNullFlowerAssertions(UUID id, Date createdAt, Date updatedAt, Flower flower)
@@ -114,7 +116,8 @@ public class BsonFlowerTest
 	{
 		BSONObject bson = makeBsonIdAssertions(id, bytes);
 
-		Binary bsonAccountId = (Binary) ((BSONObject) bson.get("account")).get("id");
+//		Binary bsonAccountId = (Binary) ((BSONObject) bson.get("accountId")); //.get("id");
+		Binary bsonAccountId = (Binary) bson.get("accountId");
 		assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonAccountId.getType());
 		assertEquals(accountId, UuidHelper.decodeBinaryToUuid(bsonAccountId.getData(), bsonAccountId.getType(), UuidRepresentation.STANDARD));
 	
@@ -156,6 +159,7 @@ public class BsonFlowerTest
 		BSONObject bson = DECODER.readObject(bytes);
         assertNotNull(bson);
         Binary bsonId = (Binary) bson.get("id");
+        assertNotNull("'id' property not fount in BSON", bsonId);
         assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonId.getType());
         assertEquals(id, UuidHelper.decodeBinaryToUuid(bsonId.getData(), bsonId.getType(), UuidRepresentation.STANDARD));
 		return bson;

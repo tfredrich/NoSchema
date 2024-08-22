@@ -51,14 +51,14 @@ public class BsonPrimitivesTest
 		assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonId.getType());
 		assertEquals(id, UuidHelper.decodeBinaryToUuid(bsonId.getData(), bsonId.getType(), UuidRepresentation.STANDARD));
 
-		Binary bsonAccountId = (Binary) ((BSONObject) bson.get("account")).get("id");
+		Binary bsonAccountId = (Binary) bson.get("accountId");
 		assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonAccountId.getType());
 		assertEquals(accountId, UuidHelper.decodeBinaryToUuid(bsonAccountId.getData(), bsonAccountId.getType(), UuidRepresentation.STANDARD));
 	
 		assertEquals(created, bson.get("createdAt"));
 		assertEquals(updated, bson.get("updatedAt"));
 		assertEquals(0, bson.get("primitiveInt"));
-		assertEquals(false, bson.get("isPrimitiveBoolean"));
+		assertEquals(false, bson.get("primitiveBoolean"));
 		assertEquals(0.0, bson.get("primitiveDouble"));
 		assertEquals(0L, bson.get("primitiveLong"));
 		assertEquals(0, bson.get("primitiveShort"));
