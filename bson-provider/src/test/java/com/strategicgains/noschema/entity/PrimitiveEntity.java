@@ -9,7 +9,7 @@ import java.util.UUID;
  * @author Todd Fredrich
  */
 public class PrimitiveEntity
-extends AbstractEntity<UUID>
+extends AbstractTimestampedEntity<UUID>
 {
 	private int primitiveInt = 0;
 	private boolean isPrimitiveBoolean = false;
