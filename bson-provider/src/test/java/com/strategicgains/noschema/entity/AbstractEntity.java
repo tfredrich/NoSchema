@@ -7,11 +7,17 @@ public abstract class AbstractEntity<T>
 	private T id;
 	private AccountReference account = new AccountReference();
 
-	public AbstractEntity(T id)
+	public AbstractEntity()
 	{
 		super();
+	}
+
+	public AbstractEntity(T id)
+	{
+		this();
 		this.id = id;
 	}
+
 	public T getId() {
 		return id;
 	}

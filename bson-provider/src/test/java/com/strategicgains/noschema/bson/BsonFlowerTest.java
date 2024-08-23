@@ -71,9 +71,7 @@ public class BsonFlowerTest
 	@Test
 	public void shouldSkipNullValues()
 	{
-		Flower flower = new Flower(null, null, true, null, null);
-		flower.setCreatedAt(null);
-		flower.setUpdatedAt(null);
+		Flower flower = new Flower();
 
 		BsonObjectCodec<Flower> codec = new BsonObjectCodec<>();
 		byte[] bytes = codec.serialize(flower);

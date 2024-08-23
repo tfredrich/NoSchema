@@ -8,12 +8,13 @@ extends AbstractEntity<T>
 	private Date createdAt;
 	private Date updatedAt;
 
+	public AbstractTimestampedEntity() {
+		super();
+	}
+
 	public AbstractTimestampedEntity(T id)
 	{
 		super(id);
-		Date now = new Date();
-		this.setCreatedAt(now);
-		this.setUpdatedAt(now);
 	}
 
 	public Date getCreatedAt() {

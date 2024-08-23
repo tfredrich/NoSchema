@@ -92,7 +92,11 @@ public class EntityDescriptor
 					if (type instanceof TypeVariable)
 					{
 						Object value = f.get(entity);
-						codec = (Codec<? super Object>) registry.get(value.getClass());
+
+						if (value != null)
+						{
+							codec = (Codec<? super Object>) registry.get(value.getClass());
+						}
 					}
 					else if (!isPrimitive(f))
 					{
@@ -125,9 +129,7 @@ public class EntityDescriptor
 
 	private static boolean shouldInclude(Field field)
 	{
-		if ((field.getModifiers() & IGNORED_FIELD_MODIFIERS) == 0) return true;
-
-		return (!field.isAnnotationPresent(BsonIgnore.class));
+		return ((field.getModifiers() & IGNORED_FIELD_MODIFIERS) == 0) && (!field.isAnnotationPresent(BsonIgnore.class));
 	}
 
 	private static EntityDescriptor buildReferencedDescriptor(Object entity, Field field, CodecRegistry registry)
@@ -150,8 +152,7 @@ public class EntityDescriptor
 		while(superClass != null)
 		{
 			Stream.of(superClass.getDeclaredFields()).filter(f -> {
-                int mod = f.getModifiers();
-                return (!Modifier.isAbstract(mod) && !Modifier.isStatic(mod) && !Modifier.isTransient(mod) && !Modifier.isFinal(mod));
+                return ((f.getModifiers() & IGNORED_FIELD_MODIFIERS) == 0);
             }).forEach(f -> {
                 f.setAccessible(true);
                 fields.add(f);
