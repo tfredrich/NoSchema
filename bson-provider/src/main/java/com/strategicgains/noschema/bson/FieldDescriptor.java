@@ -1,8 +1,13 @@
 package com.strategicgains.noschema.bson;
 
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.withUuidRepresentation;
+
 import java.lang.reflect.Field;
 
+import org.bson.UuidRepresentation;
 import org.bson.codecs.Codec;
+import org.bson.codecs.configuration.CodecRegistry;
 
 import com.strategicgains.noschema.exception.DescriptorException;
 
@@ -14,6 +19,12 @@ import com.strategicgains.noschema.exception.DescriptorException;
  */
 public class FieldDescriptor
 {
+	public static final CodecRegistry PRIMITIVE_CODEC_REGISTRY = 
+		withUuidRepresentation(
+			fromProviders(new PrimitiveCodecProvider()),
+			UuidRepresentation.STANDARD
+		);
+
 	/**
 	 * The field being mapped.
 	 */
@@ -72,7 +83,7 @@ public class FieldDescriptor
 	{
 		if (isPrimitive())
 		{
-			return (Codec<? super Object>) BsonObjectCodec.NOSCHEMA_CODEC_REGISTRY.get(field.getType());
+			return (Codec<? super Object>) PRIMITIVE_CODEC_REGISTRY.get(field.getType());
 		}
 
 		return codec;
@@ -86,6 +97,11 @@ public class FieldDescriptor
 	public boolean isPrimitive()
 	{
         return field.getType().isPrimitive();
+	}
+
+	public boolean isGeneric()
+	{
+		return (!hasCodec() && !isReference() && field.getType().isAssignableFrom(Object.class));
 	}
 
 	public boolean hasCodec()
@@ -122,5 +138,4 @@ public class FieldDescriptor
 	{
 		return String.format("field=%s, codec={%s}, reference={%s}", field.getName(), codec, reference);
 	}
-
 }

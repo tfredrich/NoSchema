@@ -11,18 +11,18 @@ import java.util.UUID;
 public class PrimitiveEntity
 extends AbstractTimestampedEntity<UUID>
 {
-	private int primitiveInt = 0;
-	private boolean isPrimitiveBoolean = false;
-	private double primitiveDouble = 0.0;
-	private long primitiveLong = 0L;
-	private short primitiveShort = 0;
-	private byte primitiveByte = 0;
-	private byte[] primitiveByteArray = new byte[0];
-	private char primitiveChar = ' ';
-	private float primitiveFloat = 0.0f;
+	private int primitiveInt = -1;
+	private boolean isPrimitiveBoolean = true;
+	private double primitiveDouble = -2.0;
+	private long primitiveLong = -3L;
+	private short primitiveShort = -4;
+	private byte primitiveByte = -5;
+	private byte[] primitiveByteArray = new byte[] { 0, 1, 2, 3, 4, 5 };
+	private char primitiveChar = 'a';
+	private float primitiveFloat = -6.0f;
 
 	public PrimitiveEntity() {
-		super(UUID.randomUUID());
+		super();
 	}
 
 	public PrimitiveEntity(UUID id)

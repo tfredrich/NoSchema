@@ -1,7 +1,5 @@
 package com.strategicgains.noschema.bson;
 
-import static java.util.Arrays.asList;
-import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 import static org.bson.codecs.configuration.CodecRegistries.withUuidRepresentation;
 
@@ -39,11 +37,7 @@ implements ObjectCodec<T>
 {
 	public static final CodecRegistry NOSCHEMA_CODEC_REGISTRY = 
 		withUuidRepresentation(
-			fromRegistries(
-				Bson.DEFAULT_CODEC_REGISTRY,		// Provides codecs for BSON types.
-				fromProviders(asList(
-					new PrimitiveCodecProvider()	// Provides codecs for primitive types.
-			))),
+			fromRegistries(Bson.DEFAULT_CODEC_REGISTRY),
 			UuidRepresentation.STANDARD
 		);
 
@@ -113,7 +107,12 @@ implements ObjectCodec<T>
 					Object value = context.decodeWithChildContext(d.getCodec(), bson);
 					d.set(entity, value);
 				}
-				else
+				else if (d.isGeneric())
+                {
+                    // Do nothing. Generic fields are not supported.
+                    bson.skipValue();
+                }
+				else // isReference
 				{
 					Object fieldValue = d.get(entity);
 
@@ -158,7 +157,7 @@ implements ObjectCodec<T>
 		descriptor.fields().forEach(d -> {
 			Object property = d.get(entity);
 
-			if (d.isProperty())
+			if (d.isProperty() || d.isGeneric())
 			{
 				bson.writeName(d.getName());
 

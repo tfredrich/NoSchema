@@ -48,6 +48,10 @@ public class EntityDescriptorTest
 			{
 				System.out.println(String.format("\t%s: %s", d.getName(), d.getCodec().getClass().getSimpleName()));
 			}
+			else if (d.isGeneric())
+			{
+				System.out.println(String.format("\t%s: %s", d.getName(), "Generic"));
+			}
 			else
 			{
 				EntityDescriptor ref = d.getReference();

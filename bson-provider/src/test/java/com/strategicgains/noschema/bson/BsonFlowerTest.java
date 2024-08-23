@@ -151,6 +151,7 @@ public class BsonFlowerTest
 		BSONObject bson = DECODER.readObject(bytes);
         assertNotNull(bson);
         Binary bsonId = (Binary) bson.get("id");
+        assertNotNull(bsonId);
         assertEquals(BsonBinarySubType.UUID_STANDARD.getValue(), bsonId.getType());
         assertEquals(id, UuidHelper.decodeBinaryToUuid(bsonId.getData(), bsonId.getType(), UuidRepresentation.STANDARD));
 		return bson;

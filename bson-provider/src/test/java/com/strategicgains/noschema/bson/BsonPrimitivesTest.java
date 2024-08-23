@@ -57,17 +57,17 @@ public class BsonPrimitivesTest
 	
 		assertEquals(created, bson.get("createdAt"));
 		assertEquals(updated, bson.get("updatedAt"));
-		assertEquals(0, bson.get("primitiveInt"));
-		assertEquals(false, bson.get("isPrimitiveBoolean"));
-		assertEquals(0.0, bson.get("primitiveDouble"));
-		assertEquals(0L, bson.get("primitiveLong"));
-		assertEquals(0, bson.get("primitiveShort"));
-		assertEquals(0, bson.get("primitiveByte"));
+		assertEquals(-1, bson.get("primitiveInt"));
+		assertEquals(true, bson.get("isPrimitiveBoolean"));
+		assertEquals(-2.0, bson.get("primitiveDouble"));
+		assertEquals(-3L, bson.get("primitiveLong"));
+		assertEquals(-4, bson.get("primitiveShort"));
+		assertEquals(-5, bson.get("primitiveByte"));
 		byte[] byteArray = (byte[]) bson.get("primitiveByteArray");
 		assertNotNull(byteArray);
-		assertEquals(0, byteArray.length);
-		assertEquals(" ", bson.get("primitiveChar"));
-		assertEquals(0.0f, (Double) bson.get("primitiveFloat"), 0.001f);
+		assertEquals(6, byteArray.length);
+		assertEquals("a", bson.get("primitiveChar"));
+		assertEquals(-6.0f, (Double) bson.get("primitiveFloat"), 0.001f);
 	}
 
 	private void makeEntityAssertions(UUID id, UUID accountId, Date created, Date updated, PrimitiveEntity entity)
@@ -77,16 +77,16 @@ public class BsonPrimitivesTest
 		assertEquals(accountId, entity.getAccountId());
 		assertEquals(created, entity.getCreatedAt());
 		assertEquals(updated, entity.getUpdatedAt());
-		assertEquals(0, entity.getPrimitiveInt());
-		assertEquals(false, entity.isPrimitiveBoolean());
-		assertEquals(0.0, entity.getPrimitiveDouble(), 0.001);
-		assertEquals(0L, entity.getPrimitiveLong());
-		assertEquals((short) 0, entity.getPrimitiveShort());
-		assertEquals((byte) 0, entity.getPrimitiveByte());
+		assertEquals(-1, entity.getPrimitiveInt());
+		assertEquals(true, entity.isPrimitiveBoolean());
+		assertEquals(-2.0, entity.getPrimitiveDouble(), 0.001);
+		assertEquals(-3L, entity.getPrimitiveLong());
+		assertEquals((short) -4, entity.getPrimitiveShort());
+		assertEquals((byte) -5, entity.getPrimitiveByte());
 		byte[] bytes = entity.getPrimitiveByteArray();
 		assertNotNull(bytes);
-		assertEquals(0, bytes.length);
-		assertEquals(' ', entity.getPrimitiveChar());
-		assertEquals(0.0f, entity.getPrimitiveFloat(), 0.001f);
+		assertEquals(6, bytes.length);
+		assertEquals('a', entity.getPrimitiveChar());
+		assertEquals(-6.0f, entity.getPrimitiveFloat(), 0.001f);
 	}
 }
