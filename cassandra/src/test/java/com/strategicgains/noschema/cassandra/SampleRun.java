@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.strategicgains.noschema.bson.BsonObjectCodec;
 import com.strategicgains.noschema.cassandra.schema.SchemaRegistry;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.ObjectCodec;
@@ -16,11 +15,12 @@ import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 import com.strategicgains.noschema.gson.GsonObjectCodec;
+import com.strategicgains.noschema.jackson.JacksonObjectCodec;
 
 public class SampleRun
 {
 	private static final ObjectCodec<Flower> GSON_CODEC = new GsonObjectCodec<>();
-	private static final ObjectCodec<Flower> BSON_CODEC = new BsonObjectCodec<>();
+	private static final ObjectCodec<Flower> JACKSON_CODEC = new JacksonObjectCodec<>();
 	private static final UnitOfWorkType unitOfWorkType = UnitOfWorkType.ASYNC;
 
 	public static void main(String[] args)
@@ -30,7 +30,7 @@ public class SampleRun
 
 		try
 		{
-			testBson(session, "sample_run_bson");
+			testJackson(session, "sample_run_jackson");
 			testGson(session, "sample_run_gson");
 		}
 		finally
@@ -70,10 +70,10 @@ public class SampleRun
 		    .build();
 	}
 
-	private static void testBson(CqlSession session, String keyspace)
+	private static void testJackson(CqlSession session, String keyspace)
 	{
 		SchemaRegistry.keyspace(keyspace);
-		testCassandra(keyspace, session, unitOfWorkType, BSON_CODEC);
+		testCassandra(keyspace, session, unitOfWorkType, JACKSON_CODEC);
 		SchemaRegistry.clear();
 	}
 
