@@ -19,14 +19,19 @@ import com.strategicgains.noschema.exception.ConfigurationException;
  * objects based on the configuration of the ObjectMapper passed into the constructor.
  * 
  * @param <T> the type of object to serialize and deserialize.
+ * @see com.fasterxml.jackson.databind.ObjectMapper
+ * @author Todd Fredrich
  */
 public final class JacksonObjectCodec<T>
 implements ObjectCodec<T>
 {
-	private static final String TIME_POINT_OUTPUT_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+	private static final String TIME_POINT_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
 	private ObjectMapper mapper;
 
+	/**
+	 * Create a new JacksonObjectCodec instance using a default ObjectMapper.
+	 */
 	public JacksonObjectCodec()
     {
         this(createDefaultObjectMapper());
@@ -92,7 +97,7 @@ implements ObjectCodec<T>
 			.setVisibility(PropertyAccessor.IS_GETTER, Visibility.NONE)
 			
 			// Set default date output format.
-			.setDateFormat(new SimpleDateFormat(TIME_POINT_OUTPUT_FORMAT));
+			.setDateFormat(new SimpleDateFormat(TIME_POINT_FORMAT));
 		return mapper;
 	}
 }
