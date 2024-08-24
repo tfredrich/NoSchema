@@ -65,6 +65,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	private UnitOfWorkType unitOfWorkType;
 	// The observers used to observe the encoding, creation, update, and deletion of entities.
 	private List<DocumentObserver> documentObservers = new ArrayList<>();
+	// The observers used to observe the creation, update, and deletion of entities.
 	private List<EntityObserver<T>> entityObservers = new ArrayList<>();
 
 
@@ -187,8 +188,6 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 				primaryDocument.set(d);
 				serialized.set(d.getObject());
 				serializedId.set(d.getIdentifier().toString().getBytes());
-				documentObservers.forEach(o -> o.afterEncoding(primaryDocument.get()));
-				documentObservers.forEach(o -> o.beforeCreate(primaryDocument.get()));
 			}
 			else
 			{
@@ -204,6 +203,8 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 				d.setMetadata(primaryDocument.get().getMetadata());
 			}
 
+			documentObservers.forEach(o -> o.afterEncoding(d));
+			documentObservers.forEach(o -> o.beforeCreate(d));
 			uow.registerNew(t.name(), d);
 		});
 
@@ -252,14 +253,14 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 				d = asDocument(t.name(), entity);
 				primaryDocument.set(d);
 				serialized.set(d.getObject());
-				documentObservers.forEach(o -> o.afterEncoding(primaryDocument.get()));
-				documentObservers.forEach(o -> o.beforeDelete(primaryDocument.get()));
 			}
 			else
 			{
 				d = asDocument(t.name(), entity, serialized.get());
 			}
 
+			documentObservers.forEach(o -> o.afterEncoding(d));
+			documentObservers.forEach(o -> o.beforeDelete(d));
 			uow.registerDeleted(t.name(), d);
 		});
 
@@ -652,6 +653,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 		if (d == null) return null;
 
+		documentObservers.forEach(o -> o.afterEncoding(d));
 		return asEntity(viewName, d);
 	}
 
