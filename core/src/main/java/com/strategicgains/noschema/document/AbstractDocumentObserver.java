@@ -95,7 +95,7 @@ implements DocumentObserver
     public void afterUpdate(Document document) {}
 
     /**
-     * This method is called before encoding an entity into BSON. It allows you to perform any necessary actions before
+     * This method is called before encoding an entity into a byte array. It allows you to perform any necessary actions before
      * converting an object into binary format for storage.
      *
      * @param <T>       The type of {@link Identifiable} entity being encoded.
@@ -105,11 +105,13 @@ implements DocumentObserver
     public <T extends Identifiable> void beforeEncoding(T entity) {}
 
     /**
-     * This method is called after successfully converting (encoding) an object into BSON. It allows you to perform any
+     * This method is called after successfully converting (encoding) an object into a byte array. It allows you to perform any
      * necessary actions after converting an object into binary format for storage.
      *
      * @param document The Document object that has been encoded into BSON.
      */
     @Override
     public void afterEncoding(Document document) {}
+    public void beforeDecoding(Document document) {}
+    public void afterDecoding(Document document) {}
 }
