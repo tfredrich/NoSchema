@@ -14,6 +14,8 @@ import com.strategicgains.noschema.exception.StorageException;
  * This class is useful for compressing and decompressing data in a Document before and after it is stored in a storage
  * system. Trading off CPU time for storage space and can be used to reduce the amount of storage space required
  * to store a Document with a latency cost of compressing and decompressing the data.
+ * <p/>
+ * Note that small payloads may not benefit from compression and may actually increase in size after compression.
  * 
  * @see DocumentObserver
  * @author Todd Fredrich
