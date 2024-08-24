@@ -112,6 +112,10 @@ implements DocumentObserver
      */
     @Override
     public void afterEncoding(Document document) {}
-    public void beforeDecoding(Document document) {}
+
+    @Override
+    public <T extends Identifiable> void beforeDecoding(T entity) {}
+
+    @Override
     public void afterDecoding(Document document) {}
 }
