@@ -29,8 +29,8 @@ public class TrieTest
 		trie.insert("bye", 55);
 		assertTrue(trie.contains("hello"));
 		assertTrue(trie.contains("bye"));
-		assertEquals(Integer.valueOf(42), trie.getValues("hello").get(0));
-		assertEquals(Integer.valueOf(55), trie.getValues("bye").get(0));
+		assertEquals(Integer.valueOf(42), trie.getValue("hello"));
+		assertEquals(Integer.valueOf(55), trie.getValue("bye"));
 	}
 
 	@Test
@@ -105,7 +105,7 @@ public class TrieTest
 		trie.insert("bye", 3);
 		trie.insert("byebye", 4);
 		trie.insert("yyyyyyyyyyyy", 5);
-		List<String> filteredWords = trie.searchWithFilter(Arrays.asList((word, node) -> word.length() > 5, (word, node) -> word.matches(".*[aeiou].*"), (word, node) -> node.getValues().contains(4)));
+		List<String> filteredWords = trie.searchWithFilter(Arrays.asList((word, node) -> word.length() > 5, (word, node) -> word.matches(".*[aeiou].*"), (word, node) -> node.getValue().equals(4)));
 		assertEquals(1, filteredWords.size());
 		assertEquals("byebye", filteredWords.get(0));
 	}

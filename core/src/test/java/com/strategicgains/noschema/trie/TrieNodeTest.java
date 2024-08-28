@@ -13,7 +13,7 @@ public class TrieNodeTest
 		assertNotNull(node);
 		assertTrue(node.isEmpty());
 
-		node.addValue("a string value");
+		node.setValue("a string value");
 		assertTrue(node.isEmpty());
 	}
 
@@ -21,7 +21,7 @@ public class TrieNodeTest
 	public void shouldStayEmpty()
 	{
 		TrieNode<String> node = new TrieNode<>();
-		node.addValue("a string value");
+		node.setValue("a string value");
 		assertTrue(node.isEmpty());
 	}
 
@@ -29,16 +29,13 @@ public class TrieNodeTest
 	public void shouldAddValue()
 	{
 		TrieNode<String> node = new TrieNode<>();
-		assertFalse(node.hasValues());
-		node.addValue("a string value");
-		assertTrue(node.hasValues());
-		assertEquals(1, node.getValues().size());
-		assertEquals("a string value", node.getValues().get(0));
+		assertFalse(node.hasValue());
+		node.setValue("a string value");
+		assertTrue(node.hasValue());
+		assertEquals("a string value", node.getValue());
 
-		node.addValue("another string value");
-		assertEquals(2, node.getValues().size());
-		assertEquals("a string value", node.getValues().get(0));
-		assertEquals("another string value", node.getValues().get(1));
+		node.setValue("another string value");
+		assertEquals("another string value", node.getValue());
 	}
 
 	@Test
@@ -87,20 +84,18 @@ public class TrieNodeTest
 	public void shouldAddValueToChild()
 	{
 		TrieNode<String> node = new TrieNode<>();
-		node.addChildIfAbsent('a').addValue("a string value");
-		assertTrue(node.getChild('a').hasValues());
-		assertEquals(1, node.getChild('a').getValues().size());
-		assertEquals("a string value", node.getChild('a').getValues().get(0));
+		node.addChildIfAbsent('a').setValue("a string value");
+		assertTrue(node.getChild('a').hasValue());
+		assertEquals("a string value", node.getChild('a').getValue());
 	}
 
 	@Test
 	public void shouldAddValueToGrandchild()
 	{
 		TrieNode<String> node = new TrieNode<>();
-		node.addChildIfAbsent('a').addChildIfAbsent('b').addValue("a string value");
-		assertTrue(node.getChild('a').getChild('b').hasValues());
-		assertEquals(1, node.getChild('a').getChild('b').getValues().size());
-		assertEquals("a string value", node.getChild('a').getChild('b').getValues().get(0));
+		node.addChildIfAbsent('a').addChildIfAbsent('b').setValue("a string value");
+		assertTrue(node.getChild('a').getChild('b').hasValue());
+		assertEquals("a string value", node.getChild('a').getChild('b').getValue());
 	}
 
 	@Test

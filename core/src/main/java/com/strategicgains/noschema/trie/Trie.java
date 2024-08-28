@@ -49,7 +49,7 @@ public class Trie<V>
 
 		if (value != null)
         {
-			current.addValue(value);
+			current.setValue(value);
         }
 	}
 
@@ -59,9 +59,9 @@ public class Trie<V>
 		return found.isPresent() && found.get().isEndOfWord();
 	}
 
-	public List<V> getValues(String word)
+	public V getValue(String word)
 	{
-		return findNode(word).map(TrieNode::getValues).orElse(null);
+		return findNode(word).map(TrieNode::getValue).orElse(null);
 	}
 
 	Optional<TrieNode<V>> findNode(String word)

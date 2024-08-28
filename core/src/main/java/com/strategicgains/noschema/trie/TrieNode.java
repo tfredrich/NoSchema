@@ -1,9 +1,6 @@
 package com.strategicgains.noschema.trie;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
@@ -28,7 +25,7 @@ public class TrieNode<V>
 {
 	private boolean endOfWord;
 	private Map<Character, TrieNode<V>> children;
-	private List<V> values;
+	private V value;
 
 	public TrieNode()
 	{
@@ -111,35 +108,30 @@ public class TrieNode<V>
 	 * @param value the value to add to this node.
 	 * @return this node.
 	 */
-	public TrieNode<V> addValue(V value)
+	public TrieNode<V> setValue(V value)
 	{
 		if (value == null)
 		{
 			return this;
 		}
 
-		if (this.values == null)
-		{
-			this.values = new ArrayList<>();
-		}
-
-		this.values.add(value);
+		this.value = value;
 		return this;
 	}
 
-	public boolean hasValues()
+	public boolean hasValue()
 	{
-		return values != null;
+		return value != null;
 	}
 
 	/**
-	 * Get the values associated with this node.
+	 * Get the value associated with this node.
 	 * 
-	 * @return a list of values objects or an empty list if no values is associated with this node.
+	 * @return the value associated with this node.
 	 */
-	public List<V> getValues()
+	public V getValue()
 	{
-		return (hasValues() ? Collections.unmodifiableList(values) : Collections.emptyList());
+		return value;
 	}
 
 	/**
