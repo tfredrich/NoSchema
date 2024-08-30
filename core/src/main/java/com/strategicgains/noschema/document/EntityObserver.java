@@ -12,50 +12,21 @@ import com.strategicgains.noschema.Identifier;
 public interface EntityObserver<T extends Identifiable>
 {
 	/**
-	 * Called after an entity is created.
-	 * 
-	 * @param entity the entity that was created.
-	 */
-	public void afterCreate(T entity);
-
-	/**
-	 * Called after an entity is deleted.
-	 * 
-	 * @param entity the entity that was deleted.
-	 */
-	public void afterDelete(T entity);
-
-	/**
-	 * Called after an entity is read.
-	 * 
-	 * @param entity the entity that was read.
-	 */
-	public void afterRead(T entity);
-
-	/**
-	 * Called after an entity is updated.
-	 * 
-	 * @param entity the entity that was updated.
-	 */
-	public void afterUpdate(T entity);
-
-	/**
-	 * Called before an entity is created. Any changes made to the entity will be
-	 * persisted.
-	 * 
-	 * @param entity the entity that will be created.
-	 */
+     * Invoked before an entity is created in the database.
+     * 
+     * @param entity the entity being written.
+     */
 	public void beforeCreate(T entity);
 
 	/**
-	 * Called before an entity is deleted.
+	 * Invoked before an entity is deleted from the database.
 	 * 
-	 * @param entity the entity that will be deleted.
+	 * @param entity the entity being deleted.
 	 */
 	public void beforeDelete(T entity);
 
 	/**
-	 * Called before an entity is read. Any changes made to the identifier will be
+	 * Invoked before an entity is read. Any changes made to the identifier will be
 	 * used to read the entity.
 	 * 
 	 * @param id the identifier of the entity that will be read.
@@ -63,10 +34,38 @@ public interface EntityObserver<T extends Identifiable>
 	public void beforeRead(Identifier id);
 
 	/**
-	 * Called before an entity is updated. Any changes made to the entity will be
+	 * Invoked before an entity is updated. Any changes made to the entity will be
 	 * persisted.
 	 * 
 	 * @param entity the entity that will be updated.
 	 */
 	public void beforeUpdate(T entity);
+
+	/**
+	 * Invoked after an entity is created in the database.
+	 * 
+	 * @param entity the entity that was written.
+	 */
+	public void afterCreate(T entity);
+
+	/**
+	 * Invoked after an entity is deleted from the database.
+	 * 
+	 * @param entity the entity that was deleted.
+	 */
+	public void afterDelete(T entity);
+
+	/**
+	 * Invoked after an entity is read from the database.
+	 * 
+	 * @param entity the entity that was read.
+	 */
+	public void afterRead(T entity);
+
+	/**
+	 * Invoked after an entity is updated in the database.
+	 * 
+	 * @param entity the entity that was updated.
+	 */
+	public void afterUpdate(T entity);
 }
