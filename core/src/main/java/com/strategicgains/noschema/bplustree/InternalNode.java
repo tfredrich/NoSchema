@@ -18,13 +18,19 @@ extends AbstractNode<K, V>
 {
 	private List<Node<K, V>> children;
 
+	public InternalNode()
+	{
+		super();
+		children = new ArrayList<>();
+	}
+
 	public InternalNode(List<K> keys, List<Node<K, V>> children)
 	{
 		super(keys);
 		this.children = new ArrayList<>(children);
 	}
 
-	public Node<K, V> getChildFor(K key)
+	public Node<K, V> search(K key)
 	{
 		return children.get(getKeyIndex(key));
 	}
@@ -32,6 +38,15 @@ extends AbstractNode<K, V>
 	void insert(K key, Node<K, V> left, Node<K, V> right)
 	{
 		int index = insertKey(key);
+
+		if (index < 0)
+		{
+			index = -index - 1;
+			children.add(index, left);
+			children.add(index + 1, right);
+			return;
+		}
+
 		children.set(index, left);
 		children.add(index + 1, right);
 	}
@@ -40,6 +55,12 @@ extends AbstractNode<K, V>
 	public InternalNode<K, V> split(int order)
 	{
 		int mid = (order + 1) / 2;
+
+		if (mid > size())
+		{
+			return null;
+		}
+
 		InternalNode<K, V> sibling = new InternalNode<>(getRightKeys(mid), children.subList(mid, children.size()));
 		children = children.subList(0, mid);
 		return sibling;
