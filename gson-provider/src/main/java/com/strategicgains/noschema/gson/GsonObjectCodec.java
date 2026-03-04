@@ -7,19 +7,37 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.strategicgains.noschema.document.ObjectCodec;
 
+/**
+ * A Gson-based implementation of ObjectCodec that serializes and deserializes objects based on the configuration of the
+ * Gson instance passed into the constructor.
+ * 
+ * @param <T> the type of object to serialize and deserialize.
+ * @see com.google.gson.Gson
+ * @author Todd Fredrich
+ */
 public class GsonObjectCodec<T>
-	implements ObjectCodec<T>
+implements ObjectCodec<T>
 {
-	private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+	private static final String TIME_POINT_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+
 	private final Gson gson;
 
+	/**
+	 * Create a new GsonObjectCodec instance using a default Gson instance.
+	 */
 	public GsonObjectCodec()
 	{
-		gson = new GsonBuilder()
-			.disableHtmlEscaping()
-			.setDateFormat(TIMESTAMP_FORMAT)
-			.excludeFieldsWithModifiers(Modifier.TRANSIENT, Modifier.STATIC)
-			.create();
+		this(createDefaultGson());
+	}
+
+	/**
+	 * Create a new GsonObjectCodec instance using the given Gson instance.
+	 * 
+	 * @param gson a pre-configured Gson instance.
+	 */
+	public GsonObjectCodec(Gson gson)
+	{
+		this.gson = gson;
 	}
 
 	@Override
@@ -29,9 +47,19 @@ public class GsonObjectCodec<T>
 		return gsonStr.getBytes(StandardCharsets.UTF_8);
 	}
 
+	@Override
 	public T deserialize(byte[] bytes, Class<T> clazz)
 	{
 		String jsonStr = new String(bytes, StandardCharsets.UTF_8);
 		return gson.fromJson(jsonStr, clazz);
+	}
+
+	private static Gson createDefaultGson()
+	{
+		return new GsonBuilder()
+			.disableHtmlEscaping()
+			.setDateFormat(TIME_POINT_FORMAT)
+			.excludeFieldsWithModifiers(Modifier.TRANSIENT, Modifier.STATIC)
+			.create();
 	}
 }

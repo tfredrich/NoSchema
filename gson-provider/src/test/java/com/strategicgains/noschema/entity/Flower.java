@@ -18,7 +18,7 @@ extends AbstractTimestampedEntity<UUID>
 	private Float height;
 
 	public Flower() {
-		super(UUID.randomUUID());
+		super();
 	}
 
 	public Flower(UUID id, String name, Boolean isBlooming, Float height, List<String> colors) {

@@ -31,7 +31,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.strategicgains.noschema</groupId>
-			<artifactId>noschema-bson-provider</artifactId>
+			<artifactId>noschema-jackson-provider</artifactId>
 			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>

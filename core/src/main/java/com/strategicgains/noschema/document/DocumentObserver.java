@@ -93,4 +93,24 @@ public interface DocumentObserver
 	 * @param document the Document that was created from the entity
 	 */
 	void afterEncoding(Document document);
+
+	/**
+	 * Called before a Document is decoded from disk into a Document.
+	 * <p/>
+	 * This can be used to perform actions that are specific to decoding a Document into an entity such as
+	 * decompression, decryption.
+	 *
+	 * @param document the Document to be decoded
+	 */
+	<T extends Identifiable> void beforeDecoding(T entity);
+
+	/**
+	 * Called after a Document is decoded from disk into a Document.
+	 * <p/>
+	 * This can be used to perform actions that are specific to decoding a Document into an entity
+	 * such as decompression, decryption.
+	 *
+	 * @param document the Document that was decoded
+	 */
+	void afterDecoding(Document document);
 }
