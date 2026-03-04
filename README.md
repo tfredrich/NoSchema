@@ -2,7 +2,7 @@
 
 NoSchema is a Java library offering a document-oriented repository pattern for Cassandra storage. It eliminates the need for a predefined schema, thereby providing significant flexibility in domain modeling without necessitating table data migrations.
 
-In NoSchema, only the keys that form an object's identifier are stored as individual columns. These keys are extracted from the entity at storage time. The object itself is serialized into a storage format through a pluggable serialization process and stored as a binary blob. Currently, NoSchema supports BSON (like MongoDB) and GSON (JSON) serialization formats.
+In NoSchema, only the keys that form an object's identifier are stored as individual columns. These keys are extracted from the entity at storage time. The object itself is serialized into a storage format through a pluggable serialization process and stored as a binary blob. Currently, NoSchema supports Jackson and GSON serialization formats.
 
 Given that usage of materialized views and indexes in Cassandra are discouraged (at least in high-throughput scenarios), NoSchema introduces the concepts of a `PrimaryTable`, `View`, and `Index`. These are fully managed and encapsulated within a Repository pattern that implements UnitOfWork. This ensures that multiple, denormalized tables are written; one for each key format, eliminating complex coding, reducing time-to-market, increasing developer efficiency and software accuracy.
 
@@ -23,7 +23,7 @@ NoSchema simplifies the management of resource-oriented Plain Old Java Objects (
 
 * **Metadata Built-In**: Every document stored in the database contains an underlying `metadata` map column that can be used for things like encryption key names, etc. that apply to the stored, embedded entity.
 
-* **Pluggable Serialization**: The project includes `BsonObjectCodec` and `GsonObjectCodec` classes that provide methods for serializing and deserializing objects to and from BSON and Gson formats respectively. If Jackson is already used in your project, simply implement the `ObjectCodec` interface and pass an instance in to the repository.
+* **Pluggable Serialization**: The project includes `JacksonObjectCodec` and `GsonObjectCodec` classes that provide methods for serializing and deserializing objects to and from Jackson and Gson formats respectively.
 
 ## Modules
 The project is divided into four main modules:
@@ -32,14 +32,14 @@ The project is divided into four main modules:
 
 1. **cassandra**: This module provides the base Respository class for Cassandra database operations and also includes the UnitOfWork implementation, which is used by the Repository.
 
-1. **bson-provider**: This module provides the BsonObjectCodec class for BSON serialization and deserialization. The class implements the ObjectCodec interface and provides methods for serializing and deserializing objects to and from BSON format.
+1. **jackson-provider**: This module provides the JacksonObjectCodec class for Jackson serialization and deserialization.
 
 1. **gson-provider**: This module provides the GsonObjectCodec class for Gson serialization and deserialization. The class implements the ObjectCodec interface and provides methods for serializing and deserializing objects to and from Gson format. The class is located in the com.strategicgains.noschema.gson package.
 
 ## Getting Started
 1. One requirement for using NoSchema is that entities **MUST** implement the `Identifiable` interface which needs a `getId()` method returning an `Identifier` instance containing the primary identifier components for the entity.
 
-1. Choose a serialization provider: BSON (recommended) and GSON are built-in. But if you want to use something that's already in your project, implement the `ObjectCodec` interface.
+1. Choose a serialization provider: Jackson and GSON are built-in. But if you want to use something that's already in your project, implement the `ObjectCodec` interface.
 
 1. Override the CassandraNoSchemaRepository for each PoJo, defining the `PrimaryTable`s and `View`s for the resource (See: *Defining Keys*, below).
 
@@ -48,7 +48,7 @@ The project is divided into four main modules:
 1. Determine the UnitOfWork consistency level. The default is to use the capabilities of the Cassandra client driver to distribute and manage the multiple statements across the views as completely asynchronous operations. It is also possible to use LOGGED and UNLOGGED batch operations, but know that these are *anti-patterns in Cassandra due to them likely being cross-partition writes and will impact performance.*
 
 ### Maven Configuration
-For the recommended configuration using BSON as the serialization provider, there are two dependencies needed in the Maven `pom.xml`.
+For the recommended configuration using Jackson as the serialization provider, there are two dependencies needed in the Maven `pom.xml`.
 
 ```xml
 <dependency>
@@ -58,7 +58,7 @@ For the recommended configuration using BSON as the serialization provider, ther
 </dependency>
 <dependency>
 	<groupId>com.strategicgains.noschema</groupId>
-	<artifactId>noschema-bson-provider</artifactId>
+	<artifactId>noschema-jackson-provider</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
@@ -96,8 +96,8 @@ throws KeyDefinitionException, InvalidIdentifierException, DuplicateItemExceptio
 	try
 	{
 		// Create a Repository instance.
-		// This one uses the asyncronous UnitOfWork and BSON serialization.
-		CassandraNoSchemaRepository<Album> albums = new CassandraNoSchemaRepository<>(session, albumsTable, UnitOfWorkType.ASYNC, new BsonObjectCodec());
+		// This one uses the asynchronous UnitOfWork and Jackson serialization.
+		CassandraRepository<Album> albums = new CassandraRepository<>(session, albumsTable, UnitOfWorkType.ASYNC, new JacksonObjectCodec());
 
 		// this creates any missing underlying Cassandra tables (for both PrimaryTable and any Views)
 		albums.ensureTables();
