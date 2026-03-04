@@ -123,7 +123,12 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 		if (hasViews())
 		{
-			table.views().forEach(v -> new DocumentSchemaProvider(v).drop(session));
+			table.views().forEach(view -> new DocumentSchemaProvider(view).drop(session));
+		}
+
+		if (hasIndexes())
+		{
+			table.indexes().forEach(idx -> new DocumentSchemaProvider(idx).drop(session));
 		}
 	}
 
@@ -449,7 +454,9 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 		try
 		{
-			return allCompletableFuture.get();
+			return allCompletableFuture.get().stream()
+				.filter(Objects::nonNull)
+				.toList();
 		}
 		catch (InterruptedException i)
 		{

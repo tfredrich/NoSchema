@@ -198,7 +198,7 @@ implements Identifiable
 	 */
 	public void setType(Class<?> type)
 	{
-		setType(type.getClass());
+		setType(type.getName());
 	}
 
 	/**
