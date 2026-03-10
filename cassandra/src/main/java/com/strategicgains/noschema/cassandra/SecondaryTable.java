@@ -5,16 +5,11 @@ import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 /**
- * A SecondaryTable is a child of a PrimaryTable. It is a table that is
- * created to support a query that is not supported by the parent table such as
- * views and indexes. They are read-only and are not updated directly. Instead,
- * they are updated when the parent table is updated (via the UnitOfWork).
- * 
- * A View is a denormalized table that is created to support a specific query and
- * contains all the same data that the primary table contains but with a different
- * key structure. The key structure of a view is defined by the query that it supports.
- * 
- * An Index is simply an Identifier pointing to another Identifier (in the PrimaryTable).
+ * A SecondaryTable is an abstract class describing a child of a PrimaryTable.
+ * It is a table that is created to support a query that is not supported by
+ * the parent table such as views and indexes. They are read-only and are not
+ * updated directly. Instead, they are updated when the parent table is
+ * updated (via the UnitOfWork).
  * 
  * @author Todd Fredrich
  * @see View

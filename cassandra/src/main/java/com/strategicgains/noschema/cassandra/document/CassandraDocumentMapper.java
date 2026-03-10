@@ -6,7 +6,7 @@ import java.sql.Date;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.CassandraRowMapper;
+import com.strategicgains.noschema.cassandra.RowMapper;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.document.AbstractDocumentMapper;
@@ -17,7 +17,7 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 public class CassandraDocumentMapper<T extends Identifiable>
 extends AbstractDocumentMapper<T>
-implements CassandraRowMapper<T>
+implements RowMapper<T>
 {
 	private final KeyDefinition keys;
 

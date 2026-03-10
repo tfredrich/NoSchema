@@ -39,36 +39,31 @@ implements Repository<T>
 	private final CqlSession session;
 	private final PrimaryTable table;
 	private final CachingStatementFactory<T> statementFactory;
-	private final Map<String, CassandraRowMapper<T>> rowMappersByTable = new HashMap<>();
+	private final Map<String, RowMapper<T>> rowMappersByTable = new HashMap<>();
 	private final UnitOfWorkType unitOfWorkType;
 	private final List<RepositoryObserver<T>> lifecycleObservers = new ArrayList<>();
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, PreparedStatementFactoryProvider<T> factoryProvider, CassandraRowMapper<T> rowMapper)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, PreparedStatementFactoryProvider<T> factoryProvider, RowMapper<T> rowMapper)
 	{
 		this(session, table, UnitOfWorkType.LOGGED, factoryProvider, rowMapper);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, PreparedStatementFactoryProvider<T> factoryProvider, CassandraRowMapper<T> rowMapper)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, PreparedStatementFactoryProvider<T> factoryProvider, RowMapper<T> rowMapper)
 	{
 		this(session, table, unitOfWorkType, new CachingStatementFactory<>(session, table, factoryProvider), rowMapper);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, CachingStatementFactory<T> statementFactory, CassandraRowMapper<T> rowMapper)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, CachingStatementFactory<T> statementFactory, RowMapper<T> rowMapper)
 	{
 		this(session, table, UnitOfWorkType.LOGGED, statementFactory, rowMapper);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, CachingStatementFactory<T> statementFactory, CassandraRowMapper<T> rowMapper)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, CachingStatementFactory<T> statementFactory, RowMapper<T> rowMapper)
 	{
 		this(session, table, unitOfWorkType, statementFactory, toViewMap(table, rowMapper));
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, CachingStatementFactory<T> statementFactory, Map<String, ? extends CassandraRowMapper<T>> rowMappersByTable)
-	{
-		this(session, table, UnitOfWorkType.LOGGED, statementFactory, rowMappersByTable);
-	}
-
-	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, CachingStatementFactory<T> statementFactory, Map<String, ? extends CassandraRowMapper<T>> rowMappersByTable)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, CachingStatementFactory<T> statementFactory, Map<String, ? extends RowMapper<T>> rowMappersByTable)
 	{
 		this.session = Objects.requireNonNull(session);
 		this.table = Objects.requireNonNull(table);
@@ -366,19 +361,19 @@ implements Repository<T>
 
 	private T asEntity(String viewName, Row row)
 	{
-		CassandraRowMapper<T> mapper = rowMappersByTable.get(viewName);
+		RowMapper<T> mapper = rowMappersByTable.get(viewName);
 
 		if (mapper == null)
 		{
-			throw new IllegalStateException("No CassandraRowMapper configured for view: " + viewName);
+			throw new IllegalStateException("No RowMapper configured for view: " + viewName);
 		}
 
 		return mapper.toEntity(row);
 	}
 
-	private static <T extends Identifiable> Map<String, CassandraRowMapper<T>> toViewMap(PrimaryTable table, CassandraRowMapper<T> rowMapper)
+	private static <T extends Identifiable> Map<String, RowMapper<T>> toViewMap(PrimaryTable table, RowMapper<T> rowMapper)
 	{
-		Map<String, CassandraRowMapper<T>> rowMappersByTable = new HashMap<>();
+		Map<String, RowMapper<T>> rowMappersByTable = new HashMap<>();
 		table.stream().forEach(view -> rowMappersByTable.put(view.name(), rowMapper));
 		return rowMappersByTable;
 	}
