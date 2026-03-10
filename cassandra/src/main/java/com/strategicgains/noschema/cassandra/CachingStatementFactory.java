@@ -10,14 +10,14 @@ import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
-import com.strategicgains.noschema.document.ObjectCodec;
+import com.strategicgains.noschema.document.DocumentCodec;
 
-public class CassandraStatementFactory<T extends Identifiable>
+public class CachingStatementFactory<T extends Identifiable>
 {
 	private final Map<String, KeyDefinition> keysByTable = new HashMap<>();
     private final Map<String, CqlStatementFactory<T>> factoriesByTable = new HashMap<>();
 
-	public CassandraStatementFactory(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
+	public CachingStatementFactory(CqlSession session, PrimaryTable table, DocumentCodec<T> codec)
 	{
 		super();
 		table.stream().forEach(view -> {

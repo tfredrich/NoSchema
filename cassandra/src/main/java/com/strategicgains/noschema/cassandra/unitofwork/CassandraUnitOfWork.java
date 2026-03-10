@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionStage;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.CassandraStatementFactory;
+import com.strategicgains.noschema.cassandra.CachingStatementFactory;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -26,16 +26,16 @@ public class CassandraUnitOfWork
 implements UnitOfWork
 {
     private final CqlSession session;
-    private final CassandraStatementFactory statementFactory;
+    private final CachingStatementFactory statementFactory;
     private final UnitOfWorkChangeSet<Document> changeSet = new UnitOfWorkChangeSet<>();
     private final UnitOfWorkCommitStrategy commitStrategy;
 
-    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory statementFactory)
+    public CassandraUnitOfWork(CqlSession session, CachingStatementFactory statementFactory)
     {
     	this(session, statementFactory, UnitOfWorkType.LOGGED);
     }
 
-    public CassandraUnitOfWork(CqlSession session, CassandraStatementFactory statementFactory, UnitOfWorkType unitOfWorkType)
+    public CassandraUnitOfWork(CqlSession session, CachingStatementFactory statementFactory, UnitOfWorkType unitOfWorkType)
     {
         this.session = Objects.requireNonNull(session);
         this.statementFactory = Objects.requireNonNull(statementFactory);

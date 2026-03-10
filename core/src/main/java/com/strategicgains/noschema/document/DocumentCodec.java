@@ -13,13 +13,10 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
 */
-package com.strategicgains.noschema.unitofwork;
+package com.strategicgains.noschema.document;
 
-public enum EntityState
+public interface DocumentCodec<T>
 {
-	CLEAN,
-	NEW,
-	DIRTY,
-	DELETED,
-	UNKNOWN
+	byte[] serialize(T object);
+	T deserialize(byte[] bytes, Class<T> clazz);
 }

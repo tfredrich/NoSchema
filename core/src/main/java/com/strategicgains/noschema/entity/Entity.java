@@ -1,5 +1,5 @@
 /*
-    Copyright 2018-2022, Strategic Gains, Inc.
+    Copyright 2018-2026, Strategic Gains, Inc.
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -13,7 +13,9 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
 */
-package com.strategicgains.noschema;
+package com.strategicgains.noschema.entity;
+
+import com.strategicgains.noschema.Identifiable;
 
 /**
  * Represents an object that has an identifier (an 'id' property).
@@ -27,5 +29,5 @@ extends Identifiable
 {
 	public T getId();
 	public boolean hasId();
-	public void setId(T oid);
+	public void setId(T id);
 }

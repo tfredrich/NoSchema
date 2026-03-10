@@ -9,7 +9,7 @@ import java.util.UUID;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.strategicgains.noschema.cassandra.schema.SchemaRegistry;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
-import com.strategicgains.noschema.document.ObjectCodec;
+import com.strategicgains.noschema.document.DocumentCodec;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -19,8 +19,8 @@ import com.strategicgains.noschema.jackson.JacksonObjectCodec;
 
 public class SampleRun
 {
-	private static final ObjectCodec<Flower> GSON_CODEC = new GsonObjectCodec<>();
-	private static final ObjectCodec<Flower> JACKSON_CODEC = new JacksonObjectCodec<>();
+	private static final DocumentCodec<Flower> GSON_CODEC = new GsonObjectCodec<>();
+	private static final DocumentCodec<Flower> JACKSON_CODEC = new JacksonObjectCodec<>();
 	private static final UnitOfWorkType unitOfWorkType = UnitOfWorkType.ASYNC;
 
 	public static void main(String[] args)
@@ -84,7 +84,7 @@ public class SampleRun
 		SchemaRegistry.clear();
 	}
 
-	private static void testCassandra(String keyspace, CqlSession session, UnitOfWorkType uowType, ObjectCodec<Flower> codec)
+	private static void testCassandra(String keyspace, CqlSession session, UnitOfWorkType uowType, DocumentCodec<Flower> codec)
 	{
 		// Create the keyspace, if needed.
 		SchemaRegistry.initialize(session);

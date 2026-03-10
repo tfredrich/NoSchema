@@ -1,9 +1,9 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-NoSchema is a Maven multi-module Java 17 project:
-- `core/`: shared abstractions (`Entity`, `Identifier`, `UnitOfWork`) and core tests.
-- `cassandra/`: Cassandra repository implementation, key/schema DSL, and integration-oriented tests.
+NoSchema is a Maven multi-module Java 21 project:
+- `core/`: shared abstractions and contracts (`Repository`, `Identifiable`, `Identifier`, `DocumentCodec`, unit-of-work types) and core tests.
+- `cassandra/`: Cassandra repository implementation (`CassandraRepository`), key/schema DSLs, and Cassandra-focused tests.
 - `gson-provider/`: `GsonObjectCodec` implementation and codec tests.
 - `jackson-provider/`: `JacksonObjectCodec` implementation and codec tests.
 
@@ -18,11 +18,12 @@ Use Maven from the repository root:
 - `mvn -DskipTests package`: build jars quickly without tests.
 
 ## Coding Style & Naming Conventions
-- Java 17 (`maven-compiler-plugin` source/target set to `17`).
+- Java 21 (`maven-compiler-plugin` source/target set to `${jdk.version}` in root `pom.xml`).
 - Follow existing code style: tabs for indentation, K&R braces, concise Javadoc on public APIs.
 - Package naming: lowercase (`com.strategicgains.noschema...`).
 - Class names: PascalCase (`KeyDefinitionParser`); methods/fields: camelCase.
 - Keep provider-specific code inside its provider module; shared contracts belong in `core`.
+- Add Apache 2.0 license headers to new Java source files (matching the existing header format).
 
 ## Testing Guidelines
 - Framework: JUnit 4 (`org.junit.Test`, `Assert.*`).

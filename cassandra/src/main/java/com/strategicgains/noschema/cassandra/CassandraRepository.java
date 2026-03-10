@@ -15,18 +15,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.protocol.internal.util.Bytes;
+import com.strategicgains.noschema.RepositoryObserver;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.NoSchemaRepository;
+import com.strategicgains.noschema.Repository;
 import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
 import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
+import com.strategicgains.noschema.document.DocumentCodec;
 import com.strategicgains.noschema.document.DocumentObserver;
-import com.strategicgains.noschema.document.EntityObserver;
-import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -35,7 +35,7 @@ import com.strategicgains.noschema.exception.StorageException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 
 /**
- * A CassandraRepository is a NoSchemaRepository implementation that uses
+ * A CassandraRepository is a Repository implementation that uses
  * Cassandra as its underlying data store. It is responsible for creating,
  * reading, updating, and deleting entities in the database. It also provides
  * methods for checking if an entity exists, and for reading multiple entities
@@ -51,36 +51,36 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
  * T is the type of entity to be stored in the database.
  */
 public class CassandraRepository<T extends Identifiable>
-implements NoSchemaRepository<T>, SchemaWriter<T>
+implements Repository<T>, SchemaWriter<T>
 {
 	// The session used to connect to the Cassandra cluster.
 	private CqlSession session;
 	// The primary table and its views.
 	private PrimaryTable table;
 	// The statement factory used to create the CQL statements within the UnitOfWork.
-	private CassandraStatementFactory<T> statementFactory;
+	private CachingStatementFactory<T> statementFactory;
 	// The factories used to encode and decode entities.
 	private Map<String, CassandraDocumentFactory<T>> factoriesByTable = new HashMap<>();
 	// The type of UnitOfWork to create.
 	private UnitOfWorkType unitOfWorkType;
-	// The observers used to observe the encoding, creation, update, and deletion of entities.
+	// The lifecycleObservers used to observe the encoding, creation, update, and deletion of entities.
 	private List<DocumentObserver> documentObservers = new ArrayList<>();
-	// The observers used to observe the creation, update, and deletion of entities.
-	private List<EntityObserver<T>> entityObservers = new ArrayList<>();
+	// The lifecycleObservers used to observe the creation, update, and deletion of entities.
+	private List<RepositoryObserver<T>> lifecycleObservers = new ArrayList<>();
 
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, DocumentCodec<T> codec)
 	{
 		this(session, table, UnitOfWorkType.LOGGED, codec);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, ObjectCodec<T> codec)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
 	{
 		super();
 		this.session = Objects.requireNonNull(session);
 		this.table = Objects.requireNonNull(table);
 		this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
-		this.statementFactory = new CassandraStatementFactory<>(session, table, codec);
+		this.statementFactory = new CachingStatementFactory<>(session, table, codec);
 		factoriesByTable.put(table.name(), new CassandraDocumentFactory<>(table.keys(), codec));
 		table.views().forEach(view ->
 			this.factoriesByTable.put(view.name(), new CassandraDocumentFactory<>(view.keys(), codec))
@@ -143,9 +143,9 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		return this;
 	}
 
-	public CassandraRepository<T> withEntityObserver(EntityObserver<T> observer)
+	public CassandraRepository<T> withEntityObserver(RepositoryObserver<T> observer)
 	{
-		entityObservers.add(observer);
+		lifecycleObservers.add(observer);
 		return this;
 	}
 
@@ -178,7 +178,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 
 	public T create(T entity, CassandraUnitOfWork uow)
 	{
-		entityObservers.forEach(o -> o.beforeCreate(entity));
+		lifecycleObservers.forEach(o -> o.beforeCreate(entity));
 		final AtomicReference<byte[]> serialized = new AtomicReference<>();
 		final AtomicReference<byte[]> serializedId = new AtomicReference<>();
 		final AtomicReference<Document> primaryDocument = new AtomicReference<>();
@@ -214,7 +214,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		});
 
 		documentObservers.forEach(o -> o.afterCreate(primaryDocument.get()));
-		entityObservers.forEach(o -> o.afterCreate(entity));
+		lifecycleObservers.forEach(o -> o.afterCreate(entity));
 		return entity;
 	}
 
@@ -245,7 +245,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 	public void delete(Identifier id, CassandraUnitOfWork uow)
 	{
 		final T entity = read(id);
-		entityObservers.forEach(o -> o.beforeDelete(entity));
+		lifecycleObservers.forEach(o -> o.beforeDelete(entity));
 		final AtomicReference<byte[]> serialized = new AtomicReference<>();
 		final AtomicReference<Document> primaryDocument = new AtomicReference<>();
 
@@ -270,7 +270,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 		});
 
 		documentObservers.forEach(o -> o.afterDelete(primaryDocument.get()));
-		entityObservers.forEach(o -> o.afterDelete(entity));
+		lifecycleObservers.forEach(o -> o.afterDelete(entity));
 	}
 
 	/**
@@ -336,7 +336,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 			T read = readRow(viewName, id)
 				.thenApply(row -> asEntity(viewName, row))
 				.join();
-			entityObservers.forEach(o -> o.afterRead(read));
+			lifecycleObservers.forEach(o -> o.afterRead(read));
 			return read;
 		}
 		catch (CompletionException e)
@@ -381,7 +381,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 					response.cursor(page.cursor());
 					page.iterator().forEachRemaining(row -> {
 						T entity = asEntity(viewName, row);
-						entityObservers.forEach(o -> o.afterRead(entity));
+						lifecycleObservers.forEach(o -> o.afterRead(entity));
                         response.add(entity);
                     });
 				})
@@ -438,7 +438,7 @@ implements NoSchemaRepository<T>, SchemaWriter<T>
 				.thenApply(rs -> rs.one())
 				.thenApply(row -> {
 					T entity = asEntity(viewName, row);
-					entityObservers.forEach(o -> o.afterRead(entity));
+					lifecycleObservers.forEach(o -> o.afterRead(entity));
 					return entity;
 				})
 				.toCompletableFuture()
