@@ -36,7 +36,7 @@ implements UnitOfWorkCommitStrategy
 	@Override
 	public void rollback() throws UnitOfWorkRollbackException
 	{
-		// No-op for CassandraUnitOfWork so far...
+		// No-op for DocumentUnitOfWork so far...
 		throw new UnitOfWorkRollbackException("Not Implemented.");
 	}
 }

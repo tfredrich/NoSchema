@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.cassandra.document.CassandraDocumentRepository;
 import com.strategicgains.noschema.cassandra.key.ClusteringKeyComponent;
 import com.strategicgains.noschema.cassandra.key.DataTypes;
 import com.strategicgains.noschema.cassandra.key.builder.KeyDefinitionBuilder;
@@ -21,12 +22,12 @@ import com.strategicgains.noschema.document.DocumentCodec;
  * 
  * In all likelihood, Repository implementations could use containment instead of inheritance to reduce the scope of the 
  * methods exposed to the client. But, for the purposes of this example, it's easier to demonstrate the use of the
- * underlying methods by extending the CassandraRepository class.
+ * underlying methods by extending the CassandraDocumentRepository class.
  * 
  * @author Todd Fredrich
  */
 public class FlowerRepository
-extends CassandraRepository<Flower>
+extends CassandraDocumentRepository<Flower>
 {
 	private static final String FLOWERS_BY_HEIGHT = "by_height";
 	private static final String FLOWERS_BY_NAME = "by_name";

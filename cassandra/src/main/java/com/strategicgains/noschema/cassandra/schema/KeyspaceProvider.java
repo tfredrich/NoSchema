@@ -4,10 +4,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * Enables NoSchema to create a keyspace in Cassandra if it doesn't already exist.
+ * By default, the keyspace is created with a replication factor of 1 using the SimpleStrategy.
+ * If you want to use NetworkTopologyStrategy, call useNetworkReplication() and provide a map
+ * of data center names and replication factors.
+ */
 public class KeyspaceProvider
 extends AbstractSchemaProvider
 {
-	private static String DEFAULT_KEYSPACE = "noschema";
+	private static final String DEFAULT_KEYSPACE = "noschema";
 
 	private class Schema
 	{
@@ -20,22 +26,41 @@ extends AbstractSchemaProvider
 	private Map<String, Integer> dataCenters = null;
 	private String keyspace;
 
+	/**
+	 * Creates a KeyspaceProvider with the default keyspace name of "noschema".
+	 */
 	public KeyspaceProvider()
 	{
 		this(DEFAULT_KEYSPACE);
 	}
 
+	/**
+	 * Creates a KeyspaceProvider with the given keyspace name.
+	 * 
+	 * @param keyspace the name of the keyspace to create if it doesn't already exist.
+	 */
 	public KeyspaceProvider(String keyspace)
     {
 		super();
 		this.keyspace = keyspace;
     }
 
+	/**
+	 * Determines whether this KeyspaceProvider is configured to use NetworkTopologyStrategy for replication.
+	 * 
+	 * @return true if this KeyspaceProvider is configured to use NetworkTopologyStrategy for replication; false otherwise.
+	 */
 	public boolean isNetworkReplication()
 	{
 		return (dataCenters != null);
 	}
 
+	/**
+	 * Configures this KeyspaceProvider to use NetworkTopologyStrategy for replication with the given data
+	 * center names and replication factors.
+	 * 
+	 * @param dataCenters a map of data center names with corresponding integer replication factors.
+	 */
 	public void useNetworkReplication(Map<String, Integer> dataCenters)
 	{
 		this.dataCenters = new HashMap<>(dataCenters);
@@ -69,7 +94,7 @@ extends AbstractSchemaProvider
 	 * @param replFactors a map of datacenter names with corresponding integer replication factors.
 	 * @return a formatted string of the form, "'use1' : 2, 'usw2' : 2"
 	 */
-	String replicationFactors(Map<String, Integer> replFactors)
+	private String replicationFactors(Map<String, Integer> replFactors)
 	{
 		StringBuilder sb = new StringBuilder();
 		boolean isFirst = true;

@@ -22,9 +22,9 @@ extends AbstractSchemaProvider
 	}
 
 	private static final String DROP_TABLE = "drop table if exists %s.%s;";
-	private static final String CREATE_TABLE = "create table if not exists %s.%s" +
+	private static final String CREATE_TABLE = "create table if not exists %s.%s" + // format 1, 2: keyspace, table
 	"(" +
-		"%s," +									// identifying properties
+		"%s," +									// format 3: identifying columns
 	    Columns.OBJECT + " blob," +
 		Columns.TYPE + " text," +
 	    Columns.METADATA + " map<text,text>," +
@@ -32,9 +32,9 @@ extends AbstractSchemaProvider
 	    // Add Lucene index capability if needed to Document.
 		Columns.CREATED_AT + " timestamp," +
 	    Columns.UPDATED_AT + " timestamp," +
-		"%s" +									// primary key
+		"%s" +									// format 4: primary key
 	")" +
-	" %s";										// clustering order (optional)
+	" %s";										// format 5: clustering key + order (optional)
 
 	private String keyspace;
 	private String table;

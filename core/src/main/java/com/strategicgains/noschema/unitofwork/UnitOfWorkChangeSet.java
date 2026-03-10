@@ -23,47 +23,45 @@ import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
 /**
- * This class provides transactional context for managing database changes. It allows
+ * This class provides transactional context for managing database changesByState. It allows
  * registering new entities, marking entities as "dirty" or "deleted". Commit and
  * rollback are left for extenders of the class.
  */
-public class UnitOfWorkChangeSet<T extends Identifiable>
+public class UnitOfWorkChangeSet
 {
 	// This identity map is used to keep track of entities that have changed and
 	// need to be persisted during the transaction.
-	private Map<Identifier, EntityChanges<T>> changes = new HashMap<>();
+	private Map<Identifier, EntityChanges<?>> changesByIdentifier = new HashMap<>();
 
 	/**
 	 * Returns a stream containing all the changed entities (excluding CLEAN).
 	 */
-	public Stream<Change<T>> stream()
+	public Stream<Change<?>> stream()
 	{
-	    return changes.values().stream().flatMap(s -> s.asChange().stream());
+	    return changesByIdentifier.values().stream().flatMap(s -> s.asChange().stream());
 	}
 
-	public UnitOfWorkChangeSet<T> registerChange(Change<T> change)
+	public <T extends Identifiable> UnitOfWorkChangeSet registerChange(Change<T> change)
 	{
-		EntityChanges<T> changeSet = getChangesFor(change.getEntity());
-		changeSet.add(change);
+		@SuppressWarnings("unchecked")
+		EntityChanges<T> entityChanges = (EntityChanges<T>) changesByIdentifier.computeIfAbsent(change.getIdentifier(), a -> new EntityChanges<>());
+		entityChanges.add(change);
 		return this;
 	}
 
     /**
-     * Clears or deregisters all the previously-registered changes and resets the unit of work to it's initial, empty state.
+     * Clears or deregisters all the previously-registered changesByIdentifier in the change set and
+     * resets the unit of work to it's initial, empty state.
      */
     public void reset()
 	{
-		changes.clear();
+		changesByIdentifier.clear();
 	}
 
-	private EntityChanges<T> getChangesFor(T entity)
+	public <T extends Identifiable> T findClean(Identifier id)
 	{
-		return changes.computeIfAbsent(entity.getIdentifier(), a -> new EntityChanges<>());
-	}
-
-	public T findClean(Identifier id)
-	{
-		EntityChanges<T> s = changes.get(id);
+		@SuppressWarnings("unchecked")
+		EntityChanges<T> s = (EntityChanges<T>) changesByIdentifier.get(id);
 
 		if (s != null)
 		{

@@ -20,6 +20,12 @@ import java.util.Objects;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
+/**
+ * Indicates a change to an entity that needs to be persisted during a transaction (Unit of Work).
+ * The change includes the entity itself and the state of the entity (NEW, DIRTY, DELETED).
+ * 
+ * @param <T> the type of the entity that has changed.
+ */
 public class Change<T extends Identifiable>
 {
 	private final T entity;
@@ -36,7 +42,7 @@ public class Change<T extends Identifiable>
 		return entity;
 	}
 
-	public Identifier getId()
+	public Identifier getIdentifier()
 	{
 		return entity.getIdentifier();
 	}
@@ -69,7 +75,7 @@ public class Change<T extends Identifiable>
 	@Override
 	public int hashCode()
 	{
-		return Objects.hash(getId(), state);
+		return Objects.hash(getIdentifier(), state);
 	}
 
 	@Override

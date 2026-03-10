@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.AbstractTable;
 import com.strategicgains.noschema.cassandra.CqlStatementFactory;
@@ -19,7 +20,7 @@ import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.InvalidObjectIdException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
-public final class DocumentStatementFactory<T>
+public final class DocumentStatementFactory<T extends Identifiable>
 implements CqlStatementFactory<T>
 {
 	private static final String SELECT_COLUMNS = String.join(",", Columns.OBJECT, Columns.TYPE, Columns.METADATA, Columns.CREATED_AT, Columns.UPDATED_AT);
@@ -46,15 +47,15 @@ implements CqlStatementFactory<T>
 	private CqlSession session;
 	private AbstractTable table;
 	private Map<String, PreparedStatement> statements = new ConcurrentHashMap<>();
-	private CassandraDocumentFactory<T> documentFactory;
+	private CassandraDocumentMapper<T> documentFactory;
 	private boolean useLightweightTxns;
 
 	public DocumentStatementFactory(CqlSession session, AbstractTable table, DocumentCodec<T> codec)
 	{
-		this(session, table, new CassandraDocumentFactory<>(table.keys(), codec));
+		this(session, table, new CassandraDocumentMapper<>(table.keys(), codec));
 	}
 
-	public DocumentStatementFactory(CqlSession session, AbstractTable table, CassandraDocumentFactory<T> factory)
+	public DocumentStatementFactory(CqlSession session, AbstractTable table, CassandraDocumentMapper<T> factory)
 	{
 		super();
 		this.session = session;
@@ -257,7 +258,7 @@ implements CqlStatementFactory<T>
 
 		try
 		{
-			return documentFactory.asDocument(entity);
+			return documentFactory.toDocument(entity);
 		}
 		catch (InvalidIdentifierException | KeyDefinitionException e)
 		{

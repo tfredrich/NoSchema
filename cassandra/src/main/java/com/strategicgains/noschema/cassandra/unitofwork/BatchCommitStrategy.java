@@ -49,7 +49,7 @@ implements UnitOfWorkCommitStrategy
 	public void rollback()
 	throws UnitOfWorkRollbackException
 	{
-		// No-op for CassandraUnitOfWork since we're using a logged batch
+		// No-op for DocumentUnitOfWork since we're using a logged batch
 		throw new UnitOfWorkRollbackException("Not Implemented.");
 	}
 }

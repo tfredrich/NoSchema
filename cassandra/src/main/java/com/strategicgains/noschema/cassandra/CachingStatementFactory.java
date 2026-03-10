@@ -15,7 +15,7 @@ import com.strategicgains.noschema.document.DocumentCodec;
 public class CachingStatementFactory<T extends Identifiable>
 {
 	private final Map<String, KeyDefinition> keysByTable = new HashMap<>();
-    private final Map<String, CqlStatementFactory<T>> factoriesByTable = new HashMap<>();
+    private final Map<String, CqlStatementFactory<T>> statementsByTable = new HashMap<>();
 
 	public CachingStatementFactory(CqlSession session, PrimaryTable table, DocumentCodec<T> codec)
 	{
@@ -72,7 +72,7 @@ public class CachingStatementFactory<T extends Identifiable>
 
 	private void put(String tableName, CqlStatementFactory<T> factory)
 	{
-		factoriesByTable.put(tableName, factory);
+		statementsByTable.put(tableName, factory);
 	}
 
 	private void put(String tableName, KeyDefinition keys)
@@ -82,7 +82,7 @@ public class CachingStatementFactory<T extends Identifiable>
 
 	private CqlStatementFactory<T> get(String tableName)
 	{
-		CqlStatementFactory<T> factory = factoriesByTable.get(tableName);
+		CqlStatementFactory<T> factory = statementsByTable.get(tableName);
 
 //		if (factory == null) throw new InvalidViewNameException(tableName);
 

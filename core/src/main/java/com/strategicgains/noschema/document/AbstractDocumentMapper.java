@@ -15,6 +15,7 @@
 */
 package com.strategicgains.noschema.document;
 
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
@@ -27,11 +28,11 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  *
  * @param <T>
  */
-public abstract class AbstractDocumentFactory<T>
+public abstract class AbstractDocumentMapper<T extends Identifiable>
 {
 	private DocumentCodec<T> codec;
 
-	protected AbstractDocumentFactory(DocumentCodec<T> codec)
+	protected AbstractDocumentMapper(DocumentCodec<T> codec)
 	{
 		super();
 		setCodec(codec);
@@ -42,14 +43,14 @@ public abstract class AbstractDocumentFactory<T>
 		this.codec = objectCodec;
 	}
 
-	public Document asDocument(T entity)
+	public Document toDocument(T entity)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		byte[] bson = codec.serialize(entity);
-		return asDocument(entity, bson);
+		byte[] bytes = codec.serialize(entity);
+		return toDocument(entity, bytes);
 	}
 
-	public Document asDocument(T entity, byte[] bytes)
+	public Document toDocument(T entity, byte[] bytes)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		Identifier id = extractIdentifier(entity);
@@ -57,7 +58,7 @@ public abstract class AbstractDocumentFactory<T>
 	}
 
 	@SuppressWarnings("unchecked")
-	public T asPojo(Document document)
+	public T toEntity(Document document)
 	{
 		return codec.deserialize(document.getObject(), (Class<T>) document.getTypeAsClass());
 	}

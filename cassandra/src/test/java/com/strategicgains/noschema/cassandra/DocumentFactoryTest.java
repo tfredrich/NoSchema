@@ -13,7 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
+import com.strategicgains.noschema.cassandra.document.CassandraDocumentMapper;
 import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.DocumentCodec;
@@ -45,12 +45,12 @@ public class DocumentFactoryTest
 	public void testUuidIdentifier()
 	throws KeyDefinitionException, InvalidIdentifierException
 	{
-		CassandraDocumentFactory<Flower> factory = new CassandraDocumentFactory<>(KeyDefinitionParser.parse("id:UUID"), CODEC);
-		Document document = factory.asDocument(flower);
+		CassandraDocumentMapper<Flower> factory = new CassandraDocumentMapper<>(KeyDefinitionParser.parse("id:UUID"), CODEC);
+		Document document = factory.toDocument(flower);
 		assertEquals(new Identifier(id), document.getIdentifier());
 		makeDocumentAssertions(new Identifier(id), document);
 
-		Flower deserialized = factory.asPojo(document);
+		Flower deserialized = factory.toEntity(document);
 		makeFlowerAssertions(id, accountId, createdAt, updatedAt, deserialized);
 	}
 
@@ -58,11 +58,11 @@ public class DocumentFactoryTest
 	public void testMultipartIdentifier()
 	throws KeyDefinitionException, InvalidIdentifierException
 	{
-		CassandraDocumentFactory<Flower> factory = new CassandraDocumentFactory<>(KeyDefinitionParser.parse("account.id as account_id:UUID, name:text"), CODEC);
-		Document document = factory.asDocument(flower);
+		CassandraDocumentMapper<Flower> factory = new CassandraDocumentMapper<>(KeyDefinitionParser.parse("account.id as account_id:UUID, name:text"), CODEC);
+		Document document = factory.toDocument(flower);
 		assertEquals(new Identifier(accountId, "rose"), document.getIdentifier());
 		makeDocumentAssertions(new Identifier(accountId, "rose"), document);
-		Flower deserialized = factory.asPojo(document);
+		Flower deserialized = factory.toEntity(document);
 		makeFlowerAssertions(id, accountId, createdAt, updatedAt, deserialized);
 	}
 

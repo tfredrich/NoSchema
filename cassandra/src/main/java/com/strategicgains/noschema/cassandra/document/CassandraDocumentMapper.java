@@ -4,33 +4,28 @@ import java.nio.ByteBuffer;
 import java.sql.Date;
 
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
-import com.strategicgains.noschema.document.AbstractDocumentFactory;
+import com.strategicgains.noschema.document.AbstractDocumentMapper;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.DocumentCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
-public class CassandraDocumentFactory<T>
-extends AbstractDocumentFactory<T>
+public class CassandraDocumentMapper<T extends Identifiable>
+extends AbstractDocumentMapper<T>
 {
-	private KeyDefinition keys;
+	private final KeyDefinition keys;
 
-	public CassandraDocumentFactory(KeyDefinition keys, DocumentCodec<T> codec)
+	public CassandraDocumentMapper(KeyDefinition keys, DocumentCodec<T> codec)
 	{
 		super(codec);
-		setKeyDefinition(keys);
+		this.keys = keys;
 	}
 
-	public CassandraDocumentFactory(DocumentCodec<T> codec, KeyDefinition keys)
-	{
-		super(codec);
-		setKeyDefinition(keys);
-	}
-
-	public Document asDocument(Row row)
+	public Document fromRow(Row row)
 	{
 		if (row == null)
 		{
@@ -50,12 +45,7 @@ extends AbstractDocumentFactory<T>
 		d.setMetadata(row.getMap(Columns.METADATA, String.class, String.class));
 		d.setCreatedAt(new Date(row.getInstant(Columns.CREATED_AT).getEpochSecond()));
 		d.setUpdatedAt(new Date(row.getInstant(Columns.UPDATED_AT).getEpochSecond()));
-		return d;
-	}
-
-	private void setKeyDefinition(KeyDefinition keys)
-	{
-		this.keys = keys;
+			return d;
 	}
 
 	@Override

@@ -6,7 +6,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
+import com.strategicgains.noschema.cassandra.document.CassandraDocumentMapper;
 import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.DocumentCodec;
@@ -26,7 +26,7 @@ public class DocumentFactoryTimer
 	private static final List<String> COLORS = Arrays.asList("red", "white", "pink", "yellow");
 	private static final int SERIALIZATION_COUNT = 500000;
 
-	private CassandraDocumentFactory<Flower> factory;
+	private CassandraDocumentMapper<Flower> factory;
 	private long startedAt;
 	private long endedAt;
 	private int iterations;
@@ -48,7 +48,7 @@ public class DocumentFactoryTimer
 	private Flower setup()
 	throws KeyDefinitionException
 	{
-		factory  = new CassandraDocumentFactory<>(KeyDefinitionParser.parse("account.id as account_id:UUID, name:text"), CODEC);
+		factory  = new CassandraDocumentMapper<>(KeyDefinitionParser.parse("account.id as account_id:UUID, name:text"), CODEC);
 		Flower flower = new Flower(UUID.fromString(FLOWER_ID), FLOWER_NAME, true, 3.25f, COLORS);
 		flower.setAccountId(UUID.fromString(ACCOUNT_ID));
 		flower.setCreatedAt(new Date(CREATED_AT));
@@ -68,8 +68,8 @@ public class DocumentFactoryTimer
 
 		for (int i = 0; i < iterations; i++)
 		{
-			Document document = factory.asDocument(flower);
-			factory.asPojo(document);
+			Document document = factory.toDocument(flower);
+			factory.toEntity(document);
 		}
 	}
 
