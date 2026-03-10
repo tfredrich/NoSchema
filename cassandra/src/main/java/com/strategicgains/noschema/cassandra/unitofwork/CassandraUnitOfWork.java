@@ -12,7 +12,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.CachingStatementFactory;
+import com.strategicgains.noschema.cassandra.MutationStatementFactory;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -24,20 +24,20 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
 public class CassandraUnitOfWork
-	implements UnitOfWork
-	{
-	    private final CqlSession session;
-	    private final CachingStatementFactory<?> statementFactory;
-	    private final UnitOfWorkChangeSet changeSet = new UnitOfWorkChangeSet();
-	    private final UnitOfWorkCommitStrategy commitStrategy;
+		implements UnitOfWork
+		{
+		    private final CqlSession session;
+		    private final MutationStatementFactory statementFactory;
+		    private final UnitOfWorkChangeSet changeSet = new UnitOfWorkChangeSet();
+		    private final UnitOfWorkCommitStrategy commitStrategy;
 
-    public CassandraUnitOfWork(CqlSession session, CachingStatementFactory<?> statementFactory)
-    {
-    	this(session, statementFactory, UnitOfWorkType.LOGGED);
-    }
+	    public CassandraUnitOfWork(CqlSession session, MutationStatementFactory statementFactory)
+	    {
+	    	this(session, statementFactory, UnitOfWorkType.LOGGED);
+	    }
 
-    public CassandraUnitOfWork(CqlSession session, CachingStatementFactory<?> statementFactory, UnitOfWorkType unitOfWorkType)
-    {
+	    public CassandraUnitOfWork(CqlSession session, MutationStatementFactory statementFactory, UnitOfWorkType unitOfWorkType)
+	    {
         this.session = Objects.requireNonNull(session);
         this.statementFactory = Objects.requireNonNull(statementFactory);
         this.commitStrategy = Objects.requireNonNull(unitOfWorkType)
@@ -55,7 +55,7 @@ public class CassandraUnitOfWork
 	 */
 	public <T extends Identifiable> CassandraUnitOfWork registerNew(String viewName, T entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<T>(viewName, entity, EntityState.NEW));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.NEW));
 		return this;
 	}
 
@@ -66,7 +66,7 @@ public class CassandraUnitOfWork
 	 */
 	public <T extends Identifiable> CassandraUnitOfWork registerDirty(String viewName, T entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<T>(viewName, entity, EntityState.DIRTY));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.DIRTY));
 		return this;
 	}
 
@@ -77,7 +77,7 @@ public class CassandraUnitOfWork
 	 */
 	public <T extends Identifiable> CassandraUnitOfWork registerDeleted(String viewName, T entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<T>(viewName, entity, EntityState.DELETED));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.DELETED));
 		return this;
 	}
 
@@ -91,7 +91,7 @@ public class CassandraUnitOfWork
 	 */
 	public <T extends Identifiable> CassandraUnitOfWork registerClean(String viewName, T entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<T>(viewName, entity, EntityState.CLEAN));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.CLEAN));
 		return this;
 	}
 
@@ -182,17 +182,17 @@ public class CassandraUnitOfWork
 	{
 		String viewName = change.getView();
 
-			switch(change.getState())
-			{
-				case DELETED:
-					return Optional.of(statementFactory.delete(viewName, change.getIdentifier()));
-				case DIRTY:
-					return Optional.of(updateStatement(viewName, change.getEntity()));
-				case NEW:
-					return Optional.of(createStatement(viewName, change.getEntity()));
-				default:
-					break;
-			}
+				switch(change.getState())
+				{
+					case DELETED:
+						return Optional.of(statementFactory.delete(viewName, change.getIdentifier()));
+					case DIRTY:
+						return Optional.of(statementFactory.update(viewName, change.getEntity()));
+					case NEW:
+						return Optional.of(statementFactory.create(viewName, change.getEntity()));
+					default:
+						break;
+				}
 
 		return Optional.empty();
 	}
@@ -200,17 +200,5 @@ public class CassandraUnitOfWork
 	public Document readClean(Identifier id)
 	{
 		return changeSet.findClean(id);
-	}
-
-	@SuppressWarnings("unchecked")
-	private BoundStatement createStatement(String viewName, Identifiable entity)
-	{
-		return ((CachingStatementFactory<Identifiable>) statementFactory).create(viewName, entity);
-	}
-
-	@SuppressWarnings("unchecked")
-	private BoundStatement updateStatement(String viewName, Identifiable entity)
-	{
-		return ((CachingStatementFactory<Identifiable>) statementFactory).update(viewName, entity);
 	}
 }

@@ -21,6 +21,7 @@ import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.Repository;
 import com.strategicgains.noschema.cassandra.CachingStatementFactory;
 import com.strategicgains.noschema.cassandra.PagedResponse;
+import com.strategicgains.noschema.cassandra.PreparedStatementFactoryProvider;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.DocumentUnitOfWork;
@@ -96,19 +97,21 @@ implements Repository<T>, SchemaWriter<T>
 	protected CassandraDocumentRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
 	{
 		super();
-			this.session = Objects.requireNonNull(session);
-			this.table = Objects.requireNonNull(table);
-			this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
-			this.statementFactory = new CachingStatementFactory<>(session, table, codec);
-			this.documentStatementFactory = new CachingStatementFactory<>(session, table, DOCUMENT_CODEC);
-			factoriesByTable.put(table.name(), new CassandraDocumentMapper<>(table.keys(), codec));
-			table.views().forEach(view ->
-				this.factoriesByTable.put(view.name(), new CassandraDocumentMapper<>(view.keys(), codec))
-			);
-			table.indexes().forEach(index ->
-				this.factoriesByTable.put(index.name(), new CassandraDocumentMapper<>(index.keys(), codec))
-			);
-		}
+		this.session = Objects.requireNonNull(session);
+		this.table = Objects.requireNonNull(table);
+		this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
+		PreparedStatementFactoryProvider<T> entityStatementFactory = (s, t) -> new DocumentStatementFactory<>(s, t, codec);
+		PreparedStatementFactoryProvider<Document> documentStatementFactory = (s, t) -> new DocumentStatementFactory<>(s, t, DOCUMENT_CODEC);
+		this.statementFactory = new CachingStatementFactory<>(session, table, entityStatementFactory);
+		this.documentStatementFactory = new CachingStatementFactory<>(session, table, documentStatementFactory);
+		factoriesByTable.put(table.name(), new CassandraDocumentMapper<>(table.keys(), codec));
+		table.views().forEach(view ->
+			this.factoriesByTable.put(view.name(), new CassandraDocumentMapper<>(view.keys(), codec))
+		);
+		table.indexes().forEach(index ->
+			this.factoriesByTable.put(index.name(), new CassandraDocumentMapper<>(index.keys(), codec))
+		);
+	}
 
 	protected boolean hasViews()
 	{
@@ -686,7 +689,7 @@ implements Repository<T>, SchemaWriter<T>
 
 	private Document asDocument(String viewName, Row row)
 	{
-		return factoriesByTable.get(viewName).fromRow(row);
+		return factoriesByTable.get(viewName).toDocument(row);
 	}
 
 	private T asEntity(String viewName, Document d)

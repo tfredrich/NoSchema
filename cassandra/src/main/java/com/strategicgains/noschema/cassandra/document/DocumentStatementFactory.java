@@ -11,7 +11,7 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.AbstractTable;
-import com.strategicgains.noschema.cassandra.CqlStatementFactory;
+import com.strategicgains.noschema.cassandra.PreparedStatementFactory;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.document.Document;
@@ -21,7 +21,7 @@ import com.strategicgains.noschema.exception.InvalidObjectIdException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 public final class DocumentStatementFactory<T extends Identifiable>
-implements CqlStatementFactory<T>
+implements PreparedStatementFactory<T>
 {
 	private static final String SELECT_COLUMNS = String.join(",", Columns.OBJECT, Columns.TYPE, Columns.METADATA, Columns.CREATED_AT, Columns.UPDATED_AT);
 	private static final String CREATE_CQL = "insert into %s.%s (%s, %s, %s, %s, %s, %s) values (%s)";

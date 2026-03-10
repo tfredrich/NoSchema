@@ -11,7 +11,7 @@ import java.util.concurrent.CompletionStage;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.CachingStatementFactory;
+import com.strategicgains.noschema.cassandra.MutationStatementFactory;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -26,17 +26,17 @@ public class DocumentUnitOfWork
 	implements UnitOfWork
 	{
 	    private final CqlSession session;
-	    private final CachingStatementFactory<Document> statementFactory;
+	    private final MutationStatementFactory statementFactory;
 	    private final UnitOfWorkChangeSet changeSet = new UnitOfWorkChangeSet();
 	    private final UnitOfWorkCommitStrategy commitStrategy;
 
-    public DocumentUnitOfWork(CqlSession session, CachingStatementFactory<Document> statementFactory)
-    {
-    	this(session, statementFactory, UnitOfWorkType.LOGGED);
-    }
+	    public DocumentUnitOfWork(CqlSession session, MutationStatementFactory statementFactory)
+	    {
+	    	this(session, statementFactory, UnitOfWorkType.LOGGED);
+	    }
 
-    public DocumentUnitOfWork(CqlSession session, CachingStatementFactory<Document> statementFactory, UnitOfWorkType unitOfWorkType)
-    {
+	    public DocumentUnitOfWork(CqlSession session, MutationStatementFactory statementFactory, UnitOfWorkType unitOfWorkType)
+	    {
         this.session = Objects.requireNonNull(session);
         this.statementFactory = Objects.requireNonNull(statementFactory);
         this.commitStrategy = Objects.requireNonNull(unitOfWorkType)

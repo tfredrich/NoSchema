@@ -8,20 +8,19 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.protocol.internal.util.Bytes;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.document.DocumentStatementFactory;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
-import com.strategicgains.noschema.document.DocumentCodec;
 
 public class CachingStatementFactory<T extends Identifiable>
+implements MutationStatementFactory
 {
 	private final Map<String, KeyDefinition> keysByTable = new HashMap<>();
-    private final Map<String, CqlStatementFactory<T>> statementsByTable = new HashMap<>();
+    private final Map<String, PreparedStatementFactory<T>> statementsByTable = new HashMap<>();
 
-	public CachingStatementFactory(CqlSession session, PrimaryTable table, DocumentCodec<T> codec)
+	public CachingStatementFactory(CqlSession session, PrimaryTable table, PreparedStatementFactoryProvider<T> factoryProvider)
 	{
 		super();
 		table.stream().forEach(view -> {
-			put(view.name(), new DocumentStatementFactory<>(session, view, codec));
+			put(view.name(), factoryProvider.create(session, view));
 			put(view.name(), view.keys());				
 		});
 	}
@@ -45,32 +44,37 @@ public class CachingStatementFactory<T extends Identifiable>
 		return stmt;
 	}
 
+	@Override
 	public BoundStatement delete(String tableName, Identifier id)
 	{
 		return get(tableName).delete(id);
 	}
 
-	public BoundStatement create(String tableName, T entity)
-	{
-		return get(tableName).create(entity);
-	}
-
-	public BoundStatement update(String tableName, T entity)
-	{
-		return get(tableName).update(entity);
-	}
-
+	@Override
 	public BoundStatement exists(String tableName, Identifier id)
 	{
 		return get(tableName).exists(id);
 	}
 
+	@Override
 	public boolean isViewUnique(String tableName)
 	{
 		return keysByTable.get(tableName).isUnique();
 	}
 
-	private void put(String tableName, CqlStatementFactory<T> factory)
+	@Override
+	public BoundStatement create(String tableName, Identifiable entity)
+	{
+		return mutationFactory(tableName).create(entity);
+	}
+
+	@Override
+	public BoundStatement update(String tableName, Identifiable entity)
+	{
+		return mutationFactory(tableName).update(entity);
+	}
+
+	private void put(String tableName, PreparedStatementFactory<T> factory)
 	{
 		statementsByTable.put(tableName, factory);
 	}
@@ -80,12 +84,18 @@ public class CachingStatementFactory<T extends Identifiable>
 		this.keysByTable.put(tableName, keys);
 	}
 
-	private CqlStatementFactory<T> get(String tableName)
+	private PreparedStatementFactory<T> get(String tableName)
 	{
-		CqlStatementFactory<T> factory = statementsByTable.get(tableName);
+		PreparedStatementFactory<T> factory = statementsByTable.get(tableName);
 
 //		if (factory == null) throw new InvalidViewNameException(tableName);
 
 		return factory;
+	}
+
+	@SuppressWarnings("unchecked")
+	private PreparedStatementFactory<Identifiable> mutationFactory(String tableName)
+	{
+		return (PreparedStatementFactory<Identifiable>) statementsByTable.get(tableName);
 	}
 }

@@ -60,7 +60,12 @@ public abstract class AbstractDocumentMapper<T extends Identifiable>
 	@SuppressWarnings("unchecked")
 	public T toEntity(Document document)
 	{
-		return codec.deserialize(document.getObject(), (Class<T>) document.getTypeAsClass());
+		return fromBytes(document.getObject(), (Class<T>) document.getTypeAsClass());
+	}
+
+	protected T fromBytes(byte[] bytes, Class<T> type)
+	{
+		return codec.deserialize(bytes, type);
 	}
 
 	protected abstract Identifier extractIdentifier(T entity)

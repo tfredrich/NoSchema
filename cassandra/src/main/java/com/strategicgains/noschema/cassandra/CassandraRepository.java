@@ -2,8 +2,10 @@ package com.strategicgains.noschema.cassandra;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -18,7 +20,6 @@ import com.strategicgains.noschema.Repository;
 import com.strategicgains.noschema.RepositoryObserver;
 import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
-import com.strategicgains.noschema.document.DocumentCodec;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -38,30 +39,42 @@ implements Repository<T>
 	private final CqlSession session;
 	private final PrimaryTable table;
 	private final CachingStatementFactory<T> statementFactory;
+	private final Map<String, CassandraRowMapper<T>> rowMappersByTable = new HashMap<>();
 	private final UnitOfWorkType unitOfWorkType;
 	private final List<RepositoryObserver<T>> lifecycleObservers = new ArrayList<>();
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, DocumentCodec<T> codec)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, PreparedStatementFactoryProvider<T> factoryProvider, CassandraRowMapper<T> rowMapper)
 	{
-		this(session, table, UnitOfWorkType.LOGGED, codec);
+		this(session, table, UnitOfWorkType.LOGGED, factoryProvider, rowMapper);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, PreparedStatementFactoryProvider<T> factoryProvider, CassandraRowMapper<T> rowMapper)
 	{
-		this(session, table, unitOfWorkType, new CachingStatementFactory<>(session, table, codec));
+		this(session, table, unitOfWorkType, new CachingStatementFactory<>(session, table, factoryProvider), rowMapper);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, CachingStatementFactory<T> statementFactory)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, CachingStatementFactory<T> statementFactory, CassandraRowMapper<T> rowMapper)
 	{
-		this(session, table, UnitOfWorkType.LOGGED, statementFactory);
+		this(session, table, UnitOfWorkType.LOGGED, statementFactory, rowMapper);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, CachingStatementFactory<T> statementFactory)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, CachingStatementFactory<T> statementFactory, CassandraRowMapper<T> rowMapper)
+	{
+		this(session, table, unitOfWorkType, statementFactory, toViewMap(table, rowMapper));
+	}
+
+	protected CassandraRepository(CqlSession session, PrimaryTable table, CachingStatementFactory<T> statementFactory, Map<String, ? extends CassandraRowMapper<T>> rowMappersByTable)
+	{
+		this(session, table, UnitOfWorkType.LOGGED, statementFactory, rowMappersByTable);
+	}
+
+	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, CachingStatementFactory<T> statementFactory, Map<String, ? extends CassandraRowMapper<T>> rowMappersByTable)
 	{
 		this.session = Objects.requireNonNull(session);
 		this.table = Objects.requireNonNull(table);
 		this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
 		this.statementFactory = Objects.requireNonNull(statementFactory);
+		this.rowMappersByTable.putAll(Objects.requireNonNull(rowMappersByTable));
 	}
 
 	protected String tableName()
@@ -307,8 +320,6 @@ implements Repository<T>
 		return new CassandraUnitOfWork(session, statementFactory, unitOfWorkType);
 	}
 
-	protected abstract T asEntity(String viewName, Row row);
-
 	private CompletableFuture<Row> readRow(String viewName, Identifier id)
 	{
 		return session.executeAsync(statementFactory.read(viewName, id))
@@ -351,6 +362,25 @@ implements Repository<T>
 		}
 
 		throw new StorageException(e.getCause());
+	}
+
+	private T asEntity(String viewName, Row row)
+	{
+		CassandraRowMapper<T> mapper = rowMappersByTable.get(viewName);
+
+		if (mapper == null)
+		{
+			throw new IllegalStateException("No CassandraRowMapper configured for view: " + viewName);
+		}
+
+		return mapper.toEntity(row);
+	}
+
+	private static <T extends Identifiable> Map<String, CassandraRowMapper<T>> toViewMap(PrimaryTable table, CassandraRowMapper<T> rowMapper)
+	{
+		Map<String, CassandraRowMapper<T>> rowMappersByTable = new HashMap<>();
+		table.stream().forEach(view -> rowMappersByTable.put(view.name(), rowMapper));
+		return rowMappersByTable;
 	}
 
 	private class PagedRows
