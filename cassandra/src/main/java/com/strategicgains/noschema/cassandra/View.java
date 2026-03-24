@@ -54,8 +54,15 @@ extends SecondaryTable<T>
 		return this;
 	}
 
-	public RowMapper<T> effectiveRowMapper()
+	@Override
+	public boolean hasRowMapper()
 	{
-		return (hasRowMapper() ? rowMapper() : getParent().rowMapper());
+		return (super.hasRowMapper() || getParent().hasRowMapper());
+	}
+
+	@Override
+	public RowMapper<T> rowMapper()
+	{
+		return (super.hasRowMapper() ? super.rowMapper() : getParent().rowMapper());
 	}
 }
