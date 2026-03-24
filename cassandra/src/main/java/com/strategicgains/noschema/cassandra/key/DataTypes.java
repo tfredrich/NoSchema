@@ -113,8 +113,7 @@ public enum DataTypes
 			case INTEGER: return row.getInt(columnName);
 			case TEXT: return row.getString(columnName);
 			case TIMESTAMP: return Date.from(row.getInstant(columnName));
-			case TIMEUUID:
-			case UUID: return row.getUuid(columnName);
+			case TIMEUUID, UUID: return row.getUuid(columnName);
 			default:
 				return null;
 		}
@@ -124,13 +123,11 @@ public enum DataTypes
     {
 		switch(name.toLowerCase())
 		{
-			case "varchar":
-			case "text": return TEXT;
+			case "varchar", "text": return TEXT;
 			case "uuid": return UUID;
 			case "timeuuid": return TIMEUUID;
 			case "timestamp": return TIMESTAMP;
-			case "int":
-			case "integer": return INTEGER;
+			case "int", "integer": return INTEGER;
 			case "bigint": return BIGINT;
 			case "float": return FLOAT;
 			case "double": return DOUBLE;
