@@ -75,6 +75,26 @@ implements Repository<T>
 		return this;
 	}
 
+	protected boolean hasViews()
+	{
+		return table.hasViews();
+	}
+
+	protected boolean hasIndexes()
+	{
+		return table.hasIndexes();
+	}
+
+	protected PrimaryTable<T> table()
+	{
+		return table;
+	}
+
+	protected CqlSession session()
+	{
+		return session;
+	}
+
 	@Override
 	public T create(T entity)
 	{
@@ -368,12 +388,6 @@ implements Repository<T>
 
 	private RowMapper<T> rowMapper(AbstractTable<T> currentTable)
 	{
-		if (currentTable instanceof View<T> view)
-		{
-			RowMapper<T> mapper = view.effectiveRowMapper();
-			if (mapper != null) return mapper;
-		}
-
 		RowMapper<T> mapper = currentTable.rowMapper();
 
 		if (mapper == null)
@@ -387,14 +401,7 @@ implements Repository<T>
 	private void validateMappings(PrimaryTable<T> table)
 	{
 		table.stream().forEach(t -> {
-			if (t instanceof View<T> view)
-			{
-				if (view.effectiveRowMapper() == null)
-				{
-					throw new IllegalArgumentException("No RowMapper configured for table: " + t.name());
-				}
-			}
-			else if (t instanceof Index<T> index)
+			if (t instanceof Index<T> index)
 			{
 				if (index.rowMapper() == null && DereferencePolicy.NEVER.equals(index.dereferencePolicy()))
 				{
