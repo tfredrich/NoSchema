@@ -5,11 +5,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
-public abstract class AbstractTable
+public abstract class AbstractTable<T extends Identifiable>
 {
 	// The Cassandra keyspace in which this table is stored.
 	private String keyspace;
@@ -25,6 +26,9 @@ public abstract class AbstractTable
 
 	// Any extra name/value tag-alongs the customer wants to include.
 	private Map<String, String> metadata;
+
+	// A RowMapper to convert from a Cassandra Row to an Entity.
+	private RowMapper<T> rowMapper;
 
 	protected AbstractTable()
 	{
@@ -100,7 +104,7 @@ public abstract class AbstractTable
 		return (metadata != null ? Collections.unmodifiableMap(metadata) : Collections.emptyMap());
 	}
 
-	public AbstractTable withMetadata(String name, String value)
+	public AbstractTable<T> withMetadata(String name, String value)
 	{
 		if (metadata == null)
 		{
@@ -115,6 +119,27 @@ public abstract class AbstractTable
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		return keys.identifier(entity);
+	}
+
+	public Identifier getIdentifier(com.datastax.oss.driver.api.core.cql.Row row)
+	{
+		return keys.identifier(row);
+	}
+
+	public boolean hasRowMapper()
+	{
+		return rowMapper != null;
+	}
+
+	public RowMapper<T> rowMapper()
+	{
+		return rowMapper;
+	}
+
+	public AbstractTable<T> withRowMapper(RowMapper<T> rowMapper)
+	{
+		this.rowMapper = rowMapper;
+		return this;
 	}
 
 	@Override

@@ -45,17 +45,17 @@ implements PreparedStatementFactory<T>
 	private static final String UPSERT = "upsert";
 
 	private CqlSession session;
-	private AbstractTable table;
+	private AbstractTable<?> table;
 	private Map<String, PreparedStatement> statements = new ConcurrentHashMap<>();
 	private CassandraDocumentMapper<T> documentFactory;
 	private boolean useLightweightTxns;
 
-	public DocumentStatementFactory(CqlSession session, AbstractTable table, DocumentCodec<T> codec)
+	public DocumentStatementFactory(CqlSession session, AbstractTable<?> table, DocumentCodec<T> codec)
 	{
 		this(session, table, new CassandraDocumentMapper<>(table.keys(), codec));
 	}
 
-	public DocumentStatementFactory(CqlSession session, AbstractTable table, CassandraDocumentMapper<T> factory)
+	public DocumentStatementFactory(CqlSession session, AbstractTable<?> table, CassandraDocumentMapper<T> factory)
 	{
 		super();
 		this.session = session;

@@ -1,5 +1,8 @@
 package com.strategicgains.noschema.cassandra;
 
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.strategicgains.noschema.Identifiable;
+import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
@@ -19,34 +22,65 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  * @see PrimaryTable
  * @author Todd Fredrich
  */
-public class Index
-extends SecondaryTable
+public class Index<T extends Identifiable>
+extends SecondaryTable<T>
 {
+	private DereferencePolicy dereferencePolicy = DereferencePolicy.NEVER;
+
 	public Index()
 	{
 		super();
 	}
 
-	public Index(PrimaryTable parent, String tableName, String keys)
+	public Index(PrimaryTable<T> parent, String tableName, String keys)
 	throws KeyDefinitionException
 	{
 		super(parent, tableName, keys);
 	}
 
-	public Index(PrimaryTable parent, String tableName, KeyDefinition keys)
+	public Index(PrimaryTable<T> parent, String tableName, KeyDefinition keys)
 	{
 		super(parent, tableName, keys);
 	}
 
-	public Index(PrimaryTable parent, String tableName, String keys, long ttl)
+	public Index(PrimaryTable<T> parent, String tableName, String keys, long ttl)
 	throws KeyDefinitionException
 	{
 		super(parent, tableName, keys, ttl);
 	}
 
-	public Index(PrimaryTable parent, String tableName, KeyDefinition keys, long ttl)
+	public Index(PrimaryTable<T> parent, String tableName, KeyDefinition keys, long ttl)
 	{
 		super(parent, tableName, keys, ttl);
+	}
+
+	@Override
+	public Index<T> withRowMapper(RowMapper<T> rowMapper)
+	{
+		super.withRowMapper(rowMapper);
+		return this;
+	}
+
+	public Index<T> alwaysDereference()
+	{
+		dereferencePolicy = DereferencePolicy.ALWAYS;
+		return this;
+	}
+
+	public Index<T> neverDereference()
+	{
+		dereferencePolicy = DereferencePolicy.NEVER;
+		return this;
+	}
+
+	public DereferencePolicy dereferencePolicy()
+	{
+		return dereferencePolicy;
+	}
+
+	public Identifier toPrimaryIdentifier(Row row)
+	{
+		return getParent().getIdentifier(row);
 	}
 
 	@Override

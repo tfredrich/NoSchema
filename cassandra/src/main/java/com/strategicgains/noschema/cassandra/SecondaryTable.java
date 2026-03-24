@@ -2,6 +2,7 @@ package com.strategicgains.noschema.cassandra;
 
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 /**
@@ -15,45 +16,45 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  * @see View
  * @see Index
  */
-public abstract class SecondaryTable
-extends AbstractTable
+public abstract class SecondaryTable<T extends Identifiable>
+extends AbstractTable<T>
 {
-	private PrimaryTable parent;
+	private PrimaryTable<T> parent;
 
 	protected SecondaryTable()
 	{
 		super();
 	}
 
-	protected SecondaryTable(PrimaryTable parent, String tableName, String keys)
+	protected SecondaryTable(PrimaryTable<T> parent, String tableName, String keys)
 	throws KeyDefinitionException
 	{
 		this(parent, tableName, KeyDefinitionParser.parse(keys), 0l);
 	}
 
-	protected SecondaryTable(PrimaryTable parent, String tableName, KeyDefinition keys)
+	protected SecondaryTable(PrimaryTable<T> parent, String tableName, KeyDefinition keys)
 	{
 		this(parent, tableName, keys, 0l);
 	}
 
-	protected SecondaryTable(PrimaryTable parent, String tableName, String keys, long ttl)
+	protected SecondaryTable(PrimaryTable<T> parent, String tableName, String keys, long ttl)
 	throws KeyDefinitionException
 	{
 		this(parent, tableName, KeyDefinitionParser.parse(keys), ttl);
 	}
 
-	protected SecondaryTable(PrimaryTable parent, String tableName, KeyDefinition keys, long ttl)
+	protected SecondaryTable(PrimaryTable<T> parent, String tableName, KeyDefinition keys, long ttl)
 	{
 		super(parent.keyspace(), tableName, keys, ttl);
 		setParent(parent);
 	}
 
-	public PrimaryTable getParent()
+	public PrimaryTable<T> getParent()
 	{
 		return parent;
 	}
 
-	public SecondaryTable setParent(PrimaryTable parent)
+	public SecondaryTable<T> setParent(PrimaryTable<T> parent)
 	{
 		this.parent = parent;
 		return this;

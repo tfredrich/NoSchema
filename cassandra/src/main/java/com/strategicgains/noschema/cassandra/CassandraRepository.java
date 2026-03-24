@@ -2,10 +2,8 @@ package com.strategicgains.noschema.cassandra;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -37,39 +35,33 @@ public abstract class CassandraRepository<T extends Identifiable>
 implements Repository<T>
 {
 	private final CqlSession session;
-	private final PrimaryTable table;
+	private final PrimaryTable<T> table;
 	private final CachingStatementFactory<T> statementFactory;
-	private final Map<String, RowMapper<T>> rowMappersByTable = new HashMap<>();
 	private final UnitOfWorkType unitOfWorkType;
 	private final List<RepositoryObserver<T>> lifecycleObservers = new ArrayList<>();
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, PreparedStatementFactoryProvider<T> factoryProvider, RowMapper<T> rowMapper)
+	protected CassandraRepository(CqlSession session, PrimaryTable<T> table, PreparedStatementFactoryProvider<T> factoryProvider)
 	{
-		this(session, table, UnitOfWorkType.LOGGED, factoryProvider, rowMapper);
+		this(session, table, UnitOfWorkType.LOGGED, factoryProvider);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, PreparedStatementFactoryProvider<T> factoryProvider, RowMapper<T> rowMapper)
+	protected CassandraRepository(CqlSession session, PrimaryTable<T> table, UnitOfWorkType unitOfWorkType, PreparedStatementFactoryProvider<T> factoryProvider)
 	{
-		this(session, table, unitOfWorkType, new CachingStatementFactory<>(session, table, factoryProvider), rowMapper);
+		this(session, table, unitOfWorkType, new CachingStatementFactory<>(session, table, factoryProvider));
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, CachingStatementFactory<T> statementFactory, RowMapper<T> rowMapper)
+	protected CassandraRepository(CqlSession session, PrimaryTable<T> table, CachingStatementFactory<T> statementFactory)
 	{
-		this(session, table, UnitOfWorkType.LOGGED, statementFactory, rowMapper);
+		this(session, table, UnitOfWorkType.LOGGED, statementFactory);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, CachingStatementFactory<T> statementFactory, RowMapper<T> rowMapper)
-	{
-		this(session, table, unitOfWorkType, statementFactory, toViewMap(table, rowMapper));
-	}
-
-	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, CachingStatementFactory<T> statementFactory, Map<String, ? extends RowMapper<T>> rowMappersByTable)
+	protected CassandraRepository(CqlSession session, PrimaryTable<T> table, UnitOfWorkType unitOfWorkType, CachingStatementFactory<T> statementFactory)
 	{
 		this.session = Objects.requireNonNull(session);
 		this.table = Objects.requireNonNull(table);
 		this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
 		this.statementFactory = Objects.requireNonNull(statementFactory);
-		this.rowMappersByTable.putAll(Objects.requireNonNull(rowMappersByTable));
+		validateMappings(table);
 	}
 
 	protected String tableName()
@@ -158,9 +150,9 @@ implements Repository<T>
 		try
 		{
 			T read = readRow(viewName, id)
-				.thenApply(row -> asEntity(viewName, row))
+				.thenApply(row -> mapRow(viewName, row))
 				.join();
-			lifecycleObservers.forEach(o -> o.afterRead(read));
+			afterRead(read);
 			return read;
 		}
 		catch (CompletionException e)
@@ -186,8 +178,8 @@ implements Repository<T>
 				.thenAccept(page -> {
 					response.cursor(page.cursor());
 					page.iterator().forEachRemaining(row -> {
-						T entity = asEntity(viewName, row);
-						lifecycleObservers.forEach(o -> o.afterRead(entity));
+						T entity = mapRow(viewName, row);
+						afterRead(entity);
 						response.add(entity);
 					});
 				})
@@ -215,8 +207,8 @@ implements Repository<T>
 			.<CompletableFuture<T>>map(id -> session.executeAsync(statementFactory.read(viewName, id))
 				.thenApply(rs -> rs.one())
 				.thenApply(row -> {
-					T entity = asEntity(viewName, row);
-					lifecycleObservers.forEach(o -> o.afterRead(entity));
+					T entity = mapRow(viewName, row);
+					afterRead(entity);
 					return entity;
 				})
 				.toCompletableFuture())
@@ -359,23 +351,69 @@ implements Repository<T>
 		throw new StorageException(e.getCause());
 	}
 
-	private T asEntity(String viewName, Row row)
+	private T mapRow(String tableName, Row row)
 	{
-		RowMapper<T> mapper = rowMappersByTable.get(viewName);
+		AbstractTable<T> currentTable = table.table(tableName);
 
-		if (mapper == null)
+		if (currentTable instanceof Index<T> index && DereferencePolicy.ALWAYS.equals(index.dereferencePolicy()))
 		{
-			throw new IllegalStateException("No RowMapper configured for view: " + viewName);
+			return readRow(table.name(), index.toPrimaryIdentifier(row))
+				.thenApply(primaryRow -> mapRow(table.name(), primaryRow))
+				.join();
 		}
 
+		RowMapper<T> mapper = rowMapper(currentTable);
 		return mapper.toEntity(row);
 	}
 
-	private static <T extends Identifiable> Map<String, RowMapper<T>> toViewMap(PrimaryTable table, RowMapper<T> rowMapper)
+	private RowMapper<T> rowMapper(AbstractTable<T> currentTable)
 	{
-		Map<String, RowMapper<T>> rowMappersByTable = new HashMap<>();
-		table.stream().forEach(view -> rowMappersByTable.put(view.name(), rowMapper));
-		return rowMappersByTable;
+		if (currentTable instanceof View<T> view)
+		{
+			RowMapper<T> mapper = view.effectiveRowMapper();
+			if (mapper != null) return mapper;
+		}
+
+		RowMapper<T> mapper = currentTable.rowMapper();
+
+		if (mapper == null)
+		{
+			throw new IllegalStateException("No RowMapper configured for table: " + currentTable.name());
+		}
+
+		return mapper;
+	}
+
+	private void validateMappings(PrimaryTable<T> table)
+	{
+		table.stream().forEach(t -> {
+			if (t instanceof View<T> view)
+			{
+				if (view.effectiveRowMapper() == null)
+				{
+					throw new IllegalArgumentException("No RowMapper configured for table: " + t.name());
+				}
+			}
+			else if (t instanceof Index<T> index)
+			{
+				if (index.rowMapper() == null && DereferencePolicy.NEVER.equals(index.dereferencePolicy()))
+				{
+					throw new IllegalArgumentException("Index requires a RowMapper or ALWAYS dereference policy: " + t.name());
+				}
+			}
+			else if (!t.hasRowMapper())
+			{
+				throw new IllegalArgumentException("No RowMapper configured for table: " + t.name());
+			}
+		});
+	}
+
+	private void afterRead(T entity)
+	{
+		if (entity != null)
+		{
+			lifecycleObservers.forEach(o -> o.afterRead(entity));
+		}
 	}
 
 	private class PagedRows

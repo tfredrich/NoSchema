@@ -1,5 +1,6 @@
 package com.strategicgains.noschema.cassandra;
 
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
@@ -16,33 +17,45 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  * @see PrimaryTable
  * @author Todd Fredrich
  */
-public class View
-extends SecondaryTable
+public class View<T extends Identifiable>
+extends SecondaryTable<T>
 {
 	public View()
 	{
 		super();
 	}
 
-	public View(PrimaryTable parent, String viewName, KeyDefinition keys, long ttl)
+	public View(PrimaryTable<T> parent, String viewName, KeyDefinition keys, long ttl)
 	{
 		super(parent, viewName, keys, ttl);
 	}
 
-	public View(PrimaryTable parent, String viewName, KeyDefinition keys)
+	public View(PrimaryTable<T> parent, String viewName, KeyDefinition keys)
 	{
 		super(parent, viewName, keys);
 	}
 
-	public View(PrimaryTable parent, String viewName, String keys, long ttl)
+	public View(PrimaryTable<T> parent, String viewName, String keys, long ttl)
 	throws KeyDefinitionException
 	{
 		super(parent, viewName, keys, ttl);
 	}
 
-	public View(PrimaryTable parent, String viewName, String keys)
+	public View(PrimaryTable<T> parent, String viewName, String keys)
 	throws KeyDefinitionException
 	{
 		super(parent, viewName, keys);
+	}
+
+	@Override
+	public View<T> withRowMapper(RowMapper<T> rowMapper)
+	{
+		super.withRowMapper(rowMapper);
+		return this;
+	}
+
+	public RowMapper<T> effectiveRowMapper()
+	{
+		return (hasRowMapper() ? rowMapper() : getParent().rowMapper());
 	}
 }

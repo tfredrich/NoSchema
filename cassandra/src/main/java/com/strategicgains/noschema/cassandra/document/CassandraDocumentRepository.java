@@ -74,7 +74,7 @@ implements Repository<T>, SchemaWriter<T>
 	// The session used to connect to the Cassandra cluster.
 	private CqlSession session;
 	// The primary table and its views.
-	private PrimaryTable table;
+	private PrimaryTable<T> table;
 	// The statement factory used to create the CQL statements for an entity within the UnitOfWork.
 	private CachingStatementFactory<T> statementFactory;
 	// The statement factory used to create the CQL statements for Documents within the UnitOfWork.
@@ -89,12 +89,12 @@ implements Repository<T>, SchemaWriter<T>
 	private List<RepositoryObserver<T>> lifecycleObservers = new ArrayList<>();
 
 
-	protected CassandraDocumentRepository(CqlSession session, PrimaryTable table, DocumentCodec<T> codec)
+	protected CassandraDocumentRepository(CqlSession session, PrimaryTable<T> table, DocumentCodec<T> codec)
 	{
 		this(session, table, UnitOfWorkType.LOGGED, codec);
 	}
 
-	protected CassandraDocumentRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
+	protected CassandraDocumentRepository(CqlSession session, PrimaryTable<T> table, UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
 	{
 		super();
 		this.session = Objects.requireNonNull(session);

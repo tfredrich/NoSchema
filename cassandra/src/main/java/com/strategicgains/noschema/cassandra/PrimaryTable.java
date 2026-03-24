@@ -2,8 +2,10 @@ package com.strategicgains.noschema.cassandra;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
+import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.cassandra.key.KeyDefinitionParser;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
@@ -31,12 +33,12 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  * @see KeyDefinition
  * @see SecondaryTable
  */
-public class PrimaryTable
-extends AbstractTable
+public class PrimaryTable<T extends Identifiable>
+extends AbstractTable<T>
 {
 	private static final String DEFAULT_KEYS = "id:uuid unique";
-	private List<View> views;
-	private List<Index> indexes;
+	private List<View<T>> views;
+	private List<Index<T>> indexes;
 
 	public PrimaryTable()
 	{
@@ -80,31 +82,50 @@ extends AbstractTable
 		super(keyspaceName, tableName, keys, ttl);
 	}
 
-	public PrimaryTable withView(String viewName, String keys)
+	@Override
+	public PrimaryTable<T> withRowMapper(RowMapper<T> rowMapper)
+	{
+		super.withRowMapper(rowMapper);
+		return this;
+	}
+
+	public PrimaryTable<T> withView(String viewName, String keys)
 	throws KeyDefinitionException
 	{
 		return withView(viewName, keys, 0l);
 	}
 
-	public PrimaryTable withView(String viewName, String keys, long ttl)
+	public PrimaryTable<T> withView(String viewName, String keys, long ttl)
 	throws KeyDefinitionException
 	{
-		addView(new View(this, viewName, keys, ttl));
+		addView(new View<>(this, viewName, keys, ttl));
 		return this;
 	}
 
-	public PrimaryTable withView(String viewName, KeyDefinition keys)
+	public PrimaryTable<T> withView(String viewName, String keys, RowMapper<T> rowMapper)
+	throws KeyDefinitionException
+	{
+		return addView(new View<>(this, viewName, keys).withRowMapper(rowMapper));
+	}
+
+	public PrimaryTable<T> withView(String viewName, KeyDefinition keys)
 	{
 		return withView(viewName, keys, 0l);
 	}
 
-	public PrimaryTable withView(String viewName, KeyDefinition keys, long ttl)
+	public PrimaryTable<T> withView(String viewName, KeyDefinition keys, long ttl)
 	{
-		addView(new View(this, viewName, keys, ttl));
+		addView(new View<>(this, viewName, keys, ttl));
 		return this;
 	}
 
-	public void addView(View view)
+	public PrimaryTable<T> withView(String viewName, KeyDefinition keys, RowMapper<T> rowMapper)
+	{
+		addView(new View<>(this, viewName, keys).withRowMapper(rowMapper));
+		return this;
+	}
+
+	public PrimaryTable<T> addView(View<T> view)
 	{
 		if (views == null)
 		{
@@ -113,6 +134,7 @@ extends AbstractTable
 
 		view.setParent(this);
 		views.add(view);
+		return this;
 	}
 
 	public boolean hasViews()
@@ -120,12 +142,12 @@ extends AbstractTable
 		return (views != null && !views.isEmpty());
 	}
 
-	public Stream<View> views()
+	public Stream<View<T>> views()
 	{
 		return (hasViews() ? views.stream() : Stream.empty());
 	}
 
-	public Stream<View> uniqueViews()
+	public Stream<View<T>> uniqueViews()
 	{
 		return (hasViews()
 			? views.stream().filter(View::isUnique)
@@ -138,31 +160,44 @@ extends AbstractTable
 		return (hasViews() ? views.size() : 0);
 	}
 
-	public PrimaryTable withIndex(String indexName, String keys)
+	public PrimaryTable<T> withIndex(String indexName, String keys)
 	throws KeyDefinitionException
 	{
 		return withIndex(indexName, keys, 0l);
 	}
 
-	public PrimaryTable withIndex(String indexName, String keys, long ttl)
+	public PrimaryTable<T> withIndex(String indexName, String keys, long ttl)
 	throws KeyDefinitionException
 	{
-		addIndex(new Index(this, indexName, keys, ttl));
+		addIndex(new Index<>(this, indexName, keys, ttl));
 		return this;
 	}
 
-	public PrimaryTable withIndex(String indexName, KeyDefinition keys)
+	public PrimaryTable<T> withIndex(String indexName, String keys, RowMapper<T> rowMapper)
+	throws KeyDefinitionException
+	{
+		addIndex(new Index<>(this, indexName, keys).withRowMapper(rowMapper));
+		return this;
+	}
+
+	public PrimaryTable<T> withIndex(String indexName, KeyDefinition keys)
 	{
 		return withIndex(indexName, keys, 0l);
 	}
 
-	public PrimaryTable withIndex(String indexName, KeyDefinition keys, long ttl)
+	public PrimaryTable<T> withIndex(String indexName, KeyDefinition keys, long ttl)
 	{
-		addIndex(new Index(this, indexName, keys, ttl));
+		addIndex(new Index<>(this, indexName, keys, ttl));
 		return this;
 	}
 
-	public void addIndex(Index index)
+	public PrimaryTable<T> withIndex(String indexName, KeyDefinition keys, RowMapper<T> rowMapper)
+	{
+		addIndex(new Index<>(this, indexName, keys).withRowMapper(rowMapper));
+		return this;
+	}
+
+	public void addIndex(Index<T> index)
 	{
 		if (indexes == null)
 		{
@@ -178,12 +213,12 @@ extends AbstractTable
 		return (indexes != null && !indexes.isEmpty());
 	}
 
-	public Stream<Index> indexes()
+	public Stream<Index<T>> indexes()
 	{
 		return (hasIndexes() ? indexes.stream() : Stream.empty());
 	}
 
-	public Stream<Index> uniqueIndexes()
+	public Stream<Index<T>> uniqueIndexes()
 	{
 		return (hasIndexes()
 			? indexes.stream().filter(Index::isUnique)
@@ -201,7 +236,16 @@ extends AbstractTable
 	 * 
 	 * @return a Stream of the primary table, its views, and indexes.
 	 */
-	public Stream<AbstractTable> stream()
+	public Stream<AbstractTable<T>> stream()
 	{
 		return Stream.of(Stream.of(this), views(), indexes()).flatMap(s -> s);
-	}}
+	}
+
+	public AbstractTable<T> table(String tableName)
+	{
+		return stream()
+			.filter(t -> Objects.equals(t.name(), tableName))
+			.findFirst()
+			.orElseThrow(() -> new IllegalArgumentException("Unknown table: " + tableName));
+	}
+}

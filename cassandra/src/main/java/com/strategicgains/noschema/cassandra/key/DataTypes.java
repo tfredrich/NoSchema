@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
 
 public enum DataTypes
 {
@@ -100,6 +101,24 @@ public enum DataTypes
 		bb.rewind();
 		return bb;
     }
+
+	public Object readFrom(Row row, String columnName)
+	{
+		switch(this)
+		{
+			case BIGINT: return row.getLong(columnName);
+			case DECIMAL: return row.getBigDecimal(columnName);
+			case DOUBLE: return row.getDouble(columnName);
+			case FLOAT: return row.getFloat(columnName);
+			case INTEGER: return row.getInt(columnName);
+			case TEXT: return row.getString(columnName);
+			case TIMESTAMP: return Date.from(row.getInstant(columnName));
+			case TIMEUUID:
+			case UUID: return row.getUuid(columnName);
+			default:
+				return null;
+		}
+	}
 
 	public static DataTypes from(String name)
     {

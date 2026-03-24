@@ -40,7 +40,7 @@ extends AbstractSchemaProvider
 	private String table;
 	private KeyDefinition keys;
 
-	public DocumentSchemaProvider(AbstractTable table)
+	public DocumentSchemaProvider(AbstractTable<?> table)
 	{
 		super();
 		this.keyspace = table.keyspace();

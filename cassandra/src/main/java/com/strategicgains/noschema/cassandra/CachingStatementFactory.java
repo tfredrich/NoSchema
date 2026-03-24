@@ -16,7 +16,7 @@ implements MutationStatementFactory
 	private final Map<String, KeyDefinition> keysByTable = new HashMap<>();
     private final Map<String, PreparedStatementFactory<T>> statementsByTable = new HashMap<>();
 
-	public CachingStatementFactory(CqlSession session, PrimaryTable table, PreparedStatementFactoryProvider<T> factoryProvider)
+	public CachingStatementFactory(CqlSession session, PrimaryTable<?> table, PreparedStatementFactoryProvider<T> factoryProvider)
 	{
 		super();
 		table.stream().forEach(view -> {

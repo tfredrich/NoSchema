@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.key.ClusteringKeyComponent.Ordering;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -135,6 +136,23 @@ public class KeyDefinition
 		return identifier;
 	}
 
+	public Identifier identifier(Row row)
+	{
+		Identifier identifier = new Identifier();
+
+		if (hasPartitionKey())
+		{
+			appendIdentifierComponents(row, partitionKey, identifier);
+		}
+
+		if (hasClusteringKey())
+		{
+			appendIdentifierComponents(row, clusteringKey, identifier);
+		}
+
+		return identifier;
+	}
+
 	private <T extends KeyComponent> boolean extractKey(Object entity, List<T> keys, Identifier identifier, List<String> missingProperties)
 	{
 		AtomicBoolean kdeOccurred = new AtomicBoolean(false);
@@ -147,6 +165,18 @@ public class KeyDefinition
 			});
 
 		return kdeOccurred.get();
+	}
+
+	private <T extends KeyComponent> void appendIdentifierComponents(Row row, List<T> keys, Identifier identifier)
+	{
+		keys.stream()
+			.map(k -> value(row, k))
+			.forEach(identifier::add);
+	}
+
+	private Object value(Row row, KeyComponent component)
+	{
+		return component.type().readFrom(row, component.column());
 	}
 
 	private boolean extractComponent(Object entity, KeyComponent k, Identifier identifier, List<String> missingProperties)
