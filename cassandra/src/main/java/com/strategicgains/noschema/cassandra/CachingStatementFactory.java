@@ -27,12 +27,12 @@ implements MutationStatementFactory
 
 	public BoundStatement read(String tableName, Identifier id)
 	{
-		return get(tableName).read(id);
+		return factoryFor(tableName).read(id);
 	}
 
 	public BoundStatement readAll(String tableName, int limit, String cursor, Object... parameters)
 	{
-		BoundStatement stmt = get(tableName)
+		BoundStatement stmt = factoryFor(tableName)
 			.readAll(parameters)
 			.setPageSize(limit);
 
@@ -47,19 +47,23 @@ implements MutationStatementFactory
 	@Override
 	public BoundStatement delete(String tableName, Identifier id)
 	{
-		return get(tableName).delete(id);
+		return factoryFor(tableName).delete(id);
 	}
 
 	@Override
 	public BoundStatement exists(String tableName, Identifier id)
 	{
-		return get(tableName).exists(id);
+		return factoryFor(tableName).exists(id);
 	}
 
 	@Override
 	public boolean isViewUnique(String tableName)
 	{
-		return keysByTable.get(tableName).isUnique();
+		KeyDefinition keys = keysByTable.get(tableName);
+
+		if (keys == null) throw new InvalidTableNameException(tableName);
+
+		return keys.isUnique();
 	}
 
 	@Override
@@ -84,11 +88,11 @@ implements MutationStatementFactory
 		this.keysByTable.put(tableName, keys);
 	}
 
-	private PreparedStatementFactory<T> get(String tableName)
+	private PreparedStatementFactory<T> factoryFor(String tableName)
 	{
 		PreparedStatementFactory<T> factory = statementsByTable.get(tableName);
 
-		if (factory == null) throw new InvalidViewNameException(tableName);
+		if (factory == null) throw new InvalidTableNameException(tableName);
 
 		return factory;
 	}
