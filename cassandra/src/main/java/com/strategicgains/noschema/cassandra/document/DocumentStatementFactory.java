@@ -49,7 +49,7 @@ implements PreparedStatementFactory<Document>
 		this.session = session;
 		this.table = table;
 
-		if ((table instanceof PrimaryTable primary) && !primary.hasViews())
+		if (table.isPrimary() && ((PrimaryTable<?>)table).hasViews())
 		{
 			this.useLightweightTxns = true;
 		}

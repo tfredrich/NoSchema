@@ -248,4 +248,10 @@ extends AbstractTable<T>
 			.findFirst()
 			.orElseThrow(() -> new IllegalArgumentException("Unknown table: " + tableName));
 	}
+
+	@Override
+	public boolean isPrimary()
+	{
+		return true;
+	}
 }

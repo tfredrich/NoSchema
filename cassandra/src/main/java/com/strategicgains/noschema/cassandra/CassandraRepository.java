@@ -425,7 +425,7 @@ implements Repository<T>
 	{
 		AbstractTable<T> currentTable = table.table(tableName);
 
-		if (currentTable instanceof Index<T> index && DereferencePolicy.ALWAYS.equals(index.dereferencePolicy()))
+		if (currentTable instanceof Index<T> index && IndexDereferencePolicy.ALWAYS.equals(index.dereferencePolicy()))
 		{
 			return readRow(table.name(), index.toPrimaryIdentifier(row))
 				.thenApply(primaryRow -> mapRow(table.name(), primaryRow))
@@ -453,7 +453,7 @@ implements Repository<T>
 		table.stream().forEach(t -> {
 			if (t instanceof Index<T> index)
 			{
-				if (index.rowMapper() == null && DereferencePolicy.NEVER.equals(index.dereferencePolicy()))
+				if (index.rowMapper() == null && IndexDereferencePolicy.NEVER.equals(index.dereferencePolicy()))
 				{
 					throw new IllegalArgumentException("Index requires a RowMapper or ALWAYS dereference policy: " + t.name());
 				}

@@ -40,7 +40,7 @@ extends CassandraDocumentRepository<Flower>
 			 * A primary table with a unique key that is the 'id' property of type UUID.
 			 * The database table column and the entity property are the same name.
 			 */
-			new PrimaryTable(keyspace, "flowers", "id:UUID unique")
+			new PrimaryTable<Flower>(keyspace, "flowers", "id:UUID unique")
 
 				/**
 				 * A view of flowers by name, where the name is unique within an account.
@@ -94,6 +94,6 @@ extends CassandraDocumentRepository<Flower>
 
 	public PagedResponse<Flower> readAllByName(int max, String cursor, UUID accountId)
 	{
-		return readAll(FLOWERS_BY_NAME, 20, cursor, accountId);
+		return readAll(FLOWERS_BY_NAME, max, cursor, accountId);
 	}
 }

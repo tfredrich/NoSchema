@@ -26,17 +26,17 @@ implements UnitOfWorkCommitStrategy
 	throws UnitOfWorkCommitException
 	{
 		CompletableFuture<?>[] futures = statements.stream()
-				.map(s -> session.executeAsync(s).toCompletableFuture())
-				.toArray(CompletableFuture[]::new);
+			.map(s -> session.executeAsync(s).toCompletableFuture())
+			.toArray(CompletableFuture[]::new);
 
-			return CompletableFuture.allOf(futures);
+		return CompletableFuture.allOf(futures);
 	}
 
 
 	@Override
 	public void rollback() throws UnitOfWorkRollbackException
 	{
-		// No-op for DocumentUnitOfWork so far...
+		// No-op for CassandraUnitOfWork so far...
 		throw new UnitOfWorkRollbackException("Not Implemented.");
 	}
 }

@@ -88,7 +88,7 @@ implements MutationStatementFactory
 	{
 		PreparedStatementFactory<T> factory = statementsByTable.get(tableName);
 
-//		if (factory == null) throw new InvalidViewNameException(tableName);
+		if (factory == null) throw new InvalidViewNameException(tableName);
 
 		return factory;
 	}

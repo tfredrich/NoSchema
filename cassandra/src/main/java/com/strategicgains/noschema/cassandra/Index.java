@@ -25,7 +25,7 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
 public class Index<T extends Identifiable>
 extends SecondaryTable<T>
 {
-	private DereferencePolicy dereferencePolicy = DereferencePolicy.NEVER;
+	private IndexDereferencePolicy dereferencePolicy = IndexDereferencePolicy.NEVER;
 
 	public Index()
 	{
@@ -63,17 +63,17 @@ extends SecondaryTable<T>
 
 	public Index<T> alwaysDereference()
 	{
-		dereferencePolicy = DereferencePolicy.ALWAYS;
+		dereferencePolicy = IndexDereferencePolicy.ALWAYS;
 		return this;
 	}
 
 	public Index<T> neverDereference()
 	{
-		dereferencePolicy = DereferencePolicy.NEVER;
+		dereferencePolicy = IndexDereferencePolicy.NEVER;
 		return this;
 	}
 
-	public DereferencePolicy dereferencePolicy()
+	public IndexDereferencePolicy dereferencePolicy()
 	{
 		return dereferencePolicy;
 	}

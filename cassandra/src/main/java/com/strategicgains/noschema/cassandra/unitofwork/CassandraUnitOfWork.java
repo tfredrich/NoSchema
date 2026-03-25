@@ -55,7 +55,7 @@ implements RepositoryUnitOfWork
     @Override
 	public CassandraUnitOfWork registerNew(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.NEW));
+		changeSet.registerChange(new CassandraChange<>(viewName, entity, EntityState.NEW));
 		return this;
 	}
 
@@ -67,7 +67,7 @@ implements RepositoryUnitOfWork
     @Override
 	public CassandraUnitOfWork registerDirty(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.DIRTY));
+		changeSet.registerChange(new CassandraChange<>(viewName, entity, EntityState.DIRTY));
 		return this;
 	}
 
@@ -79,7 +79,7 @@ implements RepositoryUnitOfWork
     @Override
 	public CassandraUnitOfWork registerDeleted(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.DELETED));
+		changeSet.registerChange(new CassandraChange<>(viewName, entity, EntityState.DELETED));
 		return this;
 	}
 
@@ -94,7 +94,7 @@ implements RepositoryUnitOfWork
     @Override
 	public CassandraUnitOfWork registerClean(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.CLEAN));
+		changeSet.registerChange(new CassandraChange<>(viewName, entity, EntityState.CLEAN));
 		return this;
 	}
 
@@ -106,7 +106,7 @@ implements RepositoryUnitOfWork
 			List<BoundStatement> statements = new ArrayList<>();
 
 			changeSet.stream()
-				.map(change -> (UnitOfWorkChange<?>) change)
+				.map(change -> (CassandraChange<?>) change)
 				.forEach(change -> {
 					checkExistence(session, change).ifPresent(existence::add);
 					generateStatementFor(change).ifPresent(statements::add);
@@ -147,7 +147,7 @@ implements RepositoryUnitOfWork
 		}
 	}
 
-	private Optional<CompletionStage<Boolean>> checkExistence(CqlSession session, final UnitOfWorkChange<?> change)
+	private Optional<CompletionStage<Boolean>> checkExistence(CqlSession session, final CassandraChange<?> change)
 	{
 		String viewName = change.getView();
 
@@ -181,7 +181,7 @@ implements RepositoryUnitOfWork
 		return result;
 	}
 
-	private Optional<BoundStatement> generateStatementFor(UnitOfWorkChange<?> change)
+	private Optional<BoundStatement> generateStatementFor(CassandraChange<?> change)
 	{
 		String viewName = change.getView();
 

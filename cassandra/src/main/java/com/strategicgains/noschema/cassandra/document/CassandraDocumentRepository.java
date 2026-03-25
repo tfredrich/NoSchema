@@ -19,6 +19,7 @@ import com.strategicgains.noschema.cassandra.PreparedStatementFactoryProvider;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
+import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.DocumentCodec;
 import com.strategicgains.noschema.document.DocumentObserver;
@@ -47,22 +48,22 @@ implements SchemaWriter<T>
 {
 	// The lifecycleObservers used to observe the encoding, creation, update, and deletion of entities.
 	private final CachingStatementFactory<Document> statementFactory;
-	private final Map<String, CassandraDocumentMapper<T>> factoriesByTable = new HashMap<>();
+	private final Map<String, CassandraDocumentMapper<T>> mappersByTable = new HashMap<>();
 	private final List<DocumentObserver> documentObservers = new ArrayList<>();
 
 	protected CassandraDocumentRepository(CqlSession session, PrimaryTable<T> table, DocumentCodec<T> codec)
 	{
-		this(session, table, com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType.LOGGED, codec);
+		this(session, table, UnitOfWorkType.LOGGED, codec);
 	}
 
-	protected CassandraDocumentRepository(CqlSession session, PrimaryTable<T> table, com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
+	protected CassandraDocumentRepository(CqlSession session, PrimaryTable<T> table, UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
 	{
 		super(session, table, unitOfWorkType, entityStatementFactory(codec));
 		PreparedStatementFactoryProvider<Document> documentStatementFactory = (s, t) -> new DocumentStatementFactory(s, t);
 		this.statementFactory = new CachingStatementFactory<>(session, table, documentStatementFactory);
-		factoriesByTable.put(table.name(), new CassandraDocumentMapper<>(table.keys(), codec));
-		table.views().forEach(view -> factoriesByTable.put(view.name(), new CassandraDocumentMapper<>(view.keys(), codec)));
-		table.indexes().forEach(index -> factoriesByTable.put(index.name(), new CassandraDocumentMapper<>(index.keys(), codec)));
+		mappersByTable.put(table.name(), new CassandraDocumentMapper<>(table.keys(), codec));
+		table.views().forEach(view -> mappersByTable.put(view.name(), new CassandraDocumentMapper<>(view.keys(), codec)));
+		table.indexes().forEach(index -> mappersByTable.put(index.name(), new CassandraDocumentMapper<>(index.keys(), codec)));
 	}
 
 	private static <T extends Identifiable> PreparedStatementFactoryProvider<T> entityStatementFactory(DocumentCodec<T> codec)
@@ -470,12 +471,12 @@ implements SchemaWriter<T>
 
 	private Document asDocument(String viewName, Row row)
 	{
-		return factoriesByTable.get(viewName).toDocument(row);
+		return mappersByTable.get(viewName).toDocument(row);
 	}
 
 	private T asEntity(String viewName, Document d)
 	{
-		return factoriesByTable.get(viewName).toEntity(d);
+		return mappersByTable.get(viewName).toEntity(d);
 	}
 
 	protected Document asDocument(T entity)
@@ -491,12 +492,12 @@ implements SchemaWriter<T>
 	private Document asDocument(String viewName, T entity)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		return factoriesByTable.get(viewName).toDocument(entity);
+		return mappersByTable.get(viewName).toDocument(entity);
 	}
 
 	private Document asDocument(String viewName, T entity, byte[] bytes)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		return factoriesByTable.get(viewName).toDocument(entity, bytes);
+		return mappersByTable.get(viewName).toDocument(entity, bytes);
 	}
 }

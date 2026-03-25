@@ -1,6 +1,6 @@
 package com.strategicgains.noschema.cassandra;
 
-public enum DereferencePolicy
+public enum IndexDereferencePolicy
 {
 	NEVER,
 	ALWAYS

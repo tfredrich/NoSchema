@@ -157,4 +157,14 @@ public abstract class AbstractTable<T extends Identifiable>
 	{
 		return false;
 	}
+
+	public boolean isView()
+	{
+		return false;
+	}
+
+	public boolean isPrimary()
+	{
+		return false;
+	}
 }
