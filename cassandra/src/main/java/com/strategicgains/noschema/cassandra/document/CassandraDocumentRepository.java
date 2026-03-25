@@ -15,16 +15,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.protocol.internal.util.Bytes;
-import com.strategicgains.noschema.RepositoryObserver;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.Repository;
+import com.strategicgains.noschema.RepositoryObserver;
 import com.strategicgains.noschema.cassandra.CachingStatementFactory;
+import com.strategicgains.noschema.cassandra.CassandraRepository;
 import com.strategicgains.noschema.cassandra.PagedResponse;
 import com.strategicgains.noschema.cassandra.PreparedStatementFactoryProvider;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
-import com.strategicgains.noschema.cassandra.unitofwork.DocumentUnitOfWork;
+import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.DocumentCodec;
@@ -51,7 +52,8 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
  * T is the type of entity to be stored in the database.
  */
 public class CassandraDocumentRepository<T extends Identifiable>
-implements Repository<T>, SchemaWriter<T>
+extends CassandraRepository<T>
+implements SchemaWriter<T>
 {
 	private static final DocumentCodec<Document> DOCUMENT_CODEC = new DocumentCodec<>()
 	{
@@ -71,23 +73,8 @@ implements Repository<T>, SchemaWriter<T>
 		}
 	};
 
-	// The session used to connect to the Cassandra cluster.
-	private CqlSession session;
-	// The primary table and its views.
-	private PrimaryTable<T> table;
-	// The statement factory used to create the CQL statements for an entity within the UnitOfWork.
-	private CachingStatementFactory<T> statementFactory;
-	// The statement factory used to create the CQL statements for Documents within the UnitOfWork.
-	private CachingStatementFactory<Document> documentStatementFactory;
-	// The factories used to encode and decode entities.
-	private Map<String, CassandraDocumentMapper<T>> factoriesByTable = new HashMap<>();
-	// The type of UnitOfWork to create.
-	private UnitOfWorkType unitOfWorkType;
 	// The lifecycleObservers used to observe the encoding, creation, update, and deletion of entities.
 	private List<DocumentObserver> documentObservers = new ArrayList<>();
-	// The lifecycleObservers used to observe the creation, update, and deletion of entities.
-	private List<RepositoryObserver<T>> lifecycleObservers = new ArrayList<>();
-
 
 	protected CassandraDocumentRepository(CqlSession session, PrimaryTable<T> table, DocumentCodec<T> codec)
 	{
@@ -96,79 +83,48 @@ implements Repository<T>, SchemaWriter<T>
 
 	protected CassandraDocumentRepository(CqlSession session, PrimaryTable<T> table, UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
 	{
-		super();
-		this.session = Objects.requireNonNull(session);
-		this.table = Objects.requireNonNull(table);
-		this.unitOfWorkType = Objects.requireNonNull(unitOfWorkType);
+		super(session, table, unitOfWorkType, new DocumentStatementFactory<>(session, table, codec));
 		PreparedStatementFactoryProvider<T> entityStatementFactory = (s, t) -> new DocumentStatementFactory<>(s, t, codec);
 		PreparedStatementFactoryProvider<Document> documentStatementFactory = (s, t) -> new DocumentStatementFactory<>(s, t, DOCUMENT_CODEC);
 		this.statementFactory = new CachingStatementFactory<>(session, table, entityStatementFactory);
 		this.documentStatementFactory = new CachingStatementFactory<>(session, table, documentStatementFactory);
-		factoriesByTable.put(table.name(), new CassandraDocumentMapper<>(table.keys(), codec));
-		table.views().forEach(view ->
-			this.factoriesByTable.put(view.name(), new CassandraDocumentMapper<>(view.keys(), codec))
-		);
-		table.indexes().forEach(index ->
-			this.factoriesByTable.put(index.name(), new CassandraDocumentMapper<>(index.keys(), codec))
-		);
-	}
-
-	protected boolean hasViews()
-	{
-		return table.hasViews();
-	}
-
-	protected boolean hasIndexes()
-	{
-		return table.hasIndexes();
 	}
 
 	@Override
 	public void ensureTables()
 	{
-		new DocumentSchemaProvider(table).create(session);
+		new DocumentSchemaProvider(table()).create(session());
 
 		if (hasViews())
 		{
-			table.views().forEach(view -> new DocumentSchemaProvider(view).create(session));
+			table().views().forEach(view -> new DocumentSchemaProvider(view).create(session()));
 		}
 
 		if (hasIndexes())
 		{
-			table.indexes().forEach(idx -> new DocumentSchemaProvider(idx).create(session));
+			table().indexes().forEach(idx -> new DocumentSchemaProvider(idx).create(session()));
 		}
 	}
 
 	@Override
 	public void dropTables()
 	{
-		new DocumentSchemaProvider(table).drop(session);
+		new DocumentSchemaProvider(table()).drop(session());
 
 		if (hasViews())
 		{
-			table.views().forEach(view -> new DocumentSchemaProvider(view).drop(session));
+			table().views().forEach(view -> new DocumentSchemaProvider(view).drop(session()));
 		}
 
 		if (hasIndexes())
 		{
-			table.indexes().forEach(idx -> new DocumentSchemaProvider(idx).drop(session));
+			table().indexes().forEach(idx -> new DocumentSchemaProvider(idx).drop(session()));
 		}
-	}
-
-	protected String tableName()
-	{
-		return table.name();
 	}
 
 	public CassandraDocumentRepository<T> withDocumentObserver(DocumentObserver observer)
 	{
 		documentObservers.add(observer);
-		return this;
-	}
-
-	public CassandraDocumentRepository<T> withEntityObserver(RepositoryObserver<T> observer)
-	{
-		lifecycleObservers.add(observer);
 		return this;
 	}
 
@@ -186,7 +142,7 @@ implements Repository<T>, SchemaWriter<T>
 	{
 		try
 		{
-			DocumentUnitOfWork uow = createUnitOfWork();
+			CassandraUnitOfWork uow = createUnitOfWork();
 			T created = create(entity, uow);
 			uow.commit();
 			return created;
@@ -199,7 +155,7 @@ implements Repository<T>, SchemaWriter<T>
 		return null;
 	}
 
-	public T create(T entity, DocumentUnitOfWork uow)
+	public T create(T entity, CassandraUnitOfWork uow)
 	{
 		lifecycleObservers.forEach(o -> o.beforeCreate(entity));
 		final AtomicReference<byte[]> serialized = new AtomicReference<>();
@@ -255,7 +211,7 @@ implements Repository<T>, SchemaWriter<T>
 	{
 		try
 		{
-			DocumentUnitOfWork uow = createUnitOfWork();
+			CassandraUnitOfWork uow = createUnitOfWork();
 			delete(id, uow);
 			uow.commit();
 		}
@@ -265,7 +221,7 @@ implements Repository<T>, SchemaWriter<T>
 		}
 	}
 
-	public void delete(Identifier id, DocumentUnitOfWork uow)
+	public void delete(Identifier id, CassandraUnitOfWork uow)
 	{
 		final T entity = read(id);
 		lifecycleObservers.forEach(o -> o.beforeDelete(entity));
@@ -294,39 +250,6 @@ implements Repository<T>, SchemaWriter<T>
 
 		documentObservers.forEach(o -> o.afterDelete(primaryDocument.get()));
 		lifecycleObservers.forEach(o -> o.afterDelete(entity));
-	}
-
-	/**
-	 * This method checks if an entity exists in the primary table.
-	 * It executes an asynchronous query to check if the entity exists,
-	 * returning true if the id exists, and false otherwise.
-	 *
-	 * @param id The Identifier of the entity to check.
-	 * @return true if the entity exists, false otherwise.
-	 * @throws InvalidIdentifierException If the provided Identifier is invalid.
-	 */
-	@Override
-	public boolean exists(Identifier id)
-	throws InvalidIdentifierException
-	{
-		return exists(table.name(), id);
-	}
-
-	/**
-	 * This method checks if an entity exists in a specific view of the database.
-	 * It executes an asynchronous query to check if the entity exists in the
-	 * view, returning true if the id exists, and false otherwise.
-	 *
-	 * @param viewName The name of the view to check.
-	 * @param id The Identifier of the entity to check.
-	 * @return true if the entity exists in the view, false otherwise.
-	 */
-	public boolean exists(String viewName, Identifier id)
-	{
-		return session.executeAsync(statementFactory.exists(viewName, id))
-			.thenApply(r -> (Boolean.valueOf(r.one().getLong(0) > 0)))
-			.toCompletableFuture()
-			.join();
 	}
 
 	/**
@@ -508,7 +431,7 @@ implements Repository<T>, SchemaWriter<T>
 	{
 		try
 		{
-			DocumentUnitOfWork uow = createUnitOfWork();
+			CassandraUnitOfWork uow = createUnitOfWork();
 			T updated = update(entity, original, uow);
 			uow.commit();
 			return updated;
@@ -521,7 +444,7 @@ implements Repository<T>, SchemaWriter<T>
 		return null;
 	}
 
-	public T update(T entity, T original, DocumentUnitOfWork uow)
+	public T update(T entity, T original, CassandraUnitOfWork uow)
 	{
 		AtomicReference<Document> originalDocument = new AtomicReference<>();
 		final T originalEntity;
@@ -592,7 +515,7 @@ implements Repository<T>, SchemaWriter<T>
 	{
 		try
 		{
-			DocumentUnitOfWork uow = createUnitOfWork();
+			CassandraUnitOfWork uow = createUnitOfWork();
 			T upserted = upsert(entity, uow);
 			uow.commit();
 			return upserted;
@@ -605,7 +528,7 @@ implements Repository<T>, SchemaWriter<T>
 		return null;
 	}
 
-	public T upsert(T entity, DocumentUnitOfWork uow)
+	public T upsert(T entity, CassandraUnitOfWork uow)
 	{
 		final AtomicReference<byte[]> bson = new AtomicReference<>();
 		final AtomicReference<Document> updated = new AtomicReference<>();
@@ -632,11 +555,6 @@ implements Repository<T>, SchemaWriter<T>
 
 		documentObservers.forEach(o -> o.afterUpdate(updated.get()));
 		return entity;
-	}
-
-	protected DocumentUnitOfWork createUnitOfWork()
-	{
-		return new DocumentUnitOfWork(session, documentStatementFactory, unitOfWorkType);
 	}
 
 	private CompletableFuture<Document> readAsDocument(Identifier id)

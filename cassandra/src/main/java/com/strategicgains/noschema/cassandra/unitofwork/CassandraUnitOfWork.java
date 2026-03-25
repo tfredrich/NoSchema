@@ -18,26 +18,26 @@ import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.unitofwork.Change;
 import com.strategicgains.noschema.unitofwork.EntityState;
-import com.strategicgains.noschema.unitofwork.UnitOfWork;
+import com.strategicgains.noschema.unitofwork.RepositoryUnitOfWork;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkChangeSet;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
-public class CassandraUnitOfWork
-		implements UnitOfWork
-		{
-		    private final CqlSession session;
-		    private final MutationStatementFactory statementFactory;
-		    private final UnitOfWorkChangeSet changeSet = new UnitOfWorkChangeSet();
-		    private final UnitOfWorkCommitStrategy commitStrategy;
+public class CassandraUnitOfWork<T extends Identifiable>
+implements RepositoryUnitOfWork
+{
+    private final CqlSession session;
+    private final MutationStatementFactory statementFactory;
+    private final UnitOfWorkChangeSet changeSet = new UnitOfWorkChangeSet();
+    private final UnitOfWorkCommitStrategy commitStrategy;
 
-	    public CassandraUnitOfWork(CqlSession session, MutationStatementFactory statementFactory)
-	    {
-	    	this(session, statementFactory, UnitOfWorkType.LOGGED);
-	    }
+    public CassandraUnitOfWork(CqlSession session, MutationStatementFactory statementFactory)
+    {
+    	this(session, statementFactory, UnitOfWorkType.LOGGED);
+    }
 
-	    public CassandraUnitOfWork(CqlSession session, MutationStatementFactory statementFactory, UnitOfWorkType unitOfWorkType)
-	    {
+    public CassandraUnitOfWork(CqlSession session, MutationStatementFactory statementFactory, UnitOfWorkType unitOfWorkType)
+    {
         this.session = Objects.requireNonNull(session);
         this.statementFactory = Objects.requireNonNull(statementFactory);
         this.commitStrategy = Objects.requireNonNull(unitOfWorkType)
@@ -53,9 +53,10 @@ public class CassandraUnitOfWork
 	 *
 	 * @param entity the new entity to register.
 	 */
-	public <T extends Identifiable> CassandraUnitOfWork registerNew(String viewName, T entity)
+    @Override
+	public CassandraUnitOfWork<T> registerNew(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.NEW));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, (T) entity, EntityState.NEW));
 		return this;
 	}
 
@@ -64,9 +65,10 @@ public class CassandraUnitOfWork
 	 *
 	 * @param entity the entity in its dirty state (after update).
 	 */
-	public <T extends Identifiable> CassandraUnitOfWork registerDirty(String viewName, T entity)
+    @Override
+	public CassandraUnitOfWork<T> registerDirty(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.DIRTY));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, (T) entity, EntityState.DIRTY));
 		return this;
 	}
 
@@ -75,9 +77,10 @@ public class CassandraUnitOfWork
 	 *
 	 * @param entity the entity in its clean state (before removal).
 	 */
-	public <T extends Identifiable> CassandraUnitOfWork registerDeleted(String viewName, T entity)
+    @Override
+	public CassandraUnitOfWork<T> registerDeleted(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.DELETED));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, (T) entity, EntityState.DELETED));
 		return this;
 	}
 
@@ -89,9 +92,10 @@ public class CassandraUnitOfWork
 	 * change the copy that is registered as clean, making registration useless. Copy your
 	 * own objects either before registering them as clean or before mutating them.
 	 */
-	public <T extends Identifiable> CassandraUnitOfWork registerClean(String viewName, T entity)
+    @Override
+	public CassandraUnitOfWork<T> registerClean(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.CLEAN));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, (T) entity, EntityState.CLEAN));
 		return this;
 	}
 
