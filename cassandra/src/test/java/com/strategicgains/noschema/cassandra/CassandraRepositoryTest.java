@@ -24,7 +24,7 @@ public class CassandraRepositoryTest
 			.withView("by_name", "name:text unique");
 
 		assertSame(rowMapper, table.rowMapper());
-		assertSame(rowMapper, table.views().findFirst().orElseThrow().effectiveRowMapper());
+		assertSame(rowMapper, table.views().findFirst().orElseThrow().rowMapper());
 	}
 
 	@Test(expected = IllegalArgumentException.class)

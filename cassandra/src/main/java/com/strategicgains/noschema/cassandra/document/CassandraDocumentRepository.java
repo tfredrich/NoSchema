@@ -1,40 +1,30 @@
 package com.strategicgains.noschema.cassandra.document;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.protocol.internal.util.Bytes;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.Repository;
 import com.strategicgains.noschema.RepositoryObserver;
 import com.strategicgains.noschema.cassandra.CachingStatementFactory;
 import com.strategicgains.noschema.cassandra.CassandraRepository;
-import com.strategicgains.noschema.cassandra.PagedResponse;
+import com.strategicgains.noschema.cassandra.PreparedStatementFactory;
 import com.strategicgains.noschema.cassandra.PreparedStatementFactoryProvider;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
-import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.DocumentCodec;
 import com.strategicgains.noschema.document.DocumentObserver;
-import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
-import com.strategicgains.noschema.exception.StorageException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 
 /**
@@ -55,39 +45,77 @@ public class CassandraDocumentRepository<T extends Identifiable>
 extends CassandraRepository<T>
 implements SchemaWriter<T>
 {
-	private static final DocumentCodec<Document> DOCUMENT_CODEC = new DocumentCodec<>()
-	{
-		@Override
-		public byte[] serialize(Document object)
-		{
-			return object.getObject();
-		}
-
-		@Override
-		public Document deserialize(byte[] bytes, Class<Document> clazz)
-		{
-			Document document = new Document();
-			document.setObject(bytes);
-			document.setType(clazz);
-			return document;
-		}
-	};
-
 	// The lifecycleObservers used to observe the encoding, creation, update, and deletion of entities.
-	private List<DocumentObserver> documentObservers = new ArrayList<>();
+	private final CachingStatementFactory<Document> statementFactory;
+	private final Map<String, CassandraDocumentMapper<T>> factoriesByTable = new HashMap<>();
+	private final List<DocumentObserver> documentObservers = new ArrayList<>();
 
 	protected CassandraDocumentRepository(CqlSession session, PrimaryTable<T> table, DocumentCodec<T> codec)
 	{
-		this(session, table, UnitOfWorkType.LOGGED, codec);
+		this(session, table, com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType.LOGGED, codec);
 	}
 
-	protected CassandraDocumentRepository(CqlSession session, PrimaryTable<T> table, UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
+	protected CassandraDocumentRepository(CqlSession session, PrimaryTable<T> table, com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
 	{
-		super(session, table, unitOfWorkType, new DocumentStatementFactory<>(session, table, codec));
-		PreparedStatementFactoryProvider<T> entityStatementFactory = (s, t) -> new DocumentStatementFactory<>(s, t, codec);
-		PreparedStatementFactoryProvider<Document> documentStatementFactory = (s, t) -> new DocumentStatementFactory<>(s, t, DOCUMENT_CODEC);
-		this.statementFactory = new CachingStatementFactory<>(session, table, entityStatementFactory);
-		this.documentStatementFactory = new CachingStatementFactory<>(session, table, documentStatementFactory);
+		super(session, table, unitOfWorkType, entityStatementFactory(codec));
+		PreparedStatementFactoryProvider<Document> documentStatementFactory = (s, t) -> new DocumentStatementFactory(s, t);
+		this.statementFactory = new CachingStatementFactory<>(session, table, documentStatementFactory);
+		factoriesByTable.put(table.name(), new CassandraDocumentMapper<>(table.keys(), codec));
+		table.views().forEach(view -> factoriesByTable.put(view.name(), new CassandraDocumentMapper<>(view.keys(), codec)));
+		table.indexes().forEach(index -> factoriesByTable.put(index.name(), new CassandraDocumentMapper<>(index.keys(), codec)));
+	}
+
+	private static <T extends Identifiable> PreparedStatementFactoryProvider<T> entityStatementFactory(DocumentCodec<T> codec)
+	{
+		return (session, table) -> {
+			CassandraDocumentMapper<T> mapper = new CassandraDocumentMapper<>(table.keys(), codec);
+			DocumentStatementFactory delegate = new DocumentStatementFactory(session, table);
+
+			return new PreparedStatementFactory<>()
+			{
+				@Override
+				public com.datastax.oss.driver.api.core.cql.BoundStatement create(T entity)
+				{
+					return delegate.create(mapper.toDocument(entity));
+				}
+
+				@Override
+				public com.datastax.oss.driver.api.core.cql.BoundStatement delete(Identifier id)
+				{
+					return delegate.delete(id);
+				}
+
+				@Override
+				public com.datastax.oss.driver.api.core.cql.BoundStatement exists(Identifier id)
+				{
+					return delegate.exists(id);
+				}
+
+				@Override
+				public com.datastax.oss.driver.api.core.cql.BoundStatement update(T entity)
+				{
+					return delegate.update(mapper.toDocument(entity));
+				}
+
+				@Override
+				public com.datastax.oss.driver.api.core.cql.BoundStatement upsert(T entity)
+				{
+					return delegate.upsert(mapper.toDocument(entity));
+				}
+
+				@Override
+				public com.datastax.oss.driver.api.core.cql.BoundStatement read(Identifier id)
+				{
+					return delegate.read(id);
+				}
+
+				@Override
+				public com.datastax.oss.driver.api.core.cql.BoundStatement readAll(Object... parameters)
+				{
+					return delegate.readAll(parameters);
+				}
+			};
+		};
 	}
 
 	@Override
@@ -128,6 +156,12 @@ implements SchemaWriter<T>
 		return this;
 	}
 
+	public CassandraDocumentRepository<T> withEntityObserver(RepositoryObserver<T> observer)
+	{
+		super.withObserver(observer);
+		return this;
+	}
+
 	/**
 	 * This method is responsible for creating a new entity in the database.
 	 * It first serializes the entity, then registers it in the UnitOfWork for 
@@ -157,12 +191,12 @@ implements SchemaWriter<T>
 
 	public T create(T entity, CassandraUnitOfWork uow)
 	{
-		lifecycleObservers.forEach(o -> o.beforeCreate(entity));
+		beforeCreate(entity);
 		final AtomicReference<byte[]> serialized = new AtomicReference<>();
 		final AtomicReference<byte[]> serializedId = new AtomicReference<>();
 		final AtomicReference<Document> primaryDocument = new AtomicReference<>();
 
-		table.stream().forEach(t -> {
+		table().stream().forEach(t -> {
 			final Document d;
 
 			if (serialized.get() == null)
@@ -193,7 +227,7 @@ implements SchemaWriter<T>
 		});
 
 		documentObservers.forEach(o -> o.afterCreate(primaryDocument.get()));
-		lifecycleObservers.forEach(o -> o.afterCreate(entity));
+		afterCreate(entity);
 		return entity;
 	}
 
@@ -224,11 +258,11 @@ implements SchemaWriter<T>
 	public void delete(Identifier id, CassandraUnitOfWork uow)
 	{
 		final T entity = read(id);
-		lifecycleObservers.forEach(o -> o.beforeDelete(entity));
+		beforeDelete(entity);
 		final AtomicReference<byte[]> serialized = new AtomicReference<>();
 		final AtomicReference<Document> primaryDocument = new AtomicReference<>();
 
-		table.stream().forEach(t -> {
+		table().stream().forEach(t -> {
 			final Document d;
 
 			if (serialized.get() == null)
@@ -249,170 +283,7 @@ implements SchemaWriter<T>
 		});
 
 		documentObservers.forEach(o -> o.afterDelete(primaryDocument.get()));
-		lifecycleObservers.forEach(o -> o.afterDelete(entity));
-	}
-
-	/**
-	 * This method reads an entity from the primary table.
-	 * It executes an asynchronous query to read the entity, and then returns the result.
-	 *
-	 * @param id The Identifier of the entity to read.
-	 * @return The read entity.
-	 * @throws ItemNotFoundException If the entity is not found.
-	 */
-	@Override
-	public T read(Identifier id)
-	{
-		return read(table.name(), id);
-	}
- 
-	/**
-	 * This method reads an entity from a specific view in the database.
-	 * It executes an asynchronous query to read the entity from the view, and then returns the result.
-	 *
-	 * @param viewName The name of the view to read from.
-	 * @param id The Identifier of the entity to read.
-	 * @return The read entity.
-	 * @throws ItemNotFoundException If the entity is not found.
-	 */
-	public T read(String viewName, Identifier id)
-	{
-		try
-		{
-			T read = readRow(viewName, id)
-				.thenApply(row -> asEntity(viewName, row))
-				.join();
-			lifecycleObservers.forEach(o -> o.afterRead(read));
-			return read;
-		}
-		catch (CompletionException e)
-		{
-			handleException(e);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Retrieve many entities from the primary table using the given [partial] identifier.
-	 * Note that values for the partition key portion MUST be included.
-	 * 
-	 * @param limit the maximum number of rows to return.
-	 * @param cursor a hex string representing the page state to start the query.
-	 * @param parms properties making up a partial key or identifier.
-	 * @return
-	 */
-	public PagedResponse<T> readAll(int limit, String cursor, Object... parms)
-	{
-		return readAll(table.name(), limit, cursor, parms);
-	}
-
-	/**
-	 * Retrieve many entities from a view using the given [partial] identifier.
-	 * Note that values for the partition key portion MUST be included.
-	 * 
-	 * @param viewName the name of the view to query.
-	 * @param limit the maximum number of rows to return.
-	 * @param cursor a hex string representing the page state to start the query.
-	 * @param parms properties making up a partial key or identifier.
-	 * @return
-	 */
-	public PagedResponse<T> readAll(String viewName, int limit, String cursor, Object... parms)
-	{
-		final PagedResponse<T> response = new PagedResponse<>();
-		try
-		{
-			readRows(viewName, limit, cursor, parms)
-				.thenAccept(page -> {
-					response.cursor(page.cursor());
-					page.iterator().forEachRemaining(row -> {
-						T entity = asEntity(viewName, row);
-						lifecycleObservers.forEach(o -> o.afterRead(entity));
-                        response.add(entity);
-                    });
-				})
-				.join();
-		}
-		catch (CompletionException e)
-		{
-			handleException(e);
-		}
-
-		return response;
-	}
-
-	/**
-	 * Reads multiple entities from the primary table.
-	 * It executes asynchronous queries to read the entities,
-	 * waits for all of them to complete, and then returns the results.
-	 * Entities that are not found are not included in the result.
-	 * 
-	 * Note: the order of the returned entities is not guaranteed.
-	 *
-	 * @param ids The Identifiers of the entities to read.
-	 * @return The list of read entities.
-	 */
-	@Override
-	public List<T> readIn(List<Identifier> ids)
-	{
-		return readIn(table.name(), ids);
-	}
-
-	/**
-	 * This method reads multiple entities from a specific view.
-	 * It executes asynchronous queries to read the entities from the view,
-	 * waits for all of them to complete, and then returns the results.
-	 * Entities that are not found are not included in the result.
-	 * 
-	 * This method uses asynchronous queries to read the entities, which
-	 * means the client itself is the coordinator instead of issuing all
-	 * the queries to a single node. This is more efficient from the
-	 * server perspective, but it can load up the client.
-	 * 
-	 * Note: the order of the returned entities is not guaranteed.
-	 *
-	 * @param viewName The name of the view to read from.
-	 * @param ids The Identifiers of the entities to read.
-	 * @return The list of read entities.
-	 */
-	public List<T> readIn(String viewName, List<Identifier> ids)
-	{
-		if (ids == null) return Collections.emptyList();
-
-		List<CompletableFuture<T>> futures = ids.stream().map(id -> 
-			session.executeAsync(statementFactory.read(viewName, id))
-				.thenApply(rs -> rs.one())
-				.thenApply(row -> {
-					T entity = asEntity(viewName, row);
-					lifecycleObservers.forEach(o -> o.afterRead(entity));
-					return entity;
-				})
-				.toCompletableFuture()
-		).toList();
-
-		CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-
-		CompletableFuture<List<T>> allCompletableFuture = allFutures.thenApply(v ->
-			futures.stream()
-				.map(CompletableFuture::join)
-				.toList()
-		);
-
-		try
-		{
-			return allCompletableFuture.get().stream()
-				.filter(Objects::nonNull)
-				.toList();
-		}
-		catch (InterruptedException i)
-		{
-			Thread.currentThread().interrupt();
-			throw new RuntimeException(i);
-		}
-		catch (ExecutionException e)
-		{
-			throw new RuntimeException(e);
-		}
+		afterDelete(entity);
 	}
 
 	/**
@@ -457,15 +328,16 @@ implements SchemaWriter<T>
 		else
 		{
 			originalDocument.set(readAsDocument(entity.getIdentifier()).join());
-			uow.registerClean(table.name(), originalDocument.get());
-			originalEntity = asEntity(table.name(), originalDocument.get());
+			uow.registerClean(table().name(), originalDocument.get());
+			originalEntity = asEntity(table().name(), originalDocument.get());
 		}
 
 		documentObservers.forEach(o -> o.beforeUpdate(originalDocument.get()));
+		beforeUpdate(entity);
 		final byte[] serialized = originalDocument.get().getObject();
 		final AtomicReference<Document> updatedDocument = new AtomicReference<>();
 
-		table.stream().forEach(t -> {
+		table().stream().forEach(t -> {
 			if (updatedDocument.get() == null)
 			{
 				documentObservers.forEach(o -> o.beforeEncoding(entity));
@@ -498,6 +370,7 @@ implements SchemaWriter<T>
 		});
 
 		documentObservers.forEach(o -> o.afterUpdate(updatedDocument.get()));
+		afterUpdate(entity);
 		return entity;
 	}
 
@@ -533,7 +406,8 @@ implements SchemaWriter<T>
 		final AtomicReference<byte[]> bson = new AtomicReference<>();
 		final AtomicReference<Document> updated = new AtomicReference<>();
 
-		table.stream().forEach(view -> {
+		beforeUpdate(entity);
+		table().stream().forEach(view -> {
 			final Document d;
 
 			if (bson.get() == null)
@@ -554,48 +428,37 @@ implements SchemaWriter<T>
 		});
 
 		documentObservers.forEach(o -> o.afterUpdate(updated.get()));
+		afterUpdate(entity);
 		return entity;
 	}
 
 	private CompletableFuture<Document> readAsDocument(Identifier id)
 	throws ItemNotFoundException
 	{
-		return readRow(table.name(), id)
+		return readRow(table().name(), id)
 			.thenApply(row -> {
-				Document document = asDocument(table.name(), row);
-				T entity = asEntity(table.name(), document);
+				Document document = asDocument(table().name(), row);
+				T entity = asEntity(table().name(), document);
 				// TODO: This is a hack. Need to load this from the database.
 				document.setIdentifier(entity.getIdentifier());
 				return document;				
 			});
 	}
 
-	private CompletableFuture<Row> readRow(String viewName, Identifier id)
+	@Override
+	protected void beforeRead(Identifier id)
 	{
 		documentObservers.forEach(o -> o.beforeRead(id));
-		return session.executeAsync(statementFactory.read(viewName, id))
-			.thenApply(rs -> rs.one())
-			.thenApply(row -> {
-				if (row == null) throw new ItemNotFoundException(id.toString());
-				return row;
-			})
-			.toCompletableFuture();
 	}
 
-	private CompletableFuture<PagedRows> readRows(String viewName, int limit, String cursor, Object... parameters)
+	@Override
+	protected void beforeReadAll(Object... parameters)
 	{
 		documentObservers.forEach(o -> o.beforeRead(new Identifier(parameters)));
-		return session.executeAsync(statementFactory.readAll(viewName, limit, cursor, parameters))
-			.thenApply(rs -> {
-				PagedRows rows = new PagedRows();
-				rows.cursor(Bytes.toHexString(rs.getExecutionInfo().getPagingState()));
-				rows.currentPage(rs.currentPage());
-				return rows;
-			})
-			.toCompletableFuture();
 	}
 
-	private T asEntity(String viewName, Row row)
+	@Override
+	protected T mapRow(String viewName, Row row)
 	{
 		Document d = asDocument(viewName, row);
 
@@ -617,7 +480,12 @@ implements SchemaWriter<T>
 
 	protected Document asDocument(T entity)
 	{
-		return asDocument(table.name(), entity);
+		return asDocument(table().name(), entity);
+	}
+
+	protected CassandraUnitOfWork createUnitOfWork()
+	{
+		return new CassandraUnitOfWork(session(), statementFactory, unitOfWorkType());
 	}
 
 	private Document asDocument(String viewName, T entity)
@@ -630,52 +498,5 @@ implements SchemaWriter<T>
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
 		return factoriesByTable.get(viewName).toDocument(entity, bytes);
-	}
-
-	private void handleException(Exception e)
-	throws StorageException
-	{
-		if (e.getCause() instanceof DuplicateItemException duplicate)
-		{
-			throw duplicate;
-		}
-
-		if (e.getCause() instanceof InvalidIdentifierException invalidId)
-		{
-			throw invalidId;
-		}
-
-		if (e.getCause() instanceof ItemNotFoundException notFound)
-		{
-			throw notFound;
-		}
-
-		throw new StorageException(e.getCause());
-	}
-
-	private class PagedRows
-	{
-		private String cursor;
-		private Iterable<Row> currentPage;
-
-		void cursor(String hexString)
-		{
-			this.cursor = hexString;
-		}
-
-		String cursor()
-		{
-			return cursor;
-		}
-
-		void currentPage(Iterable<Row> rows)
-		{
-			this.currentPage = rows;
-		}
-
-		Iterator<Row> iterator()
-        {
-			return currentPage.iterator();
-		}
 	}
 }

@@ -13,7 +13,6 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.MutationStatementFactory;
-import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.unitofwork.Change;
@@ -23,7 +22,7 @@ import com.strategicgains.noschema.unitofwork.UnitOfWorkChangeSet;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
-public class CassandraUnitOfWork<T extends Identifiable>
+public class CassandraUnitOfWork
 implements RepositoryUnitOfWork
 {
     private final CqlSession session;
@@ -54,9 +53,9 @@ implements RepositoryUnitOfWork
 	 * @param entity the new entity to register.
 	 */
     @Override
-	public CassandraUnitOfWork<T> registerNew(String viewName, Identifiable entity)
+	public CassandraUnitOfWork registerNew(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, (T) entity, EntityState.NEW));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.NEW));
 		return this;
 	}
 
@@ -66,9 +65,9 @@ implements RepositoryUnitOfWork
 	 * @param entity the entity in its dirty state (after update).
 	 */
     @Override
-	public CassandraUnitOfWork<T> registerDirty(String viewName, Identifiable entity)
+	public CassandraUnitOfWork registerDirty(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, (T) entity, EntityState.DIRTY));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.DIRTY));
 		return this;
 	}
 
@@ -78,9 +77,9 @@ implements RepositoryUnitOfWork
 	 * @param entity the entity in its clean state (before removal).
 	 */
     @Override
-	public CassandraUnitOfWork<T> registerDeleted(String viewName, Identifiable entity)
+	public CassandraUnitOfWork registerDeleted(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, (T) entity, EntityState.DELETED));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.DELETED));
 		return this;
 	}
 
@@ -93,9 +92,9 @@ implements RepositoryUnitOfWork
 	 * own objects either before registering them as clean or before mutating them.
 	 */
     @Override
-	public CassandraUnitOfWork<T> registerClean(String viewName, Identifiable entity)
+	public CassandraUnitOfWork registerClean(String viewName, Identifiable entity)
 	{
-		changeSet.registerChange(new UnitOfWorkChange<>(viewName, (T) entity, EntityState.CLEAN));
+		changeSet.registerChange(new UnitOfWorkChange<>(viewName, entity, EntityState.CLEAN));
 		return this;
 	}
 
@@ -107,7 +106,7 @@ implements RepositoryUnitOfWork
 			List<BoundStatement> statements = new ArrayList<>();
 
 			changeSet.stream()
-				.map(UnitOfWorkChange.class::cast)
+				.map(change -> (UnitOfWorkChange<?>) change)
 				.forEach(change -> {
 					checkExistence(session, change).ifPresent(existence::add);
 					generateStatementFor(change).ifPresent(statements::add);
@@ -201,7 +200,7 @@ implements RepositoryUnitOfWork
 		return Optional.empty();
 	}
 
-	public Document readClean(Identifier id)
+	public Identifiable readClean(Identifier id)
 	{
 		return changeSet.findClean(id);
 	}

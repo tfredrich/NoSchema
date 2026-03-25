@@ -2,26 +2,20 @@ package com.strategicgains.noschema.cassandra.document;
 
 import java.nio.ByteBuffer;
 import java.util.Date;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.AbstractTable;
 import com.strategicgains.noschema.cassandra.PreparedStatementFactory;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Columns;
 import com.strategicgains.noschema.document.Document;
-import com.strategicgains.noschema.document.DocumentCodec;
-import com.strategicgains.noschema.exception.InvalidIdentifierException;
-import com.strategicgains.noschema.exception.InvalidObjectIdException;
-import com.strategicgains.noschema.exception.KeyDefinitionException;
 
-public final class DocumentStatementFactory<T extends Identifiable>
-implements PreparedStatementFactory<T>
+public final class DocumentStatementFactory
+implements PreparedStatementFactory<Document>
 {
 	private static final String SELECT_COLUMNS = String.join(",", Columns.OBJECT, Columns.TYPE, Columns.METADATA, Columns.CREATED_AT, Columns.UPDATED_AT);
 	private static final String CREATE_CQL = "insert into %s.%s (%s, %s, %s, %s, %s, %s) values (%s)";
@@ -44,23 +38,16 @@ implements PreparedStatementFactory<T>
 	private static final String UPDATE = "update";
 	private static final String UPSERT = "upsert";
 
-	private CqlSession session;
-	private AbstractTable<?> table;
-	private Map<String, PreparedStatement> statements = new ConcurrentHashMap<>();
-	private CassandraDocumentMapper<T> documentFactory;
+	private final CqlSession session;
+	private final AbstractTable<?> table;
+	private final java.util.Map<String, PreparedStatement> statements = new ConcurrentHashMap<>();
 	private boolean useLightweightTxns;
 
-	public DocumentStatementFactory(CqlSession session, AbstractTable<?> table, DocumentCodec<T> codec)
-	{
-		this(session, table, new CassandraDocumentMapper<>(table.keys(), codec));
-	}
-
-	public DocumentStatementFactory(CqlSession session, AbstractTable<?> table, CassandraDocumentMapper<T> factory)
+	public DocumentStatementFactory(CqlSession session, AbstractTable<?> table)
 	{
 		super();
 		this.session = session;
 		this.table = table;
-		this.documentFactory = factory;
 
 		if ((table instanceof PrimaryTable primary) && !primary.hasViews())
 		{
@@ -165,7 +152,7 @@ implements PreparedStatementFactory<T>
 	}
 
 	@Override
-	public BoundStatement create(T entity)
+	public BoundStatement create(Document entity)
 	{
 		return bindCreate(prepareCreate(), entity);
 	}
@@ -183,13 +170,13 @@ implements PreparedStatementFactory<T>
 	}
 
 	@Override
-	public BoundStatement update(T entity)
+	public BoundStatement update(Document entity)
 	{
 		return bindUpdate(prepareUpdate(), entity);
 	}
 
 	@Override
-	public BoundStatement upsert(T entity)
+	public BoundStatement upsert(Document entity)
 	{
 		return bindCreate(prepareUpsert(), entity);
 	}
@@ -211,9 +198,8 @@ implements PreparedStatementFactory<T>
 		return bs.bind(id.components().toArray());
 	}
 
-	protected BoundStatement bindCreate(PreparedStatement ps, T entity)
+	protected BoundStatement bindCreate(PreparedStatement ps, Document document)
 	{
-		Document document = asDocument(entity);
 		Date now = new Date();
 		document.setCreatedAt(now);
 		document.setUpdatedAt(now);
@@ -229,9 +215,8 @@ implements PreparedStatementFactory<T>
 		return ps.bind(values);
 	}
 
-	protected BoundStatement bindUpdate(PreparedStatement ps, T entity)
+	protected BoundStatement bindUpdate(PreparedStatement ps, Document document)
 	{
-		Document document = asDocument(entity);
 		document.setUpdatedAt(new Date());
 		Identifier id = document.getIdentifier();
 		Object[] values = new Object[id.size() + 4];
@@ -249,20 +234,6 @@ implements PreparedStatementFactory<T>
 		for (int i = offset; i < values.length + offset; i++)
 		{
 			array[i] = values[i - offset];
-		}
-	}
-
-	private Document asDocument(T entity)
-	{
-		if (entity instanceof Document entityDocument) return entityDocument;
-
-		try
-		{
-			return documentFactory.toDocument(entity);
-		}
-		catch (InvalidIdentifierException | KeyDefinitionException e)
-		{
-			throw new InvalidObjectIdException(e);
 		}
 	}
 }

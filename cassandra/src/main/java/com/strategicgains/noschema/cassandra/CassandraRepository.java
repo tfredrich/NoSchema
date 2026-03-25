@@ -95,6 +95,51 @@ implements Repository<T>
 		return session;
 	}
 
+	protected UnitOfWorkType unitOfWorkType()
+	{
+		return unitOfWorkType;
+	}
+
+	protected void beforeCreate(T entity)
+	{
+		lifecycleObservers.forEach(o -> o.beforeCreate(entity));
+	}
+
+	protected void afterCreate(T entity)
+	{
+		lifecycleObservers.forEach(o -> o.afterCreate(entity));
+	}
+
+	protected void beforeDelete(T entity)
+	{
+		lifecycleObservers.forEach(o -> o.beforeDelete(entity));
+	}
+
+	protected void afterDelete(T entity)
+	{
+		lifecycleObservers.forEach(o -> o.afterDelete(entity));
+	}
+
+	protected void beforeUpdate(T entity)
+	{
+		lifecycleObservers.forEach(o -> o.beforeUpdate(entity));
+	}
+
+	protected void afterUpdate(T entity)
+	{
+		lifecycleObservers.forEach(o -> o.afterUpdate(entity));
+	}
+
+	protected void beforeRead(Identifier id)
+	{
+		// no-op by default
+	}
+
+	protected void beforeReadAll(Object... parameters)
+	{
+		// no-op by default
+	}
+
 	@Override
 	public T create(T entity)
 	{
@@ -115,9 +160,9 @@ implements Repository<T>
 
 	public T create(T entity, CassandraUnitOfWork uow)
 	{
-		lifecycleObservers.forEach(o -> o.beforeCreate(entity));
+		beforeCreate(entity);
 		table.stream().forEach(t -> uow.registerNew(t.name(), entity));
-		lifecycleObservers.forEach(o -> o.afterCreate(entity));
+		afterCreate(entity);
 		return entity;
 	}
 
@@ -139,9 +184,9 @@ implements Repository<T>
 	public void delete(Identifier id, CassandraUnitOfWork uow)
 	{
 		T entity = read(id);
-		lifecycleObservers.forEach(o -> o.beforeDelete(entity));
+		beforeDelete(entity);
 		table.stream().forEach(t -> uow.registerDeleted(t.name(), entity));
-		lifecycleObservers.forEach(o -> o.afterDelete(entity));
+		afterDelete(entity);
 	}
 
 	@Override
@@ -224,14 +269,17 @@ implements Repository<T>
 		if (ids == null) return Collections.emptyList();
 
 		List<CompletableFuture<T>> futures = ids.stream()
-			.<CompletableFuture<T>>map(id -> session.executeAsync(statementFactory.read(viewName, id))
+			.<CompletableFuture<T>>map(id -> {
+				beforeRead(id);
+				return session.executeAsync(statementFactory.read(viewName, id))
 				.thenApply(rs -> rs.one())
 				.thenApply(row -> {
 					T entity = mapRow(viewName, row);
 					afterRead(entity);
 					return entity;
 				})
-				.toCompletableFuture())
+				.toCompletableFuture();
+			})
 			.toList();
 
 		CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
@@ -327,8 +375,9 @@ implements Repository<T>
 		return new CassandraUnitOfWork(session, statementFactory, unitOfWorkType);
 	}
 
-	private CompletableFuture<Row> readRow(String viewName, Identifier id)
+	protected CompletableFuture<Row> readRow(String viewName, Identifier id)
 	{
+		beforeRead(id);
 		return session.executeAsync(statementFactory.read(viewName, id))
 			.thenApply(rs -> rs.one())
 			.thenApply(row -> {
@@ -338,8 +387,9 @@ implements Repository<T>
 			.toCompletableFuture();
 	}
 
-	private CompletableFuture<PagedRows> readRows(String viewName, int limit, String cursor, Object... parameters)
+	protected CompletableFuture<PagedRows> readRows(String viewName, int limit, String cursor, Object... parameters)
 	{
+		beforeReadAll(parameters);
 		return session.executeAsync(statementFactory.readAll(viewName, limit, cursor, parameters))
 			.thenApply(rs -> {
 				PagedRows rows = new PagedRows();
@@ -350,7 +400,7 @@ implements Repository<T>
 			.toCompletableFuture();
 	}
 
-	private void handleException(Exception e)
+	protected void handleException(Exception e)
 	throws StorageException
 	{
 		if (e.getCause() instanceof DuplicateItemException duplicate)
@@ -371,7 +421,7 @@ implements Repository<T>
 		throw new StorageException(e.getCause());
 	}
 
-	private T mapRow(String tableName, Row row)
+	protected T mapRow(String tableName, Row row)
 	{
 		AbstractTable<T> currentTable = table.table(tableName);
 
@@ -415,7 +465,7 @@ implements Repository<T>
 		});
 	}
 
-	private void afterRead(T entity)
+	protected void afterRead(T entity)
 	{
 		if (entity != null)
 		{
@@ -423,7 +473,7 @@ implements Repository<T>
 		}
 	}
 
-	private class PagedRows
+	protected static class PagedRows
 	{
 		private String cursor;
 		private Iterable<Row> currentPage;
