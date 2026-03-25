@@ -59,6 +59,7 @@ implements Identifiable
 
 	/**
 	 * Name/value pairs that can tag along with the document in the database that can be applied to the entity.
+	 * For example Key name for encrypted documents.
 	 */
 	private Map<String, String> metadata;
 

@@ -40,12 +40,12 @@ implements Repository<T>
 	private final UnitOfWorkType unitOfWorkType;
 	private final List<RepositoryObserver<T>> lifecycleObservers = new ArrayList<>();
 
-	protected CassandraRepository(CqlSession session, PrimaryTable<T> table, PreparedStatementFactoryProvider<T> factoryProvider)
+	protected CassandraRepository(CqlSession session, PrimaryTable<T> table, BoundStatementFactoryProvider<T> factoryProvider)
 	{
 		this(session, table, UnitOfWorkType.LOGGED, factoryProvider);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable<T> table, UnitOfWorkType unitOfWorkType, PreparedStatementFactoryProvider<T> factoryProvider)
+	protected CassandraRepository(CqlSession session, PrimaryTable<T> table, UnitOfWorkType unitOfWorkType, BoundStatementFactoryProvider<T> factoryProvider)
 	{
 		this(session, table, unitOfWorkType, new CachingStatementFactory<>(session, table, factoryProvider));
 	}

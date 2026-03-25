@@ -14,8 +14,8 @@ import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.RepositoryObserver;
 import com.strategicgains.noschema.cassandra.CachingStatementFactory;
 import com.strategicgains.noschema.cassandra.CassandraRepository;
-import com.strategicgains.noschema.cassandra.PreparedStatementFactory;
-import com.strategicgains.noschema.cassandra.PreparedStatementFactoryProvider;
+import com.strategicgains.noschema.cassandra.BoundStatementFactory;
+import com.strategicgains.noschema.cassandra.BoundStatementFactoryProvider;
 import com.strategicgains.noschema.cassandra.PrimaryTable;
 import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
@@ -59,20 +59,19 @@ implements SchemaWriter<T>
 	protected CassandraDocumentRepository(CqlSession session, PrimaryTable<T> table, UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
 	{
 		super(session, table, unitOfWorkType, entityStatementFactory(codec));
-		PreparedStatementFactoryProvider<Document> documentStatementFactory = (s, t) -> new DocumentStatementFactory(s, t);
-		this.statementFactory = new CachingStatementFactory<>(session, table, documentStatementFactory);
+		this.statementFactory = new CachingStatementFactory<>(session, table, DocumentStatementFactory::new);
 		mappersByTable.put(table.name(), new CassandraDocumentMapper<>(table.keys(), codec));
 		table.views().forEach(view -> mappersByTable.put(view.name(), new CassandraDocumentMapper<>(view.keys(), codec)));
 		table.indexes().forEach(index -> mappersByTable.put(index.name(), new CassandraDocumentMapper<>(index.keys(), codec)));
 	}
 
-	private static <T extends Identifiable> PreparedStatementFactoryProvider<T> entityStatementFactory(DocumentCodec<T> codec)
+	private static <T extends Identifiable> BoundStatementFactoryProvider<T> entityStatementFactory(DocumentCodec<T> codec)
 	{
 		return (session, table) -> {
 			CassandraDocumentMapper<T> mapper = new CassandraDocumentMapper<>(table.keys(), codec);
 			DocumentStatementFactory delegate = new DocumentStatementFactory(session, table);
 
-			return new PreparedStatementFactory<>()
+			return new BoundStatementFactory<>()
 			{
 				@Override
 				public com.datastax.oss.driver.api.core.cql.BoundStatement create(T entity)

@@ -90,7 +90,7 @@ public class CassandraRepositoryTest
 	}
 
 	private static class NoOpPreparedStatementFactory<T extends Identifiable>
-	implements PreparedStatementFactory<T>
+	implements BoundStatementFactory<T>
 	{
 		@Override
 		public com.datastax.oss.driver.api.core.cql.BoundStatement create(T entity)

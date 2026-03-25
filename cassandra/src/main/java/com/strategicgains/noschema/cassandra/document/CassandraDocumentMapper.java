@@ -1,8 +1,7 @@
 package com.strategicgains.noschema.cassandra.document;
 
 import java.nio.ByteBuffer;
-import java.sql.Date;
-
+import java.util.Date;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;

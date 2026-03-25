@@ -11,25 +11,27 @@ import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 
 public class CachingStatementFactory<T extends Identifiable>
-implements MutationStatementFactory
+implements TableStatementFactory
 {
 	private final Map<String, KeyDefinition> keysByTable = new HashMap<>();
-    private final Map<String, PreparedStatementFactory<T>> statementsByTable = new HashMap<>();
+    private final Map<String, BoundStatementFactory<T>> statementsByTable = new HashMap<>();
 
-	public CachingStatementFactory(CqlSession session, PrimaryTable<?> table, PreparedStatementFactoryProvider<T> factoryProvider)
+	public CachingStatementFactory(CqlSession session, PrimaryTable<?> table, BoundStatementFactoryProvider<T> factoryProvider)
 	{
 		super();
 		table.stream().forEach(view -> {
-			put(view.name(), factoryProvider.create(session, view));
-			put(view.name(), view.keys());				
+			putFactory(view.name(), factoryProvider.create(session, view));
+			putKey(view.name(), view.keys());				
 		});
 	}
 
+	@Override
 	public BoundStatement read(String tableName, Identifier id)
 	{
 		return factoryFor(tableName).read(id);
 	}
 
+	@Override
 	public BoundStatement readAll(String tableName, int limit, String cursor, Object... parameters)
 	{
 		BoundStatement stmt = factoryFor(tableName)
@@ -78,19 +80,19 @@ implements MutationStatementFactory
 		return mutationFactory(tableName).update(entity);
 	}
 
-	private void put(String tableName, PreparedStatementFactory<T> factory)
+	private void putFactory(String tableName, BoundStatementFactory<T> factory)
 	{
 		statementsByTable.put(tableName, factory);
 	}
 
-	private void put(String tableName, KeyDefinition keys)
+	private void putKey(String tableName, KeyDefinition keys)
 	{
 		this.keysByTable.put(tableName, keys);
 	}
 
-	private PreparedStatementFactory<T> factoryFor(String tableName)
+	private BoundStatementFactory<T> factoryFor(String tableName)
 	{
-		PreparedStatementFactory<T> factory = statementsByTable.get(tableName);
+		BoundStatementFactory<T> factory = statementsByTable.get(tableName);
 
 		if (factory == null) throw new InvalidTableNameException(tableName);
 
@@ -98,8 +100,8 @@ implements MutationStatementFactory
 	}
 
 	@SuppressWarnings("unchecked")
-	private PreparedStatementFactory<Identifiable> mutationFactory(String tableName)
+	private BoundStatementFactory<Identifiable> mutationFactory(String tableName)
 	{
-		return (PreparedStatementFactory<Identifiable>) statementsByTable.get(tableName);
+		return (BoundStatementFactory<Identifiable>) factoryFor(tableName);
 	}
 }

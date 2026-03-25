@@ -12,7 +12,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
-import com.strategicgains.noschema.cassandra.MutationStatementFactory;
+import com.strategicgains.noschema.cassandra.TableStatementFactory;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
 import com.strategicgains.noschema.unitofwork.Change;
@@ -26,16 +26,16 @@ public class CassandraUnitOfWork
 implements RepositoryUnitOfWork
 {
     private final CqlSession session;
-    private final MutationStatementFactory statementFactory;
+    private final TableStatementFactory statementFactory;
     private final UnitOfWorkChangeSet changeSet = new UnitOfWorkChangeSet();
     private final UnitOfWorkCommitStrategy commitStrategy;
 
-    public CassandraUnitOfWork(CqlSession session, MutationStatementFactory statementFactory)
+    public CassandraUnitOfWork(CqlSession session, TableStatementFactory statementFactory)
     {
     	this(session, statementFactory, UnitOfWorkType.LOGGED);
     }
 
-    public CassandraUnitOfWork(CqlSession session, MutationStatementFactory statementFactory, UnitOfWorkType unitOfWorkType)
+    public CassandraUnitOfWork(CqlSession session, TableStatementFactory statementFactory, UnitOfWorkType unitOfWorkType)
     {
         this.session = Objects.requireNonNull(session);
         this.statementFactory = Objects.requireNonNull(statementFactory);
