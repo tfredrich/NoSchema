@@ -10,6 +10,13 @@ import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 
+/**
+ * A ${link TableStatementFactory} that creates and caches prepared statements for each table in the hierarchy.
+ * It is used by the ${link UnitOfWork} to execute statements against the database.
+ *
+ * @param <T> The type of Identifiable entities this factory will handle.
+ * @author Todd Fredrich
+ */
 public class CachingStatementFactory<T extends Identifiable>
 implements TableStatementFactory
 {
