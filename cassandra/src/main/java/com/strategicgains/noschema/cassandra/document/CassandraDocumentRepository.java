@@ -200,7 +200,7 @@ implements Repository<T>, SchemaWriter
 
 			if (primaryDocument.get() == null)
 			{
-				document = encodeForWrite(entity, asDocument(table.name(), entity));
+				document = encodeForWrite(asDocument(table.name(), entity));
 				primaryDocument.set(document);
 				serializedBody.set(document.getObject());
 				serializedId.set(identifierBytes(document));
@@ -247,7 +247,7 @@ implements Repository<T>, SchemaWriter
 
 			if (primaryDocument.get() == null)
 			{
-				document = encodeForWrite(entity, asDocument(table.name(), entity));
+				document = encodeForWrite(asDocument(table.name(), entity));
 				primaryDocument.set(document);
 				serializedBody.set(document.getObject());
 				serializedId.set(identifierBytes(document));
@@ -356,7 +356,7 @@ implements Repository<T>, SchemaWriter
 
 			if (updatedPrimaryDocument.get() == null)
 			{
-				updatedDocument = encodeForWrite(entity, asDocument(table.name(), entity));
+				updatedDocument = encodeForWrite(asDocument(table.name(), entity));
 				updatedPrimaryDocument.set(updatedDocument);
 				updatedBody.set(updatedDocument.getObject());
 				updatedId.set(identifierBytes(updatedDocument));
@@ -412,7 +412,7 @@ implements Repository<T>, SchemaWriter
 
 			if (primaryDocument.get() == null)
 			{
-				document = encodeForWrite(entity, asDocument(table.name(), entity));
+				document = encodeForWrite(asDocument(table.name(), entity));
 				primaryDocument.set(document);
 				serializedBody.set(document.getObject());
 				serializedId.set(identifierBytes(document));
@@ -463,7 +463,7 @@ implements Repository<T>, SchemaWriter
 		return mappersByTable.get(tableName).toEntity(document);
 	}
 
-	private Document encodeForWrite(T entity, Document document)
+	private Document encodeForWrite(Document document)
 	{
 		documentFilters.forEach(f -> f.onWrite(document));
 		return document;
