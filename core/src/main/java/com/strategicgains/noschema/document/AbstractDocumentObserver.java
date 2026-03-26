@@ -15,7 +15,6 @@
 */
 package com.strategicgains.noschema.document;
 
-import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 
 /**
@@ -31,7 +30,6 @@ import com.strategicgains.noschema.Identifier;
  * @since Feb 5, 2024
  * @see DocumentObserver
  * @see Document
- * @see Identifiable
  * @see Identifier
  */
 public abstract class AbstractDocumentObserver
@@ -109,28 +107,4 @@ implements DocumentObserver
     @Override
     public void afterUpdate(Document document) {}
 
-    /**
-     * This method is called before encoding an entity into a byte array. It allows you to perform any necessary actions before
-     * converting an object into binary format for storage.
-     *
-     * @param <T>       The type of {@link Identifiable} entity being encoded.
-     * @param entity    The identifiable object that will be encoded into BSON.
-     */
-    @Override
-    public <T extends Identifiable> void beforeEncoding(T entity) {}
-
-    /**
-     * This method is called after successfully converting (encoding) an object into a byte array. It allows you to perform any
-     * necessary actions after converting an object into binary format for storage.
-     *
-     * @param document The Document object that has been encoded into BSON.
-     */
-    @Override
-    public void afterEncoding(Document document) {}
-
-    @Override
-    public <T extends Identifiable> void beforeDecoding(T entity) {}
-
-    @Override
-    public void afterDecoding(Document document) {}
 }

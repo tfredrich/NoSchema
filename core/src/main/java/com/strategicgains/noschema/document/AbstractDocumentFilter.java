@@ -13,34 +13,20 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
 */
-package com.strategicgains.noschema.entity;
-
-import com.strategicgains.noschema.RepositoryObserver;
+package com.strategicgains.noschema.document;
 
 /**
- * Default implementation of RepositoryObserver that provides empty method bodies. Subclasses can override
- * only the methods they are interested in.
- * 
+ * Convenience base class for {@link DocumentFilter} implementations.
+ *
  * @author Todd Fredrich
+ * @since Mar 26, 2026
  */
-public abstract class AbstractEntityObserver<T extends Entity<?>>
-implements RepositoryObserver<T>
+public abstract class AbstractDocumentFilter
+implements DocumentFilter
 {
-	protected AbstractEntityObserver() 
-	{
-		// Prevents instantiation.
-		super();
-	}
+	@Override
+	public void onWrite(Document document) {}
 
 	@Override
-	public void afterRead(T entity) {}
-
-	@Override
-	public void beforeCreate(T entity) {}
-
-	@Override
-	public void beforeDelete(T entity) {}
-
-	@Override
-	public void beforeUpdate(T entity) {}
+	public void onRead(Document document) {}
 }

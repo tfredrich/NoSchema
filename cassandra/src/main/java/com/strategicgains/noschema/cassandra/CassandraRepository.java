@@ -105,19 +105,9 @@ implements Repository<T>
 		lifecycleObservers.forEach(o -> o.beforeCreate(entity));
 	}
 
-	protected void afterCreate(T entity)
-	{
-		lifecycleObservers.forEach(o -> o.afterCreate(entity));
-	}
-
 	protected void beforeDelete(T entity)
 	{
 		lifecycleObservers.forEach(o -> o.beforeDelete(entity));
-	}
-
-	protected void afterDelete(T entity)
-	{
-		lifecycleObservers.forEach(o -> o.afterDelete(entity));
 	}
 
 	protected void beforeUpdate(T entity)
@@ -125,19 +115,17 @@ implements Repository<T>
 		lifecycleObservers.forEach(o -> o.beforeUpdate(entity));
 	}
 
-	protected void afterUpdate(T entity)
-	{
-		lifecycleObservers.forEach(o -> o.afterUpdate(entity));
-	}
-
 	protected void beforeRead(Identifier id)
 	{
-		// no-op by default
+		lifecycleObservers.forEach(o -> o.beforeRead(id));
 	}
 
-	protected void beforeReadAll(Object... parameters)
+	protected void afterRead(T entity)
 	{
-		// no-op by default
+		if (entity != null)
+		{
+			lifecycleObservers.forEach(o -> o.afterRead(entity));
+		}
 	}
 
 	@Override
@@ -162,7 +150,6 @@ implements Repository<T>
 	{
 		beforeCreate(entity);
 		table.stream().forEach(t -> uow.registerNew(t.name(), entity));
-		afterCreate(entity);
 		return entity;
 	}
 
@@ -186,7 +173,6 @@ implements Repository<T>
 		T entity = read(id);
 		beforeDelete(entity);
 		table.stream().forEach(t -> uow.registerDeleted(t.name(), entity));
-		afterDelete(entity);
 	}
 
 	@Override
@@ -389,7 +375,7 @@ implements Repository<T>
 
 	protected CompletableFuture<PagedRows> readRows(String viewName, int limit, String cursor, Object... parameters)
 	{
-		beforeReadAll(parameters);
+//		beforeReadAll(parameters);
 		return session.executeAsync(statementFactory.readAll(viewName, limit, cursor, parameters))
 			.thenApply(rs -> {
 				PagedRows rows = new PagedRows();
@@ -463,14 +449,6 @@ implements Repository<T>
 				throw new IllegalArgumentException("No RowMapper configured for table: " + t.name());
 			}
 		});
-	}
-
-	protected void afterRead(T entity)
-	{
-		if (entity != null)
-		{
-			lifecycleObservers.forEach(o -> o.afterRead(entity));
-		}
 	}
 
 	protected static class PagedRows

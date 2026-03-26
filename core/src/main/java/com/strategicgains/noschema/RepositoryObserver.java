@@ -44,18 +44,11 @@ public interface RepositoryObserver<T extends Identifiable>
 	public void beforeUpdate(T entity);
 
 	/**
-	 * Invoked after an entity is created in the database.
+	 * Invoked before an entity is read from the database.
 	 * 
-	 * @param entity the entity that was written.
+	 * @param id the identifier of the entity being read.
 	 */
-	public void afterCreate(T entity);
-
-	/**
-	 * Invoked after an entity is deleted from the database.
-	 * 
-	 * @param entity the entity that was deleted.
-	 */
-	public void afterDelete(T entity);
+	public void beforeRead(Identifier id);
 
 	/**
 	 * Invoked after an entity is read from the database.
@@ -63,11 +56,4 @@ public interface RepositoryObserver<T extends Identifiable>
 	 * @param entity the entity that was read.
 	 */
 	public void afterRead(T entity);
-
-	/**
-	 * Invoked after an entity is updated in the database.
-	 * 
-	 * @param entity the entity that was updated.
-	 */
-	public void afterUpdate(T entity);
 }

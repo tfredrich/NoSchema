@@ -44,8 +44,8 @@ implements RowMapper<T>
 
 		doc.setType(row.getString(Columns.TYPE));
 		doc.setMetadata(row.getMap(Columns.METADATA, String.class, String.class));
-		doc.setCreatedAt(new Date(row.getInstant(Columns.CREATED_AT).getEpochSecond()));
-		doc.setUpdatedAt(new Date(row.getInstant(Columns.UPDATED_AT).getEpochSecond()));
+		doc.setCreatedAt(new Date(row.getInstant(Columns.CREATED_AT).toEpochMilli()));
+		doc.setUpdatedAt(new Date(row.getInstant(Columns.UPDATED_AT).toEpochMilli()));
 		return doc;
 	}
 

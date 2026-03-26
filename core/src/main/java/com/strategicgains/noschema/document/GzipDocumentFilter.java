@@ -24,34 +24,28 @@ import java.util.zip.GZIPOutputStream;
 import com.strategicgains.noschema.exception.StorageException;
 
 /**
- * This class is a DocumentObserver that compresses and decompresses the data in a Document using GZIP compression.
- * <p/>
- * This class is useful for compressing and decompressing data in a Document before and after it is stored in a storage
- * system. Trading off CPU time for storage space and can be used to reduce the amount of storage space required
- * to store a Document with a latency cost of compressing and decompressing the data.
- * <p/>
- * Note that small payloads may not benefit from compression and may actually increase in size after compression.
- * 
- * @see DocumentObserver
+ * Compresses a Document on write and decompresses it on read using GZIP.
+ *
  * @author Todd Fredrich
+ * @since Mar 26, 2026
  */
-public class GzipDocumentObserver
-extends AbstractDocumentObserver
+public class GzipDocumentFilter
+extends AbstractDocumentFilter
 {
 	@Override
-	public void afterDecoding(Document document)
+	public void onWrite(Document document)
 	{
 		if (document.getObject() == null)
 		{
 			return;
 		}
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (GZIPOutputStream gzip = new GZIPOutputStream(baos))
-        {
-            gzip.write(document.getObject());
-            gzip.flush();
-        }
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try (GZIPOutputStream gzip = new GZIPOutputStream(baos))
+		{
+			gzip.write(document.getObject());
+			gzip.flush();
+		}
 		catch (IOException e)
 		{
 			throw new StorageException(String.format("Error compressing data for document: %s", document.getType()), e);
@@ -61,7 +55,7 @@ extends AbstractDocumentObserver
 	}
 
 	@Override
-	public void afterEncoding(Document document)
+	public void onRead(Document document)
 	{
 		if (document.getObject() == null)
 		{

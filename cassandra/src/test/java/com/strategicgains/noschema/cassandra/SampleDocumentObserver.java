@@ -7,9 +7,9 @@ public class SampleDocumentObserver
 extends AbstractDocumentObserver
 {
 	@Override
-	public void afterEncoding(Document document)
+	public void afterCreate(Document document)
 	{
-		System.out.println("SampleObserver.afterEncoding(): " + document.getIdentifier());
+		System.out.println("SampleObserver.afterCreate(): " + document.getIdentifier());
 //		document
 //			.withMetadata("todd", "Here? Check")
 //			.withMetadata("foo", "bar");

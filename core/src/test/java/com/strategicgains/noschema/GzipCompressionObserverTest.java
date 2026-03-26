@@ -21,11 +21,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.strategicgains.noschema.document.Document;
-import com.strategicgains.noschema.document.GzipDocumentObserver;
+import com.strategicgains.noschema.document.GzipDocumentFilter;
 
 public class GzipCompressionObserverTest
 {
-	private GzipDocumentObserver observer = new GzipDocumentObserver();
+	private GzipDocumentFilter filter = new GzipDocumentFilter();
 	private String JSON = "{\"name\":\"Joe Blow\",\"age\":42,\"address\":\"123 Main St.\",\"city\":\"Anytown\",\"state\":\"TX\",\"zip\":\"12345\"}";
 
 	@Before
@@ -38,9 +38,9 @@ public class GzipCompressionObserverTest
 	{
 		Document document = new Document(JSON.getBytes(), Object.class);
 		System.out.println("Before: " + document.getObject().length);
-		observer.afterDecoding(document);
+		filter.onWrite(document);
 		System.out.println("Compressed: " + document.getObject().length);
-		observer.afterEncoding(document);
+		filter.onRead(document);
 		System.out.println("Decompressed: " + document.getObject().length);
 		assertEquals(JSON, new String(document.getObject()));
 	}
