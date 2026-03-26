@@ -17,31 +17,28 @@ package com.strategicgains.noschema;
 
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.GzipDocumentFilter;
 
-public class GzipCompressionObserverTest
+public class GzipCompressionFilterTest
 {
-	private GzipDocumentFilter filter = new GzipDocumentFilter();
-	private String JSON = "{\"name\":\"Joe Blow\",\"age\":42,\"address\":\"123 Main St.\",\"city\":\"Anytown\",\"state\":\"TX\",\"zip\":\"12345\"}";
+	private static final String JSON = "{\"name\":\"Joe Blow\",\"age\":42,\"address\":\"123 Main St.\",\"city\":\"Anytown\",\"state\":\"TX\",\"zip\":\"12345\"}";
 
-	@Before
-	public void setup()
-	{
-	}
+	private GzipDocumentFilter filter = new GzipDocumentFilter();
 
 	@Test
 	public void shouldCompressAndDecompress()
 	{
 		Document document = new Document(JSON.getBytes(), Object.class);
-		System.out.println("Before: " + document.getObject().length);
+		int originalLength = document.getObject().length;
+		System.out.println("Original size: " + originalLength);
 		filter.onWrite(document);
-		System.out.println("Compressed: " + document.getObject().length);
+		System.out.println("Compressed size: " + document.getObject().length);
 		filter.onRead(document);
-		System.out.println("Decompressed: " + document.getObject().length);
+		System.out.println("Decompressed size: " + document.getObject().length);
 		assertEquals(JSON, new String(document.getObject()));
+		assertEquals(originalLength, document.getObject().length);
 	}
 }
