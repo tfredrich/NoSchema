@@ -12,6 +12,26 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
+/**
+ * A commit strategy that executes all statements in a single batch, which can
+ * be either LOGGED, UNLOGGED.
+ * 
+ * Using batches is generally discouraged in Cassandra for large numbers of
+ * statements or for statements that span multiple partitions, as it can lead to
+ * performance issues. However, for small batches of statements that target the
+ * same partition, using a batch can provide atomicity guarantees and improve
+ * performance.
+ * 
+ * NOTE: This strategy does not support ROLLBACK since Cassandra doesn't support
+ * transactions in the traditional sense. Instead, Cassandra's logged batches
+ * provide atomicity guarantees for the statements within the batch, but if any
+ * statement fails, the entire batch will fail and no changes will be applied.
+ * Therefore, if a commit fails, it will throw an exception, and there is no
+ * need for a separate rollback mechanism.
+ *
+ * @author toddf
+ * @since 2024-06-01
+ */
 public class BatchCommitStrategy
 implements UnitOfWorkCommitStrategy
 {
@@ -45,6 +65,13 @@ implements UnitOfWorkCommitStrategy
 			.toCompletableFuture();
 	}
 
+	/**
+	 * ROLLBACK is not supported for BatchCommitStrategy since Cassandra doesn't support
+	 * transactions in the traditional sense. If a commit fails, it will throw an exception,
+	 * and there is no need for a separate rollback mechanism.
+	 * 
+	 * @throws UnitOfWorkRollbackException always, since rollback is not supported.
+	 */
 	@Override
 	public void rollback()
 	throws UnitOfWorkRollbackException
