@@ -132,4 +132,14 @@ public abstract class AbstractTable
 	{
 		return false;
 	}
+
+	public boolean isPrimary()
+	{
+		return false;
+	}
+
+	public boolean isView()
+	{
+		return false;
+	}
 }

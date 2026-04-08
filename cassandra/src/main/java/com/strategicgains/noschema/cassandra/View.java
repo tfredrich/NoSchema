@@ -45,4 +45,10 @@ extends SecondaryTable
 	{
 		super(parent, viewName, keys);
 	}
+
+	@Override
+	public boolean isView()
+	{
+		return true;
+	}
 }

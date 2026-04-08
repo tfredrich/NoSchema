@@ -204,4 +204,11 @@ extends AbstractTable
 	public Stream<AbstractTable> stream()
 	{
 		return Stream.of(Stream.of(this), views(), indexes()).flatMap(s -> s);
-	}}
+	}
+
+	@Override
+	public boolean isPrimary()
+	{
+		return true;
+	}
+}
