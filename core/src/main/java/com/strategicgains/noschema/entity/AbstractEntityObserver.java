@@ -15,16 +15,16 @@
 */
 package com.strategicgains.noschema.entity;
 
-import com.strategicgains.noschema.RepositoryObserver;
+import com.strategicgains.noschema.EntityObserver;
 
 /**
- * Default implementation of RepositoryObserver that provides empty method bodies. Subclasses can override
+ * Default implementation of EntityObserver that provides empty method bodies. Subclasses can override
  * only the methods they are interested in.
  * 
  * @author Todd Fredrich
  */
 public abstract class AbstractEntityObserver<T extends Entity<?>>
-implements RepositoryObserver<T>
+implements EntityObserver<T>
 {
 	protected AbstractEntityObserver() 
 	{

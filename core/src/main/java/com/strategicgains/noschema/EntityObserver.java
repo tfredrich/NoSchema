@@ -20,7 +20,7 @@ package com.strategicgains.noschema;
  * 
  * @param <T> the type of entity being observed.
  */
-public interface RepositoryObserver<T extends Identifiable>
+public interface EntityObserver<T extends Identifiable>
 {
 	/**
      * Invoked before an entity is created in the database.

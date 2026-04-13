@@ -90,7 +90,7 @@ public class SampleRun
 		SchemaRegistry.initialize(session);
 
 		FlowerRepository flowers = new FlowerRepository(session, keyspace, uowType, codec);
-		flowers.withDocumentObserver(new SampleDocumentObserver());
+		flowers.withDocumentFilter(new SampleDocumentFilter());
 
 		// Ensure the tables exist.
 		flowers.ensureTables();

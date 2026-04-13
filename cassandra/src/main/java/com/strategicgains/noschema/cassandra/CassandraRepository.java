@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.protocol.internal.util.Bytes;
-import com.strategicgains.noschema.RepositoryObserver;
+import com.strategicgains.noschema.EntityObserver;
 import com.strategicgains.noschema.Identifiable;
 import com.strategicgains.noschema.Identifier;
 import com.strategicgains.noschema.Repository;
@@ -26,7 +26,7 @@ import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
 import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
 import com.strategicgains.noschema.document.Document;
 import com.strategicgains.noschema.document.DocumentCodec;
-import com.strategicgains.noschema.document.DocumentObserver;
+import com.strategicgains.noschema.document.DocumentFilter;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.ItemNotFoundException;
@@ -63,10 +63,10 @@ implements Repository<T>, SchemaWriter<T>
 	private Map<String, CassandraDocumentFactory<T>> factoriesByTable = new HashMap<>();
 	// The type of UnitOfWork to create.
 	private UnitOfWorkType unitOfWorkType;
-	// The lifecycleObservers used to observe the encoding, creation, update, and deletion of entities.
-	private List<DocumentObserver> documentObservers = new ArrayList<>();
-	// The lifecycleObservers used to observe the creation, update, and deletion of entities.
-	private List<RepositoryObserver<T>> lifecycleObservers = new ArrayList<>();
+	// The DocumentFilters used to reading and writing of documents.
+	private List<DocumentFilter> documentFilters = new ArrayList<>();
+	// The EntityObservers used to observe the lifecycle of entities.
+	private List<EntityObserver<T>> entityObservers = new ArrayList<>();
 
 
 	protected CassandraRepository(CqlSession session, PrimaryTable table, DocumentCodec<T> codec)
@@ -137,16 +137,26 @@ implements Repository<T>, SchemaWriter<T>
 		return table.name();
 	}
 
-	public CassandraRepository<T> withDocumentObserver(DocumentObserver observer)
+	public CassandraRepository<T> withDocumentFilter(DocumentFilter filter)
 	{
-		documentObservers.add(observer);
+		documentFilters.add(filter);
 		return this;
 	}
 
-	public CassandraRepository<T> withEntityObserver(RepositoryObserver<T> observer)
+	public CassandraRepository<T> withEntityObserver(EntityObserver<T> observer)
 	{
-		lifecycleObservers.add(observer);
+		entityObservers.add(observer);
 		return this;
+	}
+
+	public boolean hasDocumentFilters()
+	{
+		return documentFilters != null && !documentFilters.isEmpty();
+	}
+
+	public boolean hasEntityObservers()
+	{
+		return entityObservers != null && !entityObservers.isEmpty();
 	}
 
 	/**
@@ -178,7 +188,7 @@ implements Repository<T>, SchemaWriter<T>
 
 	public T create(T entity, CassandraUnitOfWork uow)
 	{
-		lifecycleObservers.forEach(o -> o.beforeCreate(entity));
+		entityObservers.forEach(o -> o.beforeCreate(entity));
 		final AtomicReference<byte[]> serialized = new AtomicReference<>();
 		final AtomicReference<byte[]> serializedId = new AtomicReference<>();
 		final AtomicReference<Document> primaryDocument = new AtomicReference<>();
@@ -188,7 +198,6 @@ implements Repository<T>, SchemaWriter<T>
 
 			if (serialized.get() == null)
 			{
-				documentObservers.forEach(o -> o.beforeEncoding(entity));
 				d = asDocument(t.name(), entity);
 				primaryDocument.set(d);
 				serialized.set(d.getObject());
@@ -208,13 +217,11 @@ implements Repository<T>, SchemaWriter<T>
 				d.setMetadata(primaryDocument.get().getMetadata());
 			}
 
-			documentObservers.forEach(o -> o.afterEncoding(d));
-			documentObservers.forEach(o -> o.beforeCreate(d));
+			processOnWriteFilters(d);
 			uow.registerNew(t.name(), d);
 		});
 
-		documentObservers.forEach(o -> o.afterCreate(primaryDocument.get()));
-		lifecycleObservers.forEach(o -> o.afterCreate(entity));
+		entityObservers.forEach(o -> o.afterCreate(entity));
 		return entity;
 	}
 
@@ -245,7 +252,7 @@ implements Repository<T>, SchemaWriter<T>
 	public void delete(Identifier id, CassandraUnitOfWork uow)
 	{
 		final T entity = read(id);
-		lifecycleObservers.forEach(o -> o.beforeDelete(entity));
+		entityObservers.forEach(o -> o.beforeDelete(entity));
 		final AtomicReference<byte[]> serialized = new AtomicReference<>();
 		final AtomicReference<Document> primaryDocument = new AtomicReference<>();
 
@@ -254,7 +261,6 @@ implements Repository<T>, SchemaWriter<T>
 
 			if (serialized.get() == null)
 			{
-				documentObservers.forEach(o -> o.beforeEncoding(entity));
 				d = asDocument(t.name(), entity);
 				primaryDocument.set(d);
 				serialized.set(d.getObject());
@@ -264,13 +270,11 @@ implements Repository<T>, SchemaWriter<T>
 				d = asDocument(t.name(), entity, serialized.get());
 			}
 
-			documentObservers.forEach(o -> o.afterEncoding(d));
-			documentObservers.forEach(o -> o.beforeDelete(d));
+			documentFilters.forEach(o -> o.onWrite(d));
 			uow.registerDeleted(t.name(), d);
 		});
 
-		documentObservers.forEach(o -> o.afterDelete(primaryDocument.get()));
-		lifecycleObservers.forEach(o -> o.afterDelete(entity));
+		entityObservers.forEach(o -> o.afterDelete(entity));
 	}
 
 	/**
@@ -336,7 +340,7 @@ implements Repository<T>, SchemaWriter<T>
 			T read = readRow(viewName, id)
 				.thenApply(row -> asEntity(viewName, row))
 				.join();
-			lifecycleObservers.forEach(o -> o.afterRead(read));
+			entityObservers.forEach(o -> o.afterRead(read));
 			return read;
 		}
 		catch (CompletionException e)
@@ -381,7 +385,7 @@ implements Repository<T>, SchemaWriter<T>
 					response.cursor(page.cursor());
 					page.iterator().forEachRemaining(row -> {
 						T entity = asEntity(viewName, row);
-						lifecycleObservers.forEach(o -> o.afterRead(entity));
+						entityObservers.forEach(o -> o.afterRead(entity));
                         response.add(entity);
                     });
 				})
@@ -438,7 +442,7 @@ implements Repository<T>, SchemaWriter<T>
 				.thenApply(rs -> rs.one())
 				.thenApply(row -> {
 					T entity = asEntity(viewName, row);
-					lifecycleObservers.forEach(o -> o.afterRead(entity));
+					entityObservers.forEach(o -> o.afterRead(entity));
 					return entity;
 				})
 				.toCompletableFuture()
@@ -515,23 +519,16 @@ implements Repository<T>, SchemaWriter<T>
 			originalEntity = asEntity(table.name(), originalDocument.get());
 		}
 
-		documentObservers.forEach(o -> o.beforeUpdate(originalDocument.get()));
 		final byte[] serialized = originalDocument.get().getObject();
 		final AtomicReference<Document> updatedDocument = new AtomicReference<>();
 
 		table.stream().forEach(t -> {
-			if (updatedDocument.get() == null)
-			{
-				documentObservers.forEach(o -> o.beforeEncoding(entity));
-			}
-
 			final Document updatedViewDocument = asDocument(t.name(), entity);
 			final Document originalViewDocument = asDocument(t.name(), originalEntity, serialized);
 
 			if (updatedDocument.get() == null)
 			{
 				updatedDocument.set(updatedViewDocument);
-				documentObservers.forEach(o-> o.afterEncoding(updatedViewDocument));
 			}
 			else
 			{
@@ -551,7 +548,6 @@ implements Repository<T>, SchemaWriter<T>
 			}
 		});
 
-		documentObservers.forEach(o -> o.afterUpdate(updatedDocument.get()));
 		return entity;
 	}
 
@@ -592,10 +588,7 @@ implements Repository<T>, SchemaWriter<T>
 
 			if (bson.get() == null)
 			{
-				documentObservers.forEach(o -> o.beforeEncoding(entity));
 				d = asDocument(view.name(), entity);
-				documentObservers.forEach(o -> o.afterEncoding(d));
-				documentObservers.forEach(o -> o.beforeUpdate(d));
 				bson.set(d.getObject());
 				updated.set(d);
 			}
@@ -607,7 +600,6 @@ implements Repository<T>, SchemaWriter<T>
 			uow.registerDirty(view.name(), d);
 		});
 
-		documentObservers.forEach(o -> o.afterUpdate(updated.get()));
 		return entity;
 	}
 
@@ -631,7 +623,6 @@ implements Repository<T>, SchemaWriter<T>
 
 	private CompletableFuture<Row> readRow(String viewName, Identifier id)
 	{
-		documentObservers.forEach(o -> o.beforeRead(id));
 		return session.executeAsync(statementFactory.read(viewName, id))
 			.thenApply(rs -> rs.one())
 			.thenApply(row -> {
@@ -643,7 +634,6 @@ implements Repository<T>, SchemaWriter<T>
 
 	private CompletableFuture<PagedRows> readRows(String viewName, int limit, String cursor, Object... parameters)
 	{
-		documentObservers.forEach(o -> o.beforeRead(new Identifier(parameters)));
 		return session.executeAsync(statementFactory.readAll(viewName, limit, cursor, parameters))
 			.thenApply(rs -> {
 				PagedRows rows = new PagedRows();
@@ -660,35 +650,59 @@ implements Repository<T>, SchemaWriter<T>
 
 		if (d == null) return null;
 
-		documentObservers.forEach(o -> o.afterEncoding(d));
 		return asEntity(viewName, d);
+	}
+
+	private void processOnWriteFilters(Document d)
+	{
+		if (hasDocumentFilters())
+		{
+			documentFilters.forEach(o -> o.onWrite(d));
+		}
+	}
+
+	private void processOnReadFilters(Document d)
+	{
+		if (hasDocumentFilters())
+		{
+			documentFilters.reversed().forEach(o -> o.onRead(d));
+		}
 	}
 
 	private Document asDocument(String viewName, Row row)
 	{
-		return factoriesByTable.get(viewName).asDocument(row);
+		Document d = factoriesByTable.get(viewName).asDocument(row);
+		processOnReadFilters(d);
+		return d;
 	}
 
 	private T asEntity(String viewName, Document d)
 	{
+		processOnReadFilters(d);
 		return factoriesByTable.get(viewName).asPojo(d);
 	}
 
 	protected Document asDocument(T entity)
 	{
-		return asDocument(table.name(), entity);
+		Document d = asDocument(table.name(), entity);
+		processOnWriteFilters(d);
+		return d;
 	}
 
 	private Document asDocument(String viewName, T entity)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		return factoriesByTable.get(viewName).asDocument(entity);
+		Document d = factoriesByTable.get(viewName).asDocument(entity);
+		processOnWriteFilters(d);
+		return d;
 	}
 
 	private Document asDocument(String viewName, T entity, byte[] bytes)
 	throws InvalidIdentifierException, KeyDefinitionException
 	{
-		return factoriesByTable.get(viewName).asDocument(entity, bytes);
+		Document d = factoriesByTable.get(viewName).asDocument(entity, bytes);
+		processOnWriteFilters(d);
+		return d;
 	}
 
 	private void handleException(Exception e)

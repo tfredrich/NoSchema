@@ -24,7 +24,7 @@ import java.util.zip.GZIPOutputStream;
 import com.strategicgains.noschema.exception.StorageException;
 
 /**
- * This class is a DocumentObserver that compresses and decompresses the data in a Document using GZIP compression.
+ * This class is a DocumentFilter that compresses and decompresses the data in a Document using GZIP compression.
  * <p/>
  * This class is useful for compressing and decompressing data in a Document before and after it is stored in a storage
  * system. Trading off CPU time for storage space and can be used to reduce the amount of storage space required
@@ -32,14 +32,14 @@ import com.strategicgains.noschema.exception.StorageException;
  * <p/>
  * Note that small payloads may not benefit from compression and may actually increase in size after compression.
  * 
- * @see DocumentObserver
+ * @see DocumentFilter
  * @author Todd Fredrich
  */
-public class GzipDocumentObserver
-extends AbstractDocumentObserver
+public class GzipDocumentFilter
+extends AbstractDocumentFilter
 {
 	@Override
-	public void afterDecoding(Document document)
+	public void onWrite(Document document)
 	{
 		if (document.getObject() == null)
 		{
@@ -61,7 +61,7 @@ extends AbstractDocumentObserver
 	}
 
 	@Override
-	public void afterEncoding(Document document)
+	public void onRead(Document document)
 	{
 		if (document.getObject() == null)
 		{
