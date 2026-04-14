@@ -50,9 +50,8 @@ public final class EntityAnnotationMapper
 		Objects.requireNonNull(keyspace, "keyspace");
 
 		Entity entity = requireEntityAnnotation(entityType);
-		Field idField = requireIdField(entityType);
 		String tableName = resolveTableName(entity, entityType);
-		String keyDefinition = String.format("%s:%s unique", idField.getName(), toDataType(idField.getType()).cassandraType());
+		String keyDefinition = resolvePrimaryKeyDefinition(entityType);
 		PrimaryTable table = new PrimaryTable(keyspace, tableName, keyDefinition);
 		List<View> views = getViews(entityType);
 		validateViewDefinitions(entityType, views);
@@ -99,6 +98,23 @@ public final class EntityAnnotationMapper
 		}
 
 		return idFields.get(0);
+	}
+
+	private static String resolvePrimaryKeyDefinition(Class<?> entityType)
+	{
+		PrimaryKey primaryKey = entityType.getAnnotation(PrimaryKey.class);
+		if (primaryKey != null)
+		{
+			if (primaryKey.value() == null || primaryKey.value().isBlank())
+			{
+				throw new ConfigurationException(String.format("Missing @PrimaryKey.keyDefinition value on class: %s", entityType.getName()));
+			}
+
+			return primaryKey.value();
+		}
+
+		Field idField = requireIdField(entityType);
+		return String.format("%s:%s unique", idField.getName(), toDataType(idField.getType()).cassandraType());
 	}
 
 	private static List<Field> findIdFields(Class<?> entityType)

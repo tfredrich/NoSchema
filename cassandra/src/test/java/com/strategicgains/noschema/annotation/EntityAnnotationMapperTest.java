@@ -83,6 +83,24 @@ public class EntityAnnotationMapperTest
 	}
 
 	@Test
+	public void shouldUsePrimaryKeyDefinitionWhenPresent()
+	throws KeyDefinitionException
+	{
+		PrimaryTable table = EntityAnnotationMapper.toPrimaryTable(PrimaryKeyEntity.class, "noschema_test");
+		PrimaryKeyEntity entity = new PrimaryKeyEntity(UUID.randomUUID());
+		assertEquals(new Identifier(entity.root.id), table.getIdentifier(entity));
+	}
+
+	@Test
+	public void shouldPreferPrimaryKeyDefinitionOverIdField()
+	throws KeyDefinitionException
+	{
+		PrimaryTable table = EntityAnnotationMapper.toPrimaryTable(PrimaryKeyOverridesIdEntity.class, "noschema_test");
+		PrimaryKeyOverridesIdEntity entity = new PrimaryKeyOverridesIdEntity(UUID.randomUUID(), "flower-name");
+		assertEquals(new Identifier(entity.name), table.getIdentifier(entity));
+	}
+
+	@Test
 	public void shouldThrowWhenMissingEntityAnnotation()
 	throws KeyDefinitionException
 	{
@@ -134,6 +152,21 @@ public class EntityAnnotationMapperTest
 		try
 		{
 			EntityAnnotationMapper.toPrimaryTable(UnsupportedIdTypeEntity.class, "noschema_test");
+			fail("Expected ConfigurationException");
+		}
+		catch (ConfigurationException e)
+		{
+			assertNotNull(e.getMessage());
+		}
+	}
+
+	@Test
+	public void shouldThrowWhenPrimaryKeyDefinitionBlank()
+	throws KeyDefinitionException
+	{
+		try
+		{
+			EntityAnnotationMapper.toPrimaryTable(BlankPrimaryKeyEntity.class, "noschema_test");
 			fail("Expected ConfigurationException");
 		}
 		catch (ConfigurationException e)
@@ -206,6 +239,62 @@ public class EntityAnnotationMapperTest
 		}
 	}
 
+	@Entity
+	@PrimaryKey(value = "root.id as root_id:uuid unique")
+	private static class PrimaryKeyEntity
+	implements Identifiable
+	{
+		private RootRef root;
+
+		private PrimaryKeyEntity(UUID rootId)
+		{
+			this.root = new RootRef(rootId);
+		}
+
+		@Override
+		public Identifier getIdentifier()
+		{
+			return new Identifier(root.id);
+		}
+	}
+
+	@Entity
+	@PrimaryKey(value = "name:text unique")
+	private static class PrimaryKeyOverridesIdEntity
+	implements Identifiable
+	{
+		@Id
+		private UUID id;
+		private String name;
+
+		private PrimaryKeyOverridesIdEntity(UUID id, String name)
+		{
+			this.id = id;
+			this.name = name;
+		}
+
+		@Override
+		public Identifier getIdentifier()
+		{
+			return new Identifier(name);
+		}
+	}
+
+	@Entity
+	@PrimaryKey(value = " ")
+	private static class BlankPrimaryKeyEntity
+	implements Identifiable
+	{
+		@Id
+		private UUID id;
+
+		@Override
+		public Identifier getIdentifier()
+		{
+			return new Identifier(id);
+		}
+	}
+
 	private static class NoEntityAnnotation
 	implements Identifiable
 	{
@@ -259,6 +348,16 @@ public class EntityAnnotationMapperTest
 		public Identifier getIdentifier()
 		{
 			return new Identifier(enabled);
+		}
+	}
+
+	private static class RootRef
+	{
+		private UUID id;
+
+		private RootRef(UUID id)
+		{
+			this.id = id;
 		}
 	}
 }
