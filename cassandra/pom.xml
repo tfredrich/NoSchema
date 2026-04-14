@@ -14,7 +14,7 @@
 	</parent>
 
 	<properties>
-		<driver.version>4.13.0</driver.version>
+		<driver.version>4.19.2</driver.version>
 	</properties>
 
 	<dependencies>
@@ -36,10 +36,20 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.datastax.oss</groupId>
+			<groupId>org.apache.cassandra</groupId>
 			<artifactId>java-driver-core</artifactId>
 			<version>${driver.version}</version>
-			<scope>provided</scope>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>

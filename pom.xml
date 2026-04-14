@@ -12,7 +12,23 @@
 
 	<properties>
 		<jdk.version>21</jdk.version>
+		<jackson.version>2.21.2</jackson.version>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-databind</artifactId>
+				<version>${jackson.version}</version>
+			</dependency>
+			<dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<modules>
 		<module>core</module>
