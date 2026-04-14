@@ -72,6 +72,7 @@ public class SampleRun
 
 	private static void testJackson(CqlSession session, String keyspace)
 	{
+		System.out.println("***** Testing with Jackson Codec...");
 		SchemaRegistry.keyspace(keyspace);
 		testCassandra(keyspace, session, unitOfWorkType, JACKSON_CODEC);
 		SchemaRegistry.clear();
@@ -79,6 +80,7 @@ public class SampleRun
 
 	private static void testGson(CqlSession session, String keyspace)
 	{
+		System.out.println("***** Testing with Gson Codec...");
 		SchemaRegistry.keyspace(keyspace);
 		testCassandra(keyspace, session, unitOfWorkType, GSON_CODEC);
 		SchemaRegistry.clear();

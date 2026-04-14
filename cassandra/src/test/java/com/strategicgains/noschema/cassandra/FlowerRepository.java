@@ -93,6 +93,6 @@ extends CassandraRepository<Flower>
 
 	public PagedResponse<Flower> readAllByName(int max, String cursor, UUID accountId)
 	{
-		return readAll(FLOWERS_BY_NAME, 20, cursor, accountId);
+		return readAll(FLOWERS_BY_NAME, max, cursor, accountId);
 	}
 }

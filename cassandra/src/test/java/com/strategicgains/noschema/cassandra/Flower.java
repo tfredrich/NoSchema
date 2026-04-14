@@ -6,13 +6,20 @@ import java.util.List;
 import java.util.UUID;
 
 import com.strategicgains.noschema.Identifier;
+import com.strategicgains.noschema.annotation.Entity;
+import com.strategicgains.noschema.annotation.View;
+import com.strategicgains.noschema.annotation.Views;
 
 /**
  * This sample entity is in no way invaded by any classes in the NoSchema library. It's a plain POJO that
  * is mapped externally into a Document entity that can be stored in the database.
  * 
- * @author tfredrich
+ * @author Todd Fredrich
  */
+@Entity("fluers")
+@Views({
+	@View(name = "by_name", keyDefinition = "(account.id as account_id:UUID), name:text unique")
+})
 public class Flower
 extends AbstractEntity
 {

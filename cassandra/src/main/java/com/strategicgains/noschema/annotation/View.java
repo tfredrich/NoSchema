@@ -19,6 +19,14 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface View
 {
+	/**
+	 * The Cassandra table/view name.
+	 */
 	String name();
-	String[] key();
+
+	/**
+	 * The complete NoSchema key-definition DSL string (for example:
+	 * "(account.id as account_id:uuid), name:text unique").
+	 */
+	String keyDefinition();
 }

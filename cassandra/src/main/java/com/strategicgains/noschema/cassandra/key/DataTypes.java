@@ -110,8 +110,7 @@ public enum DataTypes
 			case "uuid": return UUID;
 			case "timeuuid": return TIMEUUID;
 			case "timestamp": return TIMESTAMP;
-			case "int":
-			case "integer": return INTEGER;
+			case "int", "integer": return INTEGER;
 			case "bigint": return BIGINT;
 			case "float": return FLOAT;
 			case "double": return DOUBLE;
@@ -120,4 +119,25 @@ public enum DataTypes
 				throw new IllegalStateException("Invalid type: " + name);
 		}
     }
+
+
+	public static DataTypes fromClass(Class<?> fieldType)
+	{
+		if (fieldType == null) throw new IllegalStateException("fieldType cannot be null.");
+
+		switch(fieldType.getName())
+		{
+			case "java.lang.String": return TEXT;
+			case "java.util.UUID": return UUID;
+			case "java.util.Date": return TIMESTAMP;
+			case "int", "java.lang.Integer": return INTEGER;
+			case "long", "java.lang.Long": return BIGINT;
+			case "float", "java.lang.Float": return FLOAT;
+			case "double", "java.lang.Double": return DOUBLE;
+			case "java.math.BigDecimal": return DECIMAL;
+			default:
+				throw new IllegalStateException("Invalid type: " + fieldType.getName());
+		}
+	}
+
 }
