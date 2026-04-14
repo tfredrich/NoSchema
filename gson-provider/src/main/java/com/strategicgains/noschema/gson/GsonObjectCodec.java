@@ -20,10 +20,10 @@ import java.nio.charset.StandardCharsets;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.strategicgains.noschema.document.DocumentCodec;
+import com.strategicgains.noschema.document.ObjectCodec;
 
 /**
- * A Gson-based implementation of DocumentCodec that serializes and deserializes objects based on the configuration of the
+ * A Gson-based implementation of ObjectCodec that serializes and deserializes objects based on the configuration of the
  * Gson instance passed into the constructor.
  * 
  * @param <T> the type of object to serialize and deserialize.
@@ -31,7 +31,7 @@ import com.strategicgains.noschema.document.DocumentCodec;
  * @author Todd Fredrich
  */
 public class GsonObjectCodec<T>
-implements DocumentCodec<T>
+implements ObjectCodec<T>
 {
 	private static final String TIME_POINT_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 

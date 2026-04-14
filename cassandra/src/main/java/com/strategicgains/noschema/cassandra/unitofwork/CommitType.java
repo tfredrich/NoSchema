@@ -3,13 +3,19 @@ package com.strategicgains.noschema.cassandra.unitofwork;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BatchType;
 
-public enum UnitOfWorkType
+/**
+ * Defines the type of commit strategy to use for a CassandraUnitOfWork.
+ * 
+ * @author Todd Fredrich
+ * @since Aug 17, 2024
+ */
+public enum CommitType
 {
 	ASYNC,
 	LOGGED,
 	UNLOGGED;
 
-	public UnitOfWorkCommitStrategy asCommitStrategy(CqlSession session)
+	public CommitStrategy asCommitStrategy(CqlSession session)
 	{
 		switch(this)
 		{

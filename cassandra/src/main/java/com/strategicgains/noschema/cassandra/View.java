@@ -12,7 +12,7 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  * it is updated when the parent table is updated (via the UnitOfWork).
  * 
  * @see SecondaryTable
- * @see Index
+ * @see View
  * @see PrimaryTable
  * @author Todd Fredrich
  */

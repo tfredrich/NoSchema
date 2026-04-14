@@ -4,13 +4,13 @@ import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
 /**
- * An Index is simply an Identifier (key structure) pointing to another Identifier (in the PrimaryTable).
+ * An View is simply an Identifier (key structure) pointing to another Identifier (in the PrimaryTable).
  * 
- * An Index table is created to support a specific query but only contains the primary key of the parent
- * table as its data. Consequently, an Index table is read-only and is not updated directly. Instead, it is
+ * An View table is created to support a specific query but only contains the primary key of the parent
+ * table as its data. Consequently, an View table is read-only and is not updated directly. Instead, it is
  * updated when the parent table is updated (via the UnitOfWork).
  * 
- * Indexes incur a performance penalty when reading multiple rows from the parent table. They are not
+ * Views incur a performance penalty when reading multiple rows from the parent table. They are not
  * recommended for high-throughput applications as reading rows from the index table will require a
  * subsequent read from the parent table to retrieve the actual data.
  * 

@@ -26,11 +26,11 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.strategicgains.noschema.document.DocumentCodec;
+import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.ConfigurationException;
 
 /**
- * A Jackson-based implementation of DocumentCodec that serializes and deserializes
+ * A Jackson-based implementation of ObjectCodec that serializes and deserializes
  * objects based on the configuration of the ObjectMapper passed into the constructor.
  * 
  * @param <T> the type of object to serialize and deserialize.
@@ -38,7 +38,7 @@ import com.strategicgains.noschema.exception.ConfigurationException;
  * @author Todd Fredrich
  */
 public final class JacksonObjectCodec<T>
-implements DocumentCodec<T>
+implements ObjectCodec<T>
 {
 	private static final String TIME_POINT_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 

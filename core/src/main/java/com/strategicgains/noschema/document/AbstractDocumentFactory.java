@@ -29,15 +29,15 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  */
 public abstract class AbstractDocumentFactory<T>
 {
-	private DocumentCodec<T> codec;
+	private ObjectCodec<T> codec;
 
-	protected AbstractDocumentFactory(DocumentCodec<T> codec)
+	protected AbstractDocumentFactory(ObjectCodec<T> codec)
 	{
 		super();
 		setCodec(codec);
 	}
 
-	public void setCodec(DocumentCodec<T> objectCodec)
+	public void setCodec(ObjectCodec<T> objectCodec)
 	{
 		this.codec = objectCodec;
 	}

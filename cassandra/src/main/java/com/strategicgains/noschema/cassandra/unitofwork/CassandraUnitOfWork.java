@@ -28,14 +28,14 @@ implements UnitOfWork
     private final CqlSession session;
     private final CachingStatementFactory statementFactory;
     private final UnitOfWorkChangeSet<Document> changeSet = new UnitOfWorkChangeSet<>();
-    private final UnitOfWorkCommitStrategy commitStrategy;
+    private final CommitStrategy commitStrategy;
 
     public CassandraUnitOfWork(CqlSession session, CachingStatementFactory statementFactory)
     {
-    	this(session, statementFactory, UnitOfWorkType.LOGGED);
+    	this(session, statementFactory, CommitType.LOGGED);
     }
 
-    public CassandraUnitOfWork(CqlSession session, CachingStatementFactory statementFactory, UnitOfWorkType unitOfWorkType)
+    public CassandraUnitOfWork(CqlSession session, CachingStatementFactory statementFactory, CommitType unitOfWorkType)
     {
         this.session = Objects.requireNonNull(session);
         this.statementFactory = Objects.requireNonNull(statementFactory);

@@ -9,7 +9,7 @@ import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider.Col
 import com.strategicgains.noschema.cassandra.key.KeyDefinition;
 import com.strategicgains.noschema.document.AbstractDocumentFactory;
 import com.strategicgains.noschema.document.Document;
-import com.strategicgains.noschema.document.DocumentCodec;
+import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
 import com.strategicgains.noschema.exception.KeyDefinitionException;
 
@@ -18,13 +18,13 @@ extends AbstractDocumentFactory<T>
 {
 	private KeyDefinition keys;
 
-	public CassandraDocumentFactory(KeyDefinition keys, DocumentCodec<T> codec)
+	public CassandraDocumentFactory(KeyDefinition keys, ObjectCodec<T> codec)
 	{
 		super(codec);
 		setKeyDefinition(keys);
 	}
 
-	public CassandraDocumentFactory(DocumentCodec<T> codec, KeyDefinition keys)
+	public CassandraDocumentFactory(ObjectCodec<T> codec, KeyDefinition keys)
 	{
 		super(codec);
 		setKeyDefinition(keys);

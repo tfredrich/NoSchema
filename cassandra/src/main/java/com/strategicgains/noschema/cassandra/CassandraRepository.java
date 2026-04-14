@@ -23,9 +23,9 @@ import com.strategicgains.noschema.cassandra.document.CassandraDocumentFactory;
 import com.strategicgains.noschema.cassandra.document.DocumentSchemaProvider;
 import com.strategicgains.noschema.cassandra.schema.SchemaWriter;
 import com.strategicgains.noschema.cassandra.unitofwork.CassandraUnitOfWork;
-import com.strategicgains.noschema.cassandra.unitofwork.UnitOfWorkType;
+import com.strategicgains.noschema.cassandra.unitofwork.CommitType;
 import com.strategicgains.noschema.document.Document;
-import com.strategicgains.noschema.document.DocumentCodec;
+import com.strategicgains.noschema.document.ObjectCodec;
 import com.strategicgains.noschema.document.DocumentFilter;
 import com.strategicgains.noschema.exception.DuplicateItemException;
 import com.strategicgains.noschema.exception.InvalidIdentifierException;
@@ -62,19 +62,19 @@ implements Repository<T>, SchemaWriter<T>
 	// The factories used to encode and decode entities.
 	private Map<String, CassandraDocumentFactory<T>> factoriesByTable = new HashMap<>();
 	// The type of UnitOfWork to create.
-	private UnitOfWorkType unitOfWorkType;
+	private CommitType unitOfWorkType;
 	// The DocumentFilters used to reading and writing of documents.
 	private List<DocumentFilter> documentFilters = new ArrayList<>();
 	// The EntityObservers used to observe the lifecycle of entities.
 	private List<EntityObserver<T>> entityObservers = new ArrayList<>();
 
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, DocumentCodec<T> codec)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, ObjectCodec<T> codec)
 	{
-		this(session, table, UnitOfWorkType.LOGGED, codec);
+		this(session, table, CommitType.LOGGED, codec);
 	}
 
-	protected CassandraRepository(CqlSession session, PrimaryTable table, UnitOfWorkType unitOfWorkType, DocumentCodec<T> codec)
+	protected CassandraRepository(CqlSession session, PrimaryTable table, CommitType unitOfWorkType, ObjectCodec<T> codec)
 	{
 		super();
 		this.session = Objects.requireNonNull(session);

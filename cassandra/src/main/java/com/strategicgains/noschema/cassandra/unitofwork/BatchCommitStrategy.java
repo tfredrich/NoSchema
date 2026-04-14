@@ -12,8 +12,12 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
+/**
+ * Executes statements in a single batch, returning a CompletableFuture that completes when the batch has completed.
+ * The batch type can be configured (LOGGED or UNLOGGED).
+ */
 public class BatchCommitStrategy
-implements UnitOfWorkCommitStrategy
+implements CommitStrategy
 {
 	private BatchType batchType = BatchType.LOGGED;
 	private CqlSession session;

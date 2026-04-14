@@ -8,8 +8,12 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkCommitException;
 import com.strategicgains.noschema.unitofwork.UnitOfWorkRollbackException;
 
+/**
+ * Executes statements asynchronously, returning a CompletableFuture that completes when all statements have completed.
+ * There is no batch execution, so statements are executed individually.
+ */
 public class AsynchronousCommitStrategy
-implements UnitOfWorkCommitStrategy
+implements CommitStrategy
 {
 	private CqlSession session;
 

@@ -14,11 +14,11 @@ import com.strategicgains.noschema.exception.KeyDefinitionException;
  * contains all the same data that the primary table contains but with a different
  * key structure. The key structure of a view is defined by the query that it supports.
  * 
- * An Index is simply an Identifier pointing to another Identifier (in the PrimaryTable).
+ * An View is simply an Identifier pointing to another Identifier (in the PrimaryTable).
  * 
  * @author Todd Fredrich
  * @see View
- * @see Index
+ * @see View
  */
 public abstract class SecondaryTable
 extends AbstractTable
