@@ -31,11 +31,26 @@ public class CachingStatementFactory<T extends Identifiable>
 		return get(tableName).read(id);
 	}
 
+	/**
+	 * Read all records from the table, with paging support. If a cursor is
+	 * provided, it will be used to set the paging state of the statement. If a
+	 * limit is provided (greater-than zero), it will be used to set the page size
+	 * of the statement.
+	 * 
+	 * @param tableName the name of the table to read from.
+	 * @param limit the maximum number of records to return. If zero or negative, no limit will be applied.
+	 * @param cursor the paging state to use for the query. If null, the query will start from the beginning.
+	 * @param parameters any parital key parameters required for the query.
+	 * @return a BoundStatement ready to be executed against the Cassandra session.
+	 */
 	public BoundStatement readAll(String tableName, int limit, String cursor, Object... parameters)
 	{
-		BoundStatement stmt = get(tableName)
-			.readAll(parameters)
-			.setPageSize(limit);
+		BoundStatement stmt = get(tableName).readAll(parameters);
+
+		if (limit > 0)
+		{
+			stmt = stmt.setPageSize(limit);
+		}
 
 		if (cursor != null)
 		{
